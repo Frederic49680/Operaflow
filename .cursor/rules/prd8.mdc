@@ -1,0 +1,146 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Module Maintenance (journal du soir + reporting mensuel “batterie”)
+Auteur : Fred Baudry
+Version : 1.1
+Stack : Next.js 15 / Supabase / Tailwind / SMTP (mail), Recharts (KPI)
+Règle clé : saisie le soir uniquement ; mêmes états que la Remontée Site ; pas de dépenses.
+________________________________________
+1) Objectif
+•	Permettre aux équipes Maintenance de journaliser chaque soir leurs interventions (par tranches horaires, système, élémentaire, type de maintenance).
+•	Utiliser les mêmes états que le module Remontée Site (Non lancée, En cours, Terminée, Bloquée, Reportée, Prolongée, Suspendue).
+•	Gérer blocage intrajournalier (2ᵉ saisie autorisée le même jour).
+•	Gérer la suspension (exclue du temps “métal”).
+•	En fin de mois, émettre automatiquement une liste vers le responsable des activités “batterie” terminées et reportées.
+“Batterie” = groupe d’activités de maintenance (période, système ou campagne). On peut taguer chaque ligne/journal avec une batterie pour le reporting mensuel.
+________________________________________
+2) Utilisateurs cibles
+Rôle	Accès	Actions
+Technicien Maintenance	Saisie soir	Crée les lignes d’intervention
+Resp. Maintenance	Saisie + validation	Relit et valide la journée, paramètre les batteries
+Chargé d’Affaires	Lecture	Reçoit le bilan mensuel (terminées / reportées)
+Planificateur / Direction	Lecture	Historique + KPI
+________________________________________
+3) Fonctionnalités
+3.1 Journal du soir (fenêtre 17:00–20:00, paramétrable)
+Pour chaque ligne :
+•	Tranche horaire (début → fin)
+•	Système (élec, CVC, sûreté, etc.)
+•	Élémentaire (équipement/point : TGBT, CTA-2, Pompe P3…)
+•	Type de maintenance : Préventive / Corrective / Contrôle / Amélioration
+•	État réel : Non lancée / En cours / Terminée / Bloquée / Reportée / Prolongée / Suspendue
+•	Motif (obligatoire si Bloquée/Suspendue)
+•	Description courte
+•	Batterie (sélecteur) — optionnel mais recommandé pour le bilan mensuel
+•	Heures présence + heures suspension ⇒ heures métal (= présence – suspension)
+Raccourcis : duplication de ligne, listes récentes de systèmes/élémentaires.
+3.2 Blocage intrajournalier & Suspension
+•	Blocage intrajournalier : autorise une 2ᵉ ligne le même jour (flag is_block_event=true, motif obligatoire).
+•	Suspension : exclut la durée du temps métal ; peut être “ouverte” (clôturée à la reprise).
+3.3 État du jour & confirmation
+•	Vue “À confirmer” chaque soir (lignes du jour non confirmées).
+•	Bouton “Confirmer la journée” → fige les lignes (journal d’audit).
+•	Les heures métal mises à jour servent aux KPI (pas de finances ici).
+3.4 Reporting mensuel “Batterie”
+•	Dernier jour du mois à 18:30 (Europe/Paris) : génération d’un mail automatique au Responsable (et CA en copie si souhaité) listant :
+o	Batteries du mois avec statut :
+	Terminées (toutes lignes associées en état “Terminée”),
+	Reportées (au moins une ligne “Reportée” ou “Prolongée”, et aucune clôture complète),
+o	Détails par batterie : Système, Élémentaire, Nb de lignes, % “Terminée”, % “Reportée”, commentaires.
+•	Possibilité d’émettre manuellement (“Envoyer le bilan mensuel maintenant”).
+________________________________________
+4) Modèle de données (Supabase)
+Table maintenance_journal
+Champ	Type	Description
+id	uuid	PK
+site_id	uuid	FK → sites
+date_jour	date	Jour concerné
+tranche_debut	timestamptz	Début
+tranche_fin	timestamptz	Fin
+systeme	text	Domaine
+elementaire	text	Équipement/point
+type_maintenance	text	Préventive/Corrective/Contrôle/Amélioration
+etat_reel	text	Non lancée / En cours / Terminée / Bloquée / Reportée / Prolongée / Suspendue
+motif	text	Requis si Bloquée/Suspendue
+description	text	Bref résumé
+batterie_id	uuid (nullable)	FK → maintenance_batteries.id
+heures_presence	numeric	h
+heures_suspension	numeric	h (exclues métal)
+heures_metal	numeric	h = présence – suspension
+is_block_event	bool	true si événement blocage
+etat_confirme	bool	true après validation du soir
+created_by	uuid	Auteur
+created_at	timestamptz	Horodatage
+Contraintes
+•	Unicité journalière par tâche non applicable ici (on parle d’interventions libres).
+•	Fenêtre horaire : création/édition permises 17:00–20:00 (sauf rôle Resp qui peut corriger H+1).
+•	heures_metal >= 0, tranche_fin > tranche_debut.
+Table maintenance_batteries
+Champ	Type	Description
+id	uuid	PK
+site_id	uuid	FK → sites
+libelle	text	Nom de la batterie (ex. “Campagne CTA T2 2025-07”)
+periode_mois	date	Mois de référence (ex. 2025-10-01)
+responsable_id	uuid	Qui recevra le bilan
+commentaire	text	Notes
+created_by	uuid	Auteur
+created_at	timestamptz	
+Table maintenance_monthly_digest
+(trace d’envoi mensuel)
+Champ	Type	Description
+id	uuid	PK
+site_id	uuid	Site
+periode_mois	date	1er du mois (pivot)
+destinataires	text[]	Emails envoyés
+nb_batteries_terminees	int	Compte
+nb_batteries_reportees	int	Compte
+details	jsonb	Résumé batteries (id, libelle, % terminée/reportée)
+sent_at	timestamptz	Date/heure envoi
+________________________________________
+5) Règles métier
+•	Saisie soir uniquement (17:00–20:00), sinon lecture seule (sauf Resp H+1).
+•	Blocage intrajournalier : 2ᵉ ligne autorisée (motif requis).
+•	Suspension : exclue du temps métal.
+•	Batterie :
+o	une ligne peut (devrait idéalement) être rattachée à une batterie du mois,
+o	Terminée = toutes les lignes rattachées sur la période sont “Terminée”,
+o	Reportée = au moins une ligne non terminée (Reportée/Prolongée) au dernier jour du mois.
+•	Digest mensuel : un seul envoi par site et par mois (rejouable manuellement si besoin).
+________________________________________
+6) Envoi mensuel — contenu du mail
+Objet : [Maintenance][{SITE}][{AAAA-MM}] Bilan “batteries” — terminées & reportées
+Corps :
+•	En-tête : Site, Mois, Responsable, Date d’envoi.
+•	Synthèse : nb batteries terminées / reportées.
+•	Tableau :
+o	Batterie | % Terminée | % Reportée | Systèmes/Élémentaires clés | Commentaires
+•	Lien “Voir le détail dans l’app”.
+Plan d’envoi : dernier jour du mois à 18:30 (Europe/Paris).
+Destinataires : Responsable (réf. maintenance_batteries.responsable_id → email), CA en CC (option).
+________________________________________
+7) KPI & vues
+•	KPI mensuels : nb batteries, % terminées, % reportées, heures métal totales.
+•	Vues filtrées : par site, mois, batterie, état.
+•	Export CSV/Excel.
+________________________________________
+8) Critères d’acceptation
+•	Saisie le soir uniquement, avec fenêtre respectée.
+•	États identiques à Remontée Site, blocage intrajournalier OK (motif).
+•	Heures métal correctement calculées (présence – suspension, min 0).
+•	“Batterie” sélectionnable et gérée par mois.
+•	Digest mensuel émis automatiquement (terminées / reportées).
+•	Mail lisible, récapitulatif par batterie, un envoi par site et par mois.
+•	Historique & export OK, UI responsive.
+________________________________________
+9) UI / Compos
+•	MaintenanceDayForm (saisie lignes + duplication)
+•	EveningWindowGuard (verrou temporel)
+•	MaintenanceBatterySelector (assigner/éditer batteries)
+•	BatteryMonthlyDigestPreview (aperçu fin de mois)
+•	MaintenanceHistory (filtres site/mois/batterie/état)
+________________________________________
+10) Automatisation (cron)
+•	Quotidien 20:05 : reminder si des lignes non confirmées.
+•	Mensuel J-dernier 18:30 : génération + envoi digest batteries (terminées/reportées) → trace en maintenance_monthly_digest.
+

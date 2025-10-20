@@ -1,0 +1,189 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Règles du Diagramme de Gantt (Drag, Drop, Resize & Co)
+
+Auteur : Fred Baudry
+Version : 1.0
+Stack cible : Next.js + React + Tailwind + Supabase + Frappe-Gantt / D3 / custom layer
+Objectif : définir les règles de manipulation, validation et impact du diagramme de Gantt interactif (drag & drop, resize, reorder, link, calculs) dans le module Planification.
+
+1️⃣ Objectif du module Gantt
+
+Offrir une interface graphique permettant de :
+
+Créer, modifier et réorganiser les tâches d’un projet ou d’une affaire,
+
+Ajuster dynamiquement les dates, durées, liens de dépendance et ressources,
+
+Mettre à jour en temps réel les indicateurs de charge, suraffectation, avancement et atterrissage financier.
+
+L’expérience doit être fluide, cohérente, et protégée contre les incohérences métiers (ex. tâche avant le début d’affaire, ressource déjà absente, etc.).
+
+2️⃣ Types de manipulation autorisés
+Action	Description	Impact
+Drag horizontal (déplacement)	Déplacer la tâche sur l’axe temporel	Modifie date_debut_plan et date_fin_plan
+Resize (bord gauche/droit)	Étendre ou réduire la durée planifiée	Recalcule durée & effort planifié
+Drop vertical (reorder)	Réordonner au sein d’un lot ou entre lots	Change lot_id, ordre d’affichage
+Drag lien (dependence)	Créer un lien de dépendance visuelle entre tâches	Ajoute une entrée dependance (FK → tache_precedente_id)
+Double-clic / contexte	Ouvre modal détail tâche	CRUD complet (taux, statut, affectations, etc.)
+Alt + Drag	Copie de tâche (duplique, nouvelle ID, même params)	Insert clone
+Ctrl + Drag	Affecte ressource “multi” (via modal rapide)	Insert dans table taches_ressources
+Drag groupé (sélection multiple)	Déplace plusieurs tâches en même temps	Maj groupée dates relatives
+3️⃣ Contraintes & validations
+🔹 3.1 Contraintes temporelles
+
+Une tâche ne peut commencer avant la date de début d’affaire.
+
+Une tâche ne peut finir après la date de fin prévue d’affaire, sauf si affaire = ouverte.
+
+Une tâche “bloquée” (statut='Bloquée') ne peut pas être déplacée tant que non débloquée.
+
+Si la tâche a une dépendance (fin-début), la date de début ne peut être antérieure à la fin de la tâche précédente.
+
+Si décalage forcé → prompt utilisateur :
+
+⚠ “Cette tâche précède une dépendance. Souhaitez-vous décaler également les suivantes ?”
+
+🔹 3.2 Contraintes hiérarchiques
+
+Déplacement inter-affaires interdit.
+
+Déplacement inter-lot autorisé uniquement si même affaire.
+
+Déplacement inter-site interdit (une tâche = 1 site).
+
+Si tâche maître (lot parent) déplacée → décalage de toutes ses sous-tâches (option confirmée).
+
+🔹 3.3 Contraintes ressources
+
+Si ressource affectée est absente (absences.date_debut <= période <= date_fin) → alerte visuelle rouge.
+
+Si ressource déjà affectée >100 % sur la même période → badge “⚠ suraffectation”.
+
+Si ressource inactive → blocage drop (pas d’affectation possible).
+
+🔹 3.4 Contraintes de statut
+Statut	Déplacement autorisé	Resize autorisé	Commentaire
+Non lancé	✅	✅	libre
+En cours	⚠ (si pas d’avancement saisi)	⚠	confirmation requise
+Terminé	❌	❌	verrouillé
+Bloqué	❌	❌	non manipulable
+Reporté / Prolongé	✅	✅	alerte recalcul nécessaire
+4️⃣ Impact métier des actions
+Action	Impact direct	Impact secondaire
+Déplacement horizontal	maj date_debut_plan, date_fin_plan	recalcul date_debut_affaire, date_fin_affaire (si bord extrême)
+Resize	maj duree_plan	recalcul effort_plan_h (via ratio h/jour ressource)
+Drag vertical	maj lot_id	recalcul budget_lot, pondération, avancement_lot
+Dépendance ajoutée	insert dependance_taches	recalcul ordonnancement si auto_schedule=ON
+Duplication	insert nouvelle tâche	recopie affectations si choix “dupliquer avec ressources”
+Suppression	archive tâche	recalcul avancement lot et affaire
+Affectation ressource	insert taches_ressources	vérif compétence + disponibilité
+Drag groupé	maj relative des dates	recalcul global lot / affaire
+5️⃣ Données & structure associée
+Table planning_taches
+Champ	Type	Note
+id	uuid pk	
+libelle_tache	text	Nom affiché sur Gantt
+lot_id	uuid fk	
+affaire_id	uuid fk	
+site_id	uuid fk	
+date_debut_plan	date	
+date_fin_plan	date	
+effort_plan_h	numeric	recalcul auto selon durée
+avancement_pct	numeric	0–100
+statut	text	Enum statut métier
+dependances	uuid[]	liste tâches précédentes
+ordre_affichage	int	pour drag vertical
+auto_schedule	bool default true	active recalcul auto
+created_at	timestamptz	
+Table taches_ressources
+Champ	Type	Note
+id	uuid pk	
+tache_id	uuid fk	
+ressource_id	uuid fk	
+charge_h	numeric	heures prévues
+taux_affectation	numeric	0–100 %
+competence	text	utilisée pour adéquation
+created_at	timestamptz	
+6️⃣ Comportements visuels (UX / UI)
+
+Drag preview : ligne guide (magnétisme aux jours ouvrés).
+
+Auto-snap : début et fin alignés sur calendrier ouvré (évite le week-end).
+
+Color coding :
+
+Bleu clair → tâche libre
+
+Orange → en conflit (dépendance ou ressource)
+
+Rouge → violation (hors période affaire / site fermé / ressource absente)
+
+Tooltips dynamiques : affichent durée, effort, % avancement, suraffectations détectées.
+
+Double-clic : modal “Modifier tâche” (libellé, dates, ressources, statut).
+
+Ctrl+Z / Ctrl+Y : annulation/rétablissement local (undo/redo client-side).
+
+Auto-save : à chaque release de drag/resize.
+
+7️⃣ Moteur de calcul (pseudo logique)
+onDragEnd(tache):
+  validatePosition()
+  if hasDependencyConflict():
+      proposeShiftDependants()
+  updateDatesInDB()
+  recalcEffortPlanifie()
+  recalcLotAndAffaireDates()
+  if ressourcesLinked:
+      updateChargeAndCoverage()
+  triggerRealtimeRefresh()
+
+8️⃣ Triggers & fonctions Supabase
+
+fn_recalc_tache_effort() : effort_plan_h = durée * charge_jour / ressource.
+
+fn_update_affaire_dates() : synchronise bornes min/max des tâches.
+
+fn_validate_dependencies() : bloque insert si violation temporelle.
+
+fn_recalc_lot_avancement() : somme pondérée des tâches.
+
+Realtime trigger : broadcast updates → rafraîchit Gantt des autres utilisateurs connectés.
+
+9️⃣ Performances & fiabilité
+
+Tout drag/drop = maj locale + sync asynchrone DB (optimiste).
+
+Durée < 150 ms entre “drop” et “update visible”.
+
+Limiter reflows DOM : 60fps cible.
+
+Éviter recalcul complet → recalcul delta (seulement tâches modifiées).
+
+Historiser les modifications (table historique_actions).
+
+🔟 Critères d’acceptation
+ID	Critère	Validation
+GNT-01	Drag horizontal mis à jour en DB	✅
+GNT-02	Resize recalcul effort planifié	✅
+GNT-03	Dépendances respectées et contrôlées	✅
+GNT-04	Blocage inter-affaires effectif	✅
+GNT-05	Auto-snap jours ouvrés fonctionnel	✅
+GNT-06	Undo/Redo opérationnels	✅
+GNT-07	Auto-save fiable	✅
+GNT-08	Realtime synchro multi-utilisateurs	✅
+GNT-09	Sur-affectations signalées	✅
+GNT-10	Recalcul cascade vers lots/affaires cohérent	✅
+⚙️ Bonus évolutions (Phase 2)
+
+Mode “What-if” (simulation planification sans commit).
+
+Verrouillage collaboratif (tâche “en édition par X”).
+
+Critical path view (chemin critique).
+
+Zoom temporel adaptatif (jour / semaine / mois).
+
+Planification prédictive IA (ajustement automatique selon ressources & contraintes).

@@ -1,0 +1,201 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Module Transition Affaires ↔ Gantt & Lots Financiers
+
+Auteur : Fred Baudry
+Version : 1.0
+Stack : Next.js 15 / Supabase / Tailwind / Recharts / SMTP (alertes automatiques)
+
+1️⃣ Objectif général
+
+Créer une jonction fonctionnelle entre les modules Affaires, Gantt, et Facturation, permettant de :
+
+Gérer les lots financiers d’une affaire directement depuis la fiche affaire (ajout / modif / suppression).
+
+Remplacer le statut “Soumise” par “À planifier” à la création ou modification d’une affaire.
+
+Envoyer automatiquement une affaire “À planifier” vers le Gantt, dans une section “En attente de planification”.
+
+Planifier l’affaire à une date donnée (bouton “Déclarer la planification”) → changement de statut en “Validée”.
+
+Créer automatiquement les jalons à partir des lots financiers.
+
+Déclencher une alerte de facturation au Chargé d’Affaires quand un lot est complété à 100 %.
+
+2️⃣ Utilisateurs cibles
+Rôle	Accès	Actions principales
+Chargé d’Affaires (CA)	Création et modification des affaires + lots financiers	Crée ou met à jour les lots, gère numéros de commande
+Planificateur	Page Gantt	Voit les affaires “À planifier”, définit dates de planification
+Direction / Contrôle de gestion	Lecture globale	Suit les statuts et les jalons financiers
+Administration (option)	Gestion des droits	Définit qui peut valider une planification
+3️⃣ Fonctionnalités principales
+🔹 3.1 Modification de la page Affaires
+a) Section “Lots Financiers”
+
+Interface de gestion dynamique des lots financiers :
+
+Ajouter / modifier / supprimer un lot.
+
+Champs :
+
+Champ	Type	Description
+Libellé du lot	text	Nom ou objet du lot
+Montant HT	numeric	Valeur financière
+Mode de facturation	enum	à la réception / à l’avancement / échéancier
+Échéance prévue	date	Date cible du jalon
+Numéro de commande client	text	Nouveau champ ajouté
+Commentaire	text	Optionnel
+
+Les lots sont enregistrés dans la table affaires_lots_financiers et liés à affaire_id.
+
+b) Statut d’affaire
+
+Remplacement de l’ancien statut “Soumise” → “À planifier”.
+
+Règle automatique :
+
+Nouvelle affaire = statut = 'A_planifier'.
+
+Modification d’affaire sans tâche planifiée = A_planifier.
+
+🔹 3.2 Passage automatique vers le Gantt
+
+Toute affaire avec statut = 'A_planifier' est visible sur la page Gantt dans un bloc “En attente de planification”.
+
+Ce bloc liste :
+
+Nom de l’affaire, site, responsable, date prévisionnelle de début/fin, type (BPU / Forfait), nombre de lots financiers.
+
+Bouton “Déclarer la planification”.
+
+🔹 3.3 Déclaration de planification
+
+Clic sur le bouton “Déclarer la planification” → ouvre une modale :
+
+Champs : Date début / Date fin / Responsable planification.
+
+Bouton “Valider”.
+
+Actions automatiques :
+
+L’affaire quitte le bloc “En attente”.
+
+Création des tâches correspondantes dans planning_taches :
+
+soit les tâches opérationnelles (si affaire classique),
+
+soit une tâche parapluie (si affaire type BPU).
+
+Mise à jour de affaires.statut = 'Validee'.
+
+🔹 3.4 Cas particulier — Affaire type BPU
+
+Création automatique d’une tâche parapluie dans le Gantt :
+
+Nom : Parapluie – [Nom Affaire]
+
+date_debut, date_fin = dates planifiées
+
+progress auto = heures Maintenance / capacité prévisionnelle
+
+is_parapluie_bpu = true
+
+L’affaire passe directement au statut Validée (pas de planif manuelle nécessaire).
+
+🔹 3.5 Génération des Jalons Financiers
+
+Chaque lot financier d’une affaire devient un jalon dans le Gantt :
+
+planning_taches.type = 'jalon'
+
+planning_taches.lot_financier_id = affaires_lots_financiers.id
+
+date_prevue = echeance_prevue
+
+libelle = libelle du lot
+
+montant = montant du lot
+
+numero_commande = numero_commande
+
+requiert_reception = true si mode_facturation = 'a_la_reception'
+
+Ces jalons apparaissent automatiquement sous la barre principale de l’affaire dans le Gantt.
+
+🔹 3.6 Déclencheur de facturation
+
+Lorsque :
+
+un jalon atteint 100 % d’avancement,
+
+et toutes les tâches précédentes associées au lot sont terminées,
+
+alors une alerte automatique est envoyée au Chargé d’Affaires :
+
+“💡 Lot [Nom du lot] terminé — facturation possible.”
+
+L’alerte apparaît :
+
+dans la page Affaires (notification interne),
+
+et par mail SMTP (si activé).
+
+4️⃣ Modèle de données (Supabase)
+Table affaires_lots_financiers
+Champ	Type	Description
+id	uuid pk	
+affaire_id	uuid fk → affaires	
+libelle	text	
+montant_ht	numeric	
+mode_facturation	text	
+echeance_prevue	date	
+numero_commande	text	
+commentaire	text	
+created_at	timestamptz	
+updated_at	timestamptz	
+Table planning_taches (extrait pertinent)
+Champ	Type	Description
+id	uuid	
+affaire_id	uuid	
+lot_financier_id	uuid nullable	
+type	text (tache ou jalon)	
+is_parapluie_bpu	bool	
+date_debut	date	
+date_fin_prevue	date	
+progress	numeric	
+requiert_reception	bool	
+statut	text (a_faire, en_cours, terminee)	
+5️⃣ Règles métiers
+Cas	Règle
+Affaire créée ou modifiée sans planif	statut = 'A_planifier'
+Affaire planifiée via Gantt	statut = 'Validee'
+Affaire type BPU	Création automatique tâche parapluie
+Lot financier	Génère un jalon dans Gantt
+Jalon terminé + tâches précédentes terminées	Envoi alerte facturation au CA
+Statut affaire mis à jour	via trigger fn_affaire_status_from_gantt()
+6️⃣ Automatisations & triggers
+Nom	Moment	Action
+fn_affaire_status_created()	on insert affaires	statut par défaut = 'A_planifier'
+fn_push_to_gantt()	on update statut='A_planifier'	ajoute affaire dans “En attente de planification”
+fn_declare_planification()	via UI bouton	crée tâches / jalons / change statut en 'Validee'
+fn_create_jalons_from_lots()	on validate planif	crée 1 jalon par lot
+fn_check_jalon_completion()	cron ou trigger sur progress	si 100% + tâches précédentes terminées → alerte CA
+fn_alert_facturation_ca()	via SMTP	envoi mail “Facturation possible”
+7️⃣ UI / Composants
+Composant	Description
+AffaireEditForm	intègre section “Lots Financiers” (CRUD + numéro commande)
+AffaireStatusBadge	affiche statut dynamique (À planifier / Validée / Terminée)
+GanttPendingCard	bloc “En attente de planification” avec bouton “Déclarer planification”
+GanttAutoPlanTask	composant création auto tâche parapluie
+JalonAutoCreator	génération des jalons à partir des lots financiers
+CAFactureAlert	notification “Facturation possible”
+8️⃣ Critères d’acceptation
+ID	Critère	Validation
+AFF-GNT-01	Statut “Soumise” remplacé par “À planifier”	✅ visible dans UI
+AFF-GNT-02	Affaires “À planifier” affichées dans Gantt	✅ bloc dédié
+AFF-GNT-03	Bouton “Déclarer planification” crée tâche + dates	✅ testé
+AFF-GNT-04	Statut passe “Validée” après planif	✅ cohérent
+AFF-GNT-05	Cas BPU → tâche parapluie auto	✅ test BPU ok
+AFF-GNT-06	Chaque lot = jalon Gantt	✅ 1 jalon par lot
+AFF-GNT-07	Jalon 100 % + tâches précédentes OK → Alerte CA	✅ SMTP et UI ok

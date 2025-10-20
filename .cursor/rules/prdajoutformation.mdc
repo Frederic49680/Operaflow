@@ -1,0 +1,292 @@
+---
+alwaysApply: true
+---
+🧭 PRD — RH Formations v1.1
+(Organismes de formation, Coûts, Plan prévisionnel & Budget)
+
+Auteur : Fred Baudry
+Stack : Next.js 15 / Supabase / Tailwind / Recharts / SMTP
+
+1) Objectifs
+
+Référencer les organismes (coordonnées, agréments, domaines).
+
+Cataloguer les formations (durée, validité, prérequis) avec modèles de coût (par tête, par session, e-learning, déplacements).
+
+Plan prévisionnel : poser des semaines de formation par ressource (et/ou sessions), avec coût prévisionnel auto.
+
+Budget annuel : consolider prévu vs réalisé (par site, organisme, formation, ressource), sorties CSV/PDF.
+
+2) Utilisateurs
+Rôle	Accès	Actions
+RH	CRUD complet	Gère organismes, catalogue, planifie, budgète
+Responsable Site	Lecture + proposition	Propose besoins, voit budget site
+Direction / QSE	Lecture globale	Suit le budget, conformité
+Planificateur	Lecture	Voit indispos “en formation”
+3) Fonctionnalités
+3.1 Organismes de formation (référentiel)
+
+Fiche organisme : nom, SIRET, contact, email, téléphone, adresse, domaines, n° d’agrément, notes.
+
+Statut : actif/inactif, préférences (site, région).
+
+Pièces jointes : contrat-cadre, CGV, attestations.
+
+3.2 Catalogue des formations
+
+Fiche formation :
+
+Libellé, code interne, type (habilitante / technique / QSE / CACES / SST…)
+
+Durée (jours / heures), validité (mois) si habilitante
+
+Modalité : présentiel / distanciel / e-learning / mixte
+
+Prérequis, compétences associées
+
+Organisme proposé (par défaut) + liste d’alternatifs
+
+Modèle de coût (multi-modalités) :
+
+cout_unitaire_par_participant (HT)
+
+cout_session (forfait salle/formateur)
+
+cout_elearning (par licence)
+
+frais_deplacement (barème ou montant)
+
+tva %
+
+Site / Région / Organisme overrides possibles (ex : IDF plus cher)
+
+3.3 Plan prévisionnel (semaine ressource)
+
+Poser une semaine de formation à une ressource :
+
+Ressource, semaine ISO (AAAA-WW), formation choisie, organisme (défaut = proposé)
+
+Nombre de jours/h cumulés, modalité
+
+Statut : prévisionnel → validé → réalisé → annulé
+
+Effets :
+
+Indisponibilité planning (Gantt) cette semaine (bloc “en formation”)
+
+Coût prévisionnel automatique :
+
+coût = (cout_unitaire_par_participant OU cout_elearning)
+       + quote-part du cout_session (si session partagée)
+       + frais_deplacement (si présentiel)
+
+
+Si plusieurs ressources sur la même session (même semaine + même formation + même organisme) :
+
+le cout_session est réparti au prorata des participants (ou égal).
+
+3.4 Sessions (option intermédiaire)
+
+Créer une session : date(s), organisme, lieu, capacité, liste participants.
+
+Lier des semaines ressource à une session (mutualisation des coûts).
+
+Attacher documents (convocations, feuilles présence).
+
+3.5 Budget annuel & suivi
+
+Budget prévisionnel : somme des plans validés sur l’année.
+
+Réalisé : à l’issue d’une session (ou semaine “réalisée”), saisir/récupérer le coût réel (facture) et la présence.
+
+Écarts : réalisé - prévisionnel.
+
+KPI :
+
+Budget prévu / engagé / réalisé (global, par site, par organisme, par formation)
+
+Nb. jours-homme en formation (impact dispo prod)
+
+Taux de réalisation du plan (% tenu)
+
+Exports : CSV / PDF détaillé (axes : année, site, organisme, formation, ressource).
+
+3.6 Rappels & conformité
+
+Alerte 60/30/0 jours avant expiration d’une habilitation (reste inchangé vs module Formations).
+
+Alerte “Semaine de formation à venir” aux participants et au manager (J-7).
+
+Alerte dérive budget (> X %) par site/organisme.
+
+4) Modèle de données (Supabase)
+organismes_formation
+Champ	Type
+id (uuid) pk	
+nom text	
+siret text	
+contact text	
+email text	
+telephone text	
+adresse text	
+domaines text[]	
+agrement text	
+actif bool default true	
+notes text	
+created_at timestamptz	
+formations_catalogue
+Champ	Type
+id (uuid) pk	
+code text unique	
+libelle text	
+type_formation text	
+duree_heures numeric	
+validite_mois int nullable	
+modalite text (presentiel/distanciel/elearning/mixte)	
+prerequis text	
+competences text[]	
+organisme_defaut_id uuid fk → organismes_formation	
+created_at timestamptz	
+formations_tarifs
+
+(permet plusieurs grilles par formation, organisme, région, modalité)
+
+Champ	Type
+id (uuid) pk	
+formation_id uuid fk	
+organisme_id uuid fk	
+modalite text	
+site_id uuid nullable (override local)	
+cout_unitaire numeric nullable	
+cout_session numeric nullable	
+cout_elearning numeric nullable	
+frais_deplacement numeric nullable	
+tva numeric default 20	
+date_debut date	
+date_fin date nullable	
+actif bool default true	
+plan_formation_ressource
+
+(la “semaine prévisionnelle”)
+
+Champ	Type
+id (uuid) pk	
+collaborateur_id uuid fk → ressources	
+formation_id uuid fk	
+organisme_id uuid fk	
+semaine_iso text (AAAA-WW)	
+date_debut date nullable	
+date_fin date nullable	
+modalite text	
+statut text ∈ {previsionnel, valide, realise, annule}	
+cout_prevu_ht numeric	
+cout_realise_ht numeric nullable	
+session_id uuid nullable fk → formations_sessions	
+commentaire text	
+created_at timestamptz	
+formations_sessions (optionnel mais conseillé)
+Champ	Type
+id (uuid) pk	
+formation_id uuid fk	
+organisme_id uuid fk	
+site_id uuid nullable	
+date_debut date	
+date_fin date	
+capacite int	
+cout_session_ht numeric	
+statut text ∈ {ouverte, fermee, realisee, annulee}	
+documents jsonb nullable	
+Vues utiles
+
+V_Budget_Formations_Annuel (prévu, engagé, réalisé, écart par axe)
+
+V_Formation_Indispo_Planning (pour Gantt indisponibilités)
+
+V_Habilitations_A_Renouveler (intégré aux alertes)
+
+5) Calculs & règles
+5.1 Coût prévisionnel (semaine ressource)
+cout_prevu_ht =
+  (cout_unitaire_par_participant OU cout_elearning)
++ (cout_session_ht_reparti_si_session)
++ (frais_deplacement le cas échéant)
+
+
+Choix tarif : sélectionner le tarif le plus spécifique (formation+organisme+site+modalité avec dates valides).
+
+Répartition cout_session : cout_session / nb_participants_session.
+
+5.2 Passage en “réalisé”
+
+À la clôture de session ou validation de la semaine :
+
+renseigner présence (oui/non), cout_realise_ht (si facture connue),
+
+si formation habilitante : créer/mettre à jour une entrée dans formations (dossier collaborateur) avec date_obtention = date_fin, validite_mois → date_expiration.
+
+stocker justificatifs (feuilles émargement / attestation).
+
+5.3 Indisponibilités Planning
+
+Lorsqu’une semaine prévisionnelle est valide :
+
+créer un bloc indisponibilité dans Planning (type = formation), visible par le planificateur.
+
+6) Automatisations
+Tâche	Fréquence	Action
+fn_pick_tarif_applicable()	on insert/update plan	Choisit le bon tarif et calcule cout_prevu_ht
+cron_rappel_semaine_formation()	J-7 08:00	Mail participant + manager
+cron_alert_budget_derives()	mensuel	Alerte si > X % d’écart prévu vs réalisé
+fn_close_session()	à la clôture	Calcule coûts réels, met “réalisé”, pousse habilitation si besoin
+fn_sync_indispo_planning()	on status change	Crée/supprime bloc indispo “formation”
+7) UI / UX
+
+Organismes : table + fiche + docs.
+
+Catalogue : table filtrable (type, modalité, organisme), bouton “Ajouter tarif”.
+
+Plan prévisionnel :
+
+Vue semaine (ressource) + vue session (regroupée)
+
+Bouton “Poser une semaine” → select formation → select organisme → semaine ISO → calc auto du coût → statut prévisionnel
+
+Switch “Valider” (verrouille, crée indispo planning)
+
+Budget :
+
+Cartes KPI : Prévu, Engagé, Réalisé, Écart (année / site / organisme)
+
+Graphiques : barres empilées par mois ; donut par type de formation
+
+Exports : CSV / PDF
+
+8) Critères d’acceptation
+
+ Référentiel Organismes complet (recherche + actif/inactif).
+
+ Catalogue gère validité + modèle de coût multi-modalités.
+
+ Semaine prévisionnelle calcule coût prévisionnel juste (tarif applicable).
+
+ Session mutualise cout_session entre participants.
+
+ Indisponibilité planning générée si statut = validé.
+
+ Budget annuel (prévu/engagé/réalisé/écart) agrégé par site/organisme/formation.
+
+ Passage en réalisé crée/actualise habilitations si concerné (date d’expiration calculée).
+
+ Exports CSV/PDF conformes.
+
+ Alerte J-7 envoyée aux participants.
+
+9) Évolutions possibles
+
+Portail collaborateur (demande de formation, validation manager).
+
+Comparateur de devis multi-organismes pour une même formation.
+
+Intégration factures fournisseurs pour rapprocher coûts réels automatiquement.
+
+Score qualité par organisme (NPS interne, délais, conformité doc).

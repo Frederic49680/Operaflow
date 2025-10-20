@@ -1,0 +1,203 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Module Interlocuteurs Clients
+Auteur : Fred Baudry
+Version : 1.0
+Stack : Next.js 15 / Supabase / Tailwind / Recharts / SMTP (mail auto)
+Objectif principal :
+Centraliser la gestion des interlocuteurs clients (personnes & entreprises), permettre leur liaison directe aux affaires, définir leurs rôles, et enregistrer leurs interactions pour exploitation dans les modules Gantt, Claims, et Reporting.
+________________________________________
+1️⃣ Objectif
+Créer une base claire et relationnelle pour :
+•	Gérer les clients (entité juridique + contacts associés),
+•	Lier les contacts à une ou plusieurs affaires,
+•	Associer un ou plusieurs rôles (Technique, Administratif, Facturation, etc.),
+•	Disposer d’une fiche interlocuteur complète (coordonnées, fonction, historique),
+•	Suivre les échanges clés (notes, mails, appels, réunions),
+•	Exploiter ces données dans les formulaires de suivi, claims, et reportings d’affaires.
+________________________________________
+2️⃣ Utilisateurs cibles
+Rôle	Accès	Actions
+Chargé d’Affaires	Accès complet à ses clients & affaires liées	CRUD + liaisons
+Planificateur / Conducteur	Lecture + contact rapide	Voir les interlocuteurs de l’affaire
+Direction / PMO	Lecture globale	Vue multi-sites, export complet
+Administratif	Lecture + MAJ facturation	Voir et modifier les contacts de gestion
+Support / RH / Maintenance	Lecture restreinte	Lecture via liaison affaire uniquement
+________________________________________
+3️⃣ Fonctionnalités principales
+🔹 3.1 Base “Clients”
+•	Entité principale (société / organisme) :
+o	Nom entreprise
+o	SIRET (optionnel)
+o	Adresse siège
+o	Téléphone principal
+o	Email générique
+o	Catégorie : MOA / MOE / Exploitant / Autre
+o	Statut actif/inactif
+•	Vue tableau triable + recherche rapide.
+🔹 3.2 Base “Interlocuteurs”
+Chaque contact appartient à une entreprise client (FK) :
+Champ	Description
+Nom / Prénom	Identité
+Fonction	Titre (Responsable technique, Chargé d’exploitation, etc.)
+Email	Pro + secondaire (si besoin)
+Téléphone	Fixe / mobile
+Disponibilité	Créneau (ex. 8h–17h)
+Type d’interlocuteur	Technique / Administratif / Sécurité / Facturation / Autre
+Site principal	Option : rattachement site
+Notes	Libre
+Gestion :
+•	CRUD complet (ajout, modification, archivage).
+•	Tag “principal” si unique pour une affaire donnée.
+•	Photo ou carte de visite (upload possible).
+________________________________________
+🔹 3.3 Liaison aux Affaires
+•	Une affaire peut avoir plusieurs interlocuteurs clients.
+•	Une personne peut être liée à plusieurs affaires (ex. MOE commun).
+•	Liaison via table de jointure affaires_interlocuteurs.
+Dans chaque affaire :
+•	Onglet “Interlocuteurs” :
+o	Liste des contacts liés.
+o	Rôle dans l’affaire :
+	Technique / Administratif / Facturation / Exploitant / Réception / Réclamation / Autre
+o	Checkbox “contact principal” (1 par rôle).
+o	Bouton “Contacter” → ouvre mail ou renvoi à Outlook.
+o	Historique échanges récents (notes internes + synchronisation mail optionnelle).
+Synchronisation :
+•	Si un contact est désactivé → suppression logique du lien, pas de perte historique.
+•	Récupération automatique dans les formulaires liés à l’affaire (ex. Claim → “choisir interlocuteur client”).
+________________________________________
+🔹 3.4 Suivi & Historique d’échanges
+•	Section “Historique” par interlocuteur :
+o	Date, type d’interaction (appel, mail, réunion, visite site, claim),
+o	Notes internes, fichiers associés (CR, photo, doc).
+•	Enregistrement manuel ou via déclencheur automatique (ex. Claim créé → ajout “signalement”).
+•	Chronologie inversée (dernier en haut).
+•	Export CSV/PDF possible pour audit client.
+________________________________________
+🔹 3.5 Intégration multi-modules
+Module	Intégration	Description
+Affaires	Liaison directe	Chaque affaire contient les interlocuteurs liés
+Claims	Auto-rattachement	L’auteur client du claim peut être sélectionné depuis la liste
+Remontées site / maintenance	Optionnel	Permet d’associer un contact client témoin ou référent
+Dashboard Affaires	KPI	Nb d’interlocuteurs par affaire, ratio actif/inactif, contact principal renseigné
+Power Automate / Mailer	Notifications	Utilise les emails associés pour envoi de compte-rendus, notifications, claims, etc.
+________________________________________
+4️⃣ Modèle de données (Supabase)
+Table clients
+Champ	Type	Description
+id	uuid	PK
+nom_client	text	Nom de la société
+siret	text	Optionnel
+adresse	text	Adresse principale
+code_postal	text	
+ville	text	
+telephone	text	Numéro principal
+email	text	Email générique
+categorie	text	MOA / MOE / Exploitant / Maintenance / Autre
+actif	bool	true par défaut
+date_creation	timestamp	Ajout
+created_by	uuid	Utilisateur créateur
+________________________________________
+Table interlocuteurs
+Champ	Type	Description
+id	uuid	PK
+client_id	uuid	FK → clients
+nom	text	Nom
+prenom	text	Prénom
+fonction	text	Rôle ou fonction
+type_interlocuteur	text	Technique / Administratif / Facturation / Autre
+email	text	
+telephone	text	
+disponibilite	text	Texte libre ou plage horaire
+site_id	uuid (nullable)	Lien vers site (si contact localisé)
+actif	bool	Par défaut true
+notes	text	Observations internes
+photo_url	text	Option
+date_creation	timestamp	Ajout
+created_by	uuid	Utilisateur créateur
+________________________________________
+Table affaires_interlocuteurs
+Champ	Type	Description
+id	uuid	PK
+affaire_id	uuid	FK → affaires
+interlocuteur_id	uuid	FK → interlocuteurs
+role_affaire	text	Technique / Administratif / Facturation / etc.
+principal	bool	true si contact principal
+actif	bool	true par défaut
+date_liaison	timestamp	Date d’association
+created_by	uuid	Utilisateur créateur
+________________________________________
+Table interactions_client
+Champ	Type	Description
+id	uuid	PK
+interlocuteur_id	uuid	FK → interlocuteurs
+affaire_id	uuid	FK → affaires
+type_interaction	text	Appel / Mail / Réunion / Claim / Autre
+description	text	Note de l’échange
+fichier_url	text	Optionnel
+date_interaction	timestamp	Date de l’événement
+created_by	uuid	Auteur
+________________________________________
+5️⃣ Règles métier
+•	Un client actif peut avoir plusieurs contacts actifs, chacun lié à plusieurs affaires.
+•	Si un contact est désactivé → invisible en sélection mais conservé dans l’historique.
+•	Chaque affaire doit avoir au moins un interlocuteur principal par rôle critique (Technique, Facturation).
+•	Historique interactions conservé indéfiniment.
+•	Une interaction liée à un claim ou une réunion est auto-créée à la validation de l’événement.
+•	Suppression physique interdite, archivage logique.
+________________________________________
+6️⃣ Critères d’acceptation
+ID	Critère	Validation
+CLI-01	CRUD client et interlocuteur fonctionnel	✅
+CLI-02	Liaison affaire ↔ interlocuteur	✅
+CLI-03	Contact principal par rôle	✅
+CLI-04	Historique interactions complet	✅
+CLI-05	Contact désactivé = masqué mais non supprimé	✅
+CLI-06	Intégration claims et Gantt	✅
+CLI-07	Recherche & filtres rapides	✅
+CLI-08	Export CSV/PDF correct	✅
+________________________________________
+7️⃣ Stack technique
+Élément	Lib / Outil
+Backend	Supabase (clients, interlocuteurs, affaires_interlocuteurs, interactions_client)
+Frontend	Next.js + Tailwind
+Forms	React Hook Form + Zod
+Export	SheetJS / PDFKit
+Auth	Supabase Session
+Notifications	SMTP / Power Automate (mail auto CR ou Claim)
+________________________________________
+8️⃣ UI / Composants
+Composant	Description
+ClientsTable	Liste des entreprises clientes
+InterlocuteursTable	Liste filtrée des contacts
+InterlocuteurFormModal	CRUD contact
+AffaireInterlocuteursTab	Liste + ajout contact dans une affaire
+InteractionTimeline	Historique échanges chronologique
+QuickContactCard	Carte contact (appel / mail / notes)
+SearchClientBar	Recherche + filtre (site, affaire, catégorie)
+ContactBadge	Badge rôle (Technique / Admin / Facturation)
+________________________________________
+9️⃣ Intégrations
+Module	Interaction
+Affaires	Liaison multiple + rôle contact principal
+Claims	Sélection interlocuteur client concerné
+Gantt	Accès rapide contact client associé à l’affaire
+Maintenance	Possibilité d’ajouter un interlocuteur client “référent technique”
+Mail / Digest	Génération auto de listes destinataires par affaire
+________________________________________
+🔟 Exemple de scénario
+🧩 Affaire A : “Modernisation poste HTA – Site E-03A”
+•	Client = EDF Réseaux
+•	Interlocuteurs :
+o	Jean Dupont → Responsable Technique (principal)
+o	Claire Simon → Administratif
+o	Hugo Leroy → Exploitant site
+•	Liaison :
+o	Affaire A ↔ Jean Dupont (Technique principal)
+o	Affaire A ↔ Claire Simon (Administratif)
+o	Affaire A ↔ Hugo Leroy (Exploitant)
+•	Une réunion de suivi → crée interaction type “Réunion” liée à Jean Dupont + Affaire A.
+•	Claim signalé → ajoute “Claim client – EDF” dans historique.
+

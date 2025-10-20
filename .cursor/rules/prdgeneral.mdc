@@ -1,0 +1,170 @@
+---
+alwaysApply: true
+---
+🧭 PRD Général — Système de Planification & Pilotage (Master)
+Auteur : Fred Baudry
+Stack cible : Next.js 15 / Supabase (Postgres + Auth + Storage + Functions + Realtime) / Tailwind / Recharts / SMTP
+Vision : Un écosystème modulaire, fiable et rapide, qui relie Affaires → Gantt → Terrain → Finance (atterrissage) → Dashboard, avec RH, Sites, Claims, Interlocuteurs et Maintenance autour.
+________________________________________
+1) Modules inclus (scope fonctionnel)
+1.	Gestion Utilisateurs & Accès (App) — Auth, rôles, permissions (page & composant), lien d’activation 48h, 1ʳᵉ connexion avec MDP obligatoire.
+2.	Sites — clé hiérarchique (actif / en pause / fermé), responsable et stats site.
+3.	RH Collaborateurs — base ressources (actif/inactif, compétences, coordonnées), intégrée à la planif.
+4.	Absences — indisponibilités, statut (à venir / en cours / passée), synchro dispo réelle.
+5.	Base Affaires (socle métier) — identité, client/commande, compétence, découpage financier (lots).
+6.	Gantt (Planification) — tâches reliées à lot/affaire/site, affectations ressources, avancement, suraffectations.
+7.	Remontée d’Information Site — état réel, blocage intrajournalier, suspension (hors temps métal), confirmation quotidienne + reporting figé.
+8.	Maintenance (journal du soir) — tranches, système/élémentaire/type, mêmes états, digest mensuel batteries (terminées/reportées).
+9.	Interlocuteurs Clients — entreprises & contacts, liaison multi-affaires, historique d’interactions.
+10.	Réclamations / Claims — interne/client/sous-traitant, workflow (ouvert→clos), montants, pièces, intégration dashboard.
+11.	Form/Page Builder (suivis particuliers) — création de masques dynamiques, workflow, digest.
+12.	Dashboard Global — pilotage multi-rôles (N1/N2/N3), filtres globaux, alert center, exports.
+________________________________________
+2) Ordre d’exécution (mise en œuvre) — Plan de bataille
+Objectif : sécuriser les fondations (auth + modèles maîtres), puis monter en valeur par cercles concentriques jusqu’au dashboard.
+Phase 0 — Socle & Qualité (en parallèle, dès le départ)
+•	Repo, CI/CD, lint/format (ESLint + Prettier), tests (Vitest/Playwright), feature flags.
+•	Design system Tailwind (spacing, couleurs statut, composants shadcn/ui).
+•	Observabilité : logs serveur, traces, métriques (erreurs, latence, requêtes lentes).
+Phase 1 — Accès & Référentiels
+1.	Gestion Utilisateurs & Accès (Auth, Rôles, Permissions, Page Access, Component Guards).
+2.	Sites (clé hiérarchique).
+3.	RH Collaborateurs (ressources actives, compétences).
+4.	Absences (chevauchement interdit, dispo réelle).
+Gate qualité P1 :
+•	RBAC éprouvé (page + composant), RLS activées.
+•	Tables seedées (sites, 3–5 ressources, 2–3 absences).
+•	Temps page /admin/users < 2 s, /sites < 2 s.
+Phase 2 — Affaires & Finance (socle)
+5.	Base Affaires (client/commande, lots financiers).
+o	Statuts : Brouillon → Soumise → Validée (visible planif).
+o	Import/Export Excel.
+Gate qualité P2 :
+•	Code affaire unique, rattachement site & responsable validés.
+•	CRUD + import/export OK.
+Phase 3 — Planification
+6.	Gantt (Planification & Affectations)
+o	Tâches reliées à lots (pour atterrissage) et affaires/sites.
+o	Affectations ressources filtrées (actif, compétences, absences).
+o	Détection suraffectation (barres >100%).
+o	Avancement % + dates réelles → agrégation lots → affaires.
+Gate qualité P3 :
+•	CRUD drag/drop stable, perf < 150 ms par update.
+•	Recalcules idempotents (lots/affaire) via functions.
+Phase 4 — Terrain & Reporting
+7.	Remontée Site
+o	1 remontée/jour/tâche, +1 blocage intrajournalier (motif).
+o	Suspension (intervalle hors métal).
+o	Confirmation quotidienne → copie reporting figé.
+8.	Maintenance (journal du soir)
+o	Saisie en fenêtre soir (17–20h), mêmes états.
+o	Batteries + digest mensuel (terminées/reportées).
+Gate qualité P4 :
+•	Heures métal = présence – suspensions (≥0).
+•	Rappels 17h30, cron digest mensuel OK.
+Phase 5 — Relations externes
+9.	Interlocuteurs Clients (entreprises+contacts, liaisons affaire, rôles).
+10.	Réclamations / Claims (workflow, montants, pièces, notifications).
+Gate qualité P5 :
+•	Claim client impossible sans interlocuteur lié.
+•	PDF/mail transmission client généré correctement.
+Phase 6 — Suivis particuliers & Dashboard
+11.	Form/Page Builder (masques dynamiques, workflow, digest).
+12.	Dashboard Global (vues agrégées + alert center, filtres synchronisés).
+Gate qualité P6 :
+•	Vues V_Dashboard_* rafraîchies à 06:00, cartes < 2–3 s.
+•	Exports PDF/Excel corrects, filtres globaux synchronisés.
+________________________________________
+3) Ordre d’injection SQL (migrations)
+1.	sites → ressources (avec site_id)
+2.	absences
+3.	clients → interlocuteurs
+4.	affaires → affaires_lots
+5.	planning_taches → taches_ressources
+6.	remontee_site → tache_suspensions → remontee_site_reporting
+7.	maintenance_batteries → maintenance_journal → maintenance_monthly_digest
+8.	affaires_interlocuteurs → interactions_client
+9.	claims → claim_history → claim_comments
+10.	forms → form_instances → form_entries → form_entry_history → form_notifications
+11.	historique_actions
+12.	Vues V_Dashboard_* + Functions (agrégations & crons)
+13.	Auth & Admin : app_users, roles, permissions, role_permissions, user_roles, page_access_rules, component_flags, user_tokens, audit_log
+14.	RLS & policies (après data-model).
+Ajoute index partiels/GIN au fil de l’eau (notamment competences[], data jsonb, uniques partiels de remontée).
+________________________________________
+4) Flux de données (haut niveau)
+Affaires (lots) → Gantt (tâches) → Remontées (statut, %)
+       ↘                           ↘
+       Finance (atterrissage)       Reporting figé (jour)
+        ↘                             ↘
+         Dashboard (Affaires)         Dashboard (Terrain/Maintenance)
+•	Ressources & Absences influent sur le pool d’affectation et la couverture.
+•	Interlocuteurs alimentent claims et mails.
+•	Builder peut pousser des états vers tâche/affaire si activé.
+________________________________________
+5) Non-fonctionnel — Qualité attendue
+Performance
+•	TTFP < 1,5 s, TTI < 3 s sur réseau normal.
+•	Requêtes paginées, index sur FK + colonnes de filtre, vues matérialisées si besoin.
+•	Pas > 150 ms pour opérations Gantt courantes (drag/rescale/update).
+Fiabilité & Intégrité
+•	Triggers idempotents pour agrégations (tâche → lot → affaire).
+•	Unicité partielle des remontées (hors is_block_event=true).
+•	Tests d’intégration pour chevauchement absences, suspensions.
+Sécurité
+•	RLS activé par défaut.
+•	RBAC page & composant, scopes par site.
+•	Lien activation 48h, reset 1h, 2FA optionnelle (obligatoire Admin/Direction).
+•	Journal d’audit sur actions sensibles.
+UX
+•	Composants cohérents (shadcn), codes couleur statut standardisés.
+•	Autosave dans formulaires longues (Gantt/Remontées).
+•	Mobile-friendly pour terrain.
+Observabilité
+•	Logs fonctionnels (claims, digest, échecs mails).
+•	Crons monitorés (digest maintenance mensuel, refresh dashboard).
+•	Alertes en cas d’erreur de trigger/cron.
+Données & Export
+•	Imports/exports Excel (affaires, RH).
+•	PDFs archivés (claims transmis, digests).
+•	Horodatage TZ Europe/Paris partout.
+________________________________________
+6) Jeux de données seed (ordre conseillé)
+1.	Rôles & permissions (Admin, Planificateur, CA, Resp Site, RH, Maintenance, Direction).
+2.	Utilisateurs (admin initial + 3 profils de test, mapping rôles).
+3.	Sites (2–3), Ressources (8–12, compétences variées).
+4.	Absences (2–3 cas pour test dispo).
+5.	Clients / Interlocuteurs (au moins 1 client, 2 contacts).
+6.	Affaires (2) + Lots (2–3 par affaire).
+7.	Tâches Gantt (8–12) reliées aux lots.
+8.	Remontées (sur 2 jours, avec 1 blocage & 1 suspension).
+9.	Maintenance (3 lignes + 1 batterie).
+10.	Claims (2 : interne & client).
+________________________________________
+7) Critères d’acceptation globaux
+•	Auth complète (invitation 48h, 1ʳᵉ connexion MDP, RBAC, RLS).
+•	Sites/RH/Absences opérationnels et impactant la couverture planif.
+•	Affaires validées → visibles Planif ; lots reliés aux tâches.
+•	Gantt CRUD performant ; suraffectations détectées.
+•	Remontée Site : règles (blocage/suspension/confirmation/reporting) respectées.
+•	Maintenance : fenêtre soir, digest mensuel batteries.
+•	Interlocuteurs ↔ Affaires ; Claims workflow + mails.
+•	Builder : masque simple publié & saisi (POC).
+•	Dashboard : filtres globaux + alert center + exports.
+•	Observabilité & crons green.
+________________________________________
+8) Livrables UI (par module)
+•	/admin/users, /admin/roles, /admin/access
+•	/sites, /rh/collaborateurs, /rh/absences
+•	/affaires (+ modal lots), /gantt
+•	/terrain/remontee (liste jour + confirmation), /maintenance
+•	/clients, /interlocuteurs, /claims
+•	/builder (studio + instances + saisie)
+•	/dashboard
+________________________________________
+9) Notes d’implé futées (éviter les pièges)
+•	Constraintes d’abord, UI ensuite : pose les triggers/CK uniques/partial index avant de brancher la saisie.
+•	Agrégations : calcule côté DB (functions) plutôt que côté client (cohérence).
+•	Enums vs CHECK : garde CHECK au début, passe en ENUM quand le vocabulaire est gelé.
+•	Gantt : commence avec Frappe-Gantt (simple), basculable D3 custom si bes
+

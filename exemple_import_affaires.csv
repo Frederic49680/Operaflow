@@ -1,0 +1,7 @@
+Code Affaire,Nom,Client,Site,Responsable,N° Commande,Type Contrat,Montant HT,Statut,Avancement %
+AFF-2025-001,Modernisation poste HTA,EDF Réseaux,E-03A,Jean Dupont,CMD-2025-001,Forfait,150000,Validée,0
+AFF-2025-002,Installation CTA-2,Engie,DAM,Marc Leroy,CMD-2025-002,Régie,85000,En cours,45
+AFF-2025-003,Maintenance préventive,TotalEnergies,PDC_FBA,Claire Martin,CMD-2025-003,Maintenance,32000,Brouillon,0
+AFF-2025-004,Remplacement transformateur,Enedis,SITE-01,Thomas Bernard,CMD-2025-004,Forfait,120000,Soumise,0
+AFF-2025-005,Audit sécurité électrique,Schneider Electric,E-03A,Jean Dupont,CMD-2025-005,Régie,25000,Validée,0
+

@@ -1,0 +1,192 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Module Gantt (Planification & Pilotage)
+Auteur : Fred Baudry
+Version : 1.0
+Stack : Next.js 15 / Supabase / Tailwind / Recharts / D3-Gantt ou Frappe-Gantt
+Objectif principal :
+Offrir une interface de planification complète, interactive et hiérarchique pour gérer les tâches, affectations, avancements, et atterrissages financiers, tout en assurant la cohérence avec les modules RH, Affaires, Sites et Absences.
+________________________________________
+1️⃣ Objectif
+Créer une vue Gantt interactive permettant au planificateur de :
+•	Visualiser et organiser les affaires et leurs lots (issus du module Base Affaires) ;
+•	Créer, déplacer, modifier et lier les tâches planifiées ;
+•	Affecter des ressources selon leurs compétences et disponibilités réelles ;
+•	Synchroniser automatiquement les avancements et dates réelles avec :
+o	la base financière (atterrissages),
+o	les indicateurs de charge et couverture,
+o	et les modules RH / Absences.
+________________________________________
+2️⃣ Utilisateurs cibles
+Rôle	Accès	Actions
+Planificateur	Accès total	CRUD sur les tâches, affectations, avancements
+Chargé d’Affaires	Lecture + validation avancement	Consulte les tâches liées à ses affaires
+Responsable de site	Lecture	Visualise uniquement les affaires de son site
+Direction / PMO	Lecture globale	Vue consolidée multi-sites et filtres financiers
+________________________________________
+3️⃣ Fonctionnalités principales
+🔹 3.1 Arborescence hiérarchique
+Structure de base du Gantt :
+Site → Affaire → Lot → Tâche → Ressources
+•	Chaque nœud est pliable/dépliable.
+•	Les tâches sont colorées par statut (En cours / Terminé / Bloqué / Reporté).
+•	Les lots affichent leur % d’avancement global et atterrissage financier en survol.
+•	Les affaires affichent leur taux global, marge révisée, et date de fin prévisionnelle.
+________________________________________
+🔹 3.2 Gestion des tâches
+•	Création rapide (clic + glisser sur la timeline)
+•	Champs :
+o	Nom de la tâche
+o	Dates début/fin planifiées
+o	Type (Préparation, Exécution, Contrôle, Autre)
+o	Compétence requise
+o	Ressources affectées (multi-sélection filtrée)
+o	% d’avancement (manuel ou auto si journal d’activité actif)
+o	Statut (Non lancé / En cours / Terminé / Bloqué / Reporté)
+o	Lien affaire_id et lot_id (pour lier au financier)
+•	Actions :
+o	Glisser/déplacer pour modifier dates
+o	Redimensionner pour ajuster durée
+o	Supprimer (archivage uniquement)
+o	Dupliquer tâche (template réutilisable)
+________________________________________
+🔹 3.3 Affectations & ressources
+•	Sélecteur intelligent : affiche uniquement les ressources actives, non absentes, et compétentes.
+•	Alertes en cas de :
+o	Suraffectation (ressource déjà engagée sur une autre tâche sur les mêmes dates)
+o	Inadéquation compétence (ex : tâche IEG mais ressource AUTO seule)
+•	Possibilité d’ajuster la charge :
+o	En heures planifiées (ex : 14h sur 2 jours)
+o	En taux (%) de présence par jour
+•	Affichage dynamique de la capacité restante par ressource.
+________________________________________
+🔹 3.4 Synchronisation automatique
+Liens avec les autres modules :
+Module	Donnée échangée	Direction
+Affaires / Lots	Dates réelles, avancement, consommés, atterrissage	↔
+RH Collaborateurs	Statut actif, compétences, contrat	←
+Absences	Indisponibilités journalières	←
+Adéquation Charge/Compétence	Avancement réel / besoin restant	↔
+Suivi Projets	Statut tâche et progression	↔
+Chaque modification de tâche (dates, % ou ressource) déclenche une MAJ Supabase Function → recalcul des avancements et atterrissages.
+________________________________________
+🔹 3.5 Avancement & suivi
+•	% d’avancement par tâche (manuel ou alimenté par saisies quotidiennes)
+•	Avancement lot = moyenne pondérée des tâches liées
+•	Avancement affaire = moyenne pondérée des lots
+•	Affichage visuel :
+o	Barre de progression interne à la tâche
+o	Code couleur selon avancement (vert >75%, orange 25–75%, rouge <25%)
+o	Ligne verticale “aujourd’hui”
+•	Affaires avec dérive = surlignées (date réelle > fin prévue)
+________________________________________
+🔹 3.6 Vue filtrée et KPI dynamiques
+Filtres combinables :
+•	Site / Affaire / Compétence / Responsable / Ressource
+•	Statut tâche (En cours / Bloqué / Terminé)
+•	Horizon temporel (semaine, mois, trimestre)
+•	Option "afficher uniquement les tâches non terminées"
+KPI affichés en haut :
+Indicateur	Description
+Nb tâches actives	Total en cours sur la période
+Taux de couverture	% ressources disponibles / requises
+Atterrissage total	Somme des atterrissages affaires visibles
+Retard moyen (jours)	Moyenne (fin réelle - fin prévue)
+Suraffectations détectées	Nb ressources en doublon
+________________________________________
+🔹 3.7 Interaction & ergonomie
+•	Zoom horizontal (jour / semaine / mois / trimestre)
+•	Défilement fluide + sticky header
+•	Lignes horizontales colorées par site
+•	Tooltip détaillé (dates, ressource, avancement, coût)
+•	Double-clic = ouvrir modale tâche
+•	Drag & drop = réaffectation directe
+•	Sauvegarde automatique toutes les 30 secondes
+________________________________________
+4️⃣ Modèle de données (Supabase)
+Table : planning_taches
+Champ	Type	Description
+id	uuid	Identifiant
+affaire_id	uuid	Lien → affaires.id
+lot_id	uuid	Lien → affaires_lots.id
+site_id	uuid	Lien → sites.id
+libelle_tache	text	Nom de la tâche
+type_tache	text	Préparation / Exécution / etc.
+competence	text	Code compétence requise
+date_debut_plan	date	Planifié début
+date_fin_plan	date	Planifié fin
+date_debut_reelle	date	Réelle début
+date_fin_reelle	date	Réelle fin
+effort_plan_h	numeric	Heures planifiées
+effort_reel_h	numeric	Heures consommées
+avancement_pct	numeric	0–100
+statut	text	Non lancé / En cours / Terminé / Bloqué / Reporté
+ressource_ids	uuid[]	Tableau de ressources affectées
+created_by	uuid	Créateur
+date_creation	timestamp	Ajout
+________________________________________
+5️⃣ Règles métiers
+•	Une tâche doit être liée à une affaire validée.
+•	Si lot_id non défini → tâche visible mais marquée “non ventilée”.
+•	Dates réelles mises à jour uniquement si avancement > 0 %.
+•	Si tâche “Bloquée” → notification au CA et au Responsable de site.
+•	Si tâche “Terminée” → MAJ automatique du lot et de l’affaire.
+•	En cas de suraffectation, sauvegarde possible mais signalée visuellement (pastille rouge).
+•	Suppression physique interdite (archivage).
+________________________________________
+6️⃣ Critères d’acceptation
+ID	Critère	Validation
+GANTT-01	Affichage arborescent complet (Site → Affaire → Lot → Tâche)	✅
+GANTT-02	CRUD tâches opérationnel (formulaire + drag/drop)	✅
+GANTT-03	Liaison tâche ↔ lot / affaire fonctionnelle	✅
+GANTT-04	Avancement auto → MAJ des atterrissages	✅
+GANTT-05	Suraffectation détectée en temps réel	✅
+GANTT-06	Filtres et zooms temporels fluides	✅
+GANTT-07	Données synchronisées avec modules liés	✅
+GANTT-08	Interface réactive et sauvegarde auto	✅
+________________________________________
+7️⃣ Stack technique
+Élément	Lib / Outil
+Backend	Supabase (planning_taches) + Functions de synchro
+Frontend	Next.js + Tailwind
+Gantt Engine	Frappe-Gantt ou D3.js custom
+Formulaires	React Hook Form + Zod
+Charts	Recharts (KPI)
+Realtime Sync	Supabase Realtime / WebSocket
+Auth	Supabase Session (Planif / CA / Resp)
+________________________________________
+8️⃣ UI / Composants clés
+Composant	Rôle
+GanttTreeView	Arborescence Site → Affaire → Lot → Tâches
+GanttTimeline	Vue graphique (barres / zoom)
+TaskFormModal	Formulaire création / édition
+ResourceSelector	Filtre intelligent ressources disponibles
+FinanceSyncTag	Badge indiquant si tâche liée à un lot financier
+KPIBar	Indicateurs haut de page
+ConflictChip	Alerte suraffectation
+AutoSaveToast	Feedback de sauvegarde
+________________________________________
+9️⃣ Intégration inter-modules
+Module	Interaction
+Sites	Regroupement principal et filtrage
+Affaires / Lots	Remonte dates et avancement (atterrissage)
+RH / Ressources	Vérifie statut actif + compétence
+Absences	Exclut ressources indisponibles
+Adéquation charge / compétence	Met à jour charge réelle
+Suivi projets	Alimente les statuts et alertes
+Claims	Blocages déclenchent création de claim
+________________________________________
+10️⃣ Vue de synthèse — cycle des données
+Affaire (CA) 
+   ↓ (Validée)
+Lots financiers 
+   ↓ (Liés à tâches)
+Gantt (Planificateur)
+   ↕
+Ressources / Absences / Compétences
+   ↓
+Atterrissage (calcul auto)
+   ↓
+Suivi projets / Dashboard
+

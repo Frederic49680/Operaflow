@@ -1,0 +1,247 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Affaires BPU “parapluie” + Saisie Maintenance guidée
+
+Version : 1.1
+Modules impactés : Affaires, Maintenance (journal 14–18), Gantt, KPI
+Règle clé : si type_affaire = 'BPU' alors :
+
+Gantt crée une tâche parapluie (nom = Contrat {Nom Affaire} — Décharge batterie, par ex.).
+
+Dans Maintenance, on voit la tâche parapluie et on clique dessus pour créer une réalisation :
+
+affaire verrouillée,
+
+on saisit juste la Tranche (0–9),
+
+on choisit le Système Élémentaire depuis la liste BPU de l’affaire,
+
+on sélectionne Type de maintenance (prérempli si dispo),
+
+état (En cours / Reportée / Terminée / Suspendue / Prolongée).
+
+Reportée ⇒ cause obligatoire, non facturée (mais comptée dans KPI).
+
+Terminée ⇒ actualise le bilan d’heures et le bilan monétaire de l’affaire.
+
+1) UX — où et comment on saisit
+1.1 Sur la page Maintenance (14:00–18:00)
+
+Encart “Affaires BPU actives (site courant)”
+→ cartes Parapluie (une par affaire BPU sur ce site) :
+Contrat {Nom Affaire} — Décharge batterie
+badges : Capacité Z h | Vendu X h | Consommé Y h.
+
+Clic sur la carte → ouvre Tuile “Nouvelle réalisation BPU” :
+
+Affaire : verrouillée (non modifiable)
+
+Tranche : obligatoire (0..9)
+
+Système Élémentaire : liste déroulante issue de affaire_bpu_lignes (lignes vendues et non soldées)
+
+Type de maintenance : prérempli si la ligne BPU a un libellé type (sinon libre)
+
+État : En cours / Reportée / Terminée / Suspendue / Prolongée
+
+Si Reportée : Motif obligatoire, aucune monétisation
+
+Heures : présence / suspension → métal auto (≥ 0)
+
+Enregistrer (auto-save silencieux à chaque action)
+
+NB : Tuile = la même UI/animations que tes tuiles Terrain/Maintenance (v1.2.x).
+
+1.2 Dans le Gantt
+
+Une seule barre “Parapluie BPU – {Affaire}” couvrant la période (ex. année).
+
+Progress auto hebdo (mode régie).
+
+Tooltip : Capacité / Vendu / Consommé / € reconnu / Écarts.
+
+1.3 Sur la fiche Affaire BPU
+
+Carte “Suivi heures & € (BPU)” :
+
+Capacité (ressources × 35h/sem × nb sem)
+
+Vendu (h) (des lignes BPU “vendues” → heures équiv.)
+
+Consommé (h) (somme heures métal réalisées)
+
+€ reconnu (lignes BPU livrées par réalisations terminées)
+
+Barres : Consommé/Capacité et Consommé/Vendu
+
+Tableau “Réalisation BPU” (journal lié) : date, tranche, système élém., type, état, h métal, code BPU / libellé, € reconnu (si terminée), motif (si reportée).
+
+2) Règles de gestion (noyau)
+2.1 Création de l’affaire BPU
+
+CSV BPU obligatoire (déjà acté).
+
+À la validation :
+
+créer tâche parapluie dans planning_taches
+
+initialiser Capacité = nb_ressources_ref * heures_semaine_ref * nb_semaines(période)
+
+par défaut nb_ressources_ref=2, heures_semaine_ref=35 (éditables).
+
+2.2 Réalisation (depuis Maintenance)
+
+Affaire verrouillée par la carte parapluie.
+
+Tranche (0–9) obligatoire.
+
+Système Élémentaire choisi dans la liste des lignes BPU vendues (et non soldées) de l’affaire.
+
+On associe la réalisation à la ligne BPU (bpu_ligne_id).
+
+États :
+
+Reportée → motif obligatoire, pas de monétisation, visible dans KPI.
+
+Terminée →
+
+Heures : ajoute heures_metal au Consommé (h) de l’affaire,
+
+Monétaire :
+
+si BPU à l’unité ⇒ delivered_qty += 1, € reconnu += PU (plafonné à la qté vendue),
+
+si BPU à l’heure ⇒ € reconnu += heures_metal × PU_h (si fourni),
+
+si équivalence heures ⇒ via bpu_heures_equiv (optionnelle).
+
+Marquer la ligne BPU comme partiellement livrée / soldée (si qté atteinte).
+
+Suspendue / Prolongée → règles heures métal (suspension exclue), KPI impact.
+
+Pas de facturation depuis Maintenance : on reconnaît l’avancement € côté Affaires, sans émettre facture ici.
+
+2.3 Avancement auto
+
+Hebdo (lundi 00:05) : %avancement = min(100, Consommé(h)/Capacité(h) × 100) mis à jour sur la tâche parapluie.
+
+KPI Affaire :
+
+Remplissage = Vendu/Capacité
+
+Réalisation = Consommé/Vendu
+
+Reconnu € = somme € lignes livrées
+
+3) Modèle de données (extensions)
+affaires (ajouts)
+
+type_affaire ∈ {BPU, Forfait, Maintenance, Autre}
+
+nb_ressources_ref int (def 2)
+
+heures_semaine_ref numeric (def 35)
+
+periode_debut date / periode_fin date
+
+heures_capacite numeric (vue ou champ)
+
+heures_vendues_total numeric (vue)
+
+heures_consommes_total numeric (vue)
+
+montant_reconnu_total numeric (vue)
+
+affaire_bpu_lignes (compléments)
+
+statut_ligne ∈ {proposee, vendue, annulee}
+
+code_bpu, libelle, quantite, unite, pu
+
+delivered_qty numeric default 0
+
+delivered_hours numeric default 0
+
+montant_reconnu numeric default 0
+
+(option) pu_horaire numeric
+
+(option) heures_equiv_unitaire numeric
+
+planning_taches
+
+is_parapluie_bpu bool default true
+
+affaire_id fk
+
+maintenance_journal (BPU mode)
+
+affaire_id fk nullable
+
+bpu_ligne_id fk nullable ← nouveau lien quand la réalisation est rattachée à une ligne BPU
+
+tranche int (0..9), systeme_elementaire text, systeme text, type_maintenance text
+
+etat_reel, heures_presence, heures_suspension, heures_metal, motif
+
+Vues
+
+V_Affaire_BPU_Suivi : par affaire → Capacité, Vendu(h), Consommé(h), Reconnu(€), écarts.
+
+V_Affaire_BPU_Livraisons : journal des réalisations terminées avec impacts qty/€.
+
+4) Automatisations
+Événement	Fonction	Effet
+Création affaire BPU	fn_create_bpu_parapluie_task()	Crée barre Gantt + init capacité
+Import CSV BPU	fn_import_bpu_affaire()	Insère lignes BPU (statut=proposee/vendue)
+Passage réalisation → Terminée	fn_bpu_on_realisation_terminee(maintenance_id)	+heures_consommes ; +qty/€ reconnu sur ligne BPU ; maj vues
+Passage réalisation → Reportée	fn_bpu_on_realisation_reportee(maintenance_id)	log KPI, 0 €
+Recalcule hebdo	cron_bpu_avancement_weekly()	Met à jour progress barre parapluie
+Nightly agrégats	fn_agg_bpu_affaire_totaux()	rafraîchit affaires / dashboard
+
+Sécurité
+
+Empêcher la sur-livraison : si delivered_qty >= quantite ⇒ ne plus proposer la ligne dans le sélecteur.
+
+5) UI / Composants
+
+BPUTaskCard (Maintenance) : carte parapluie (clic → tuile saisie)
+
+BPURealizationTile : tuile Affaire verrouillée + Tranche 0..9 + Select Système Élémentaire (BPU) + Type + État + Heures + Motif si reporté
+
+AffaireBPUOverview : 3 KPI (Capacité/Vendu/Consommé) + € reconnu + 2 barres
+
+BPURealizationsTable : journal des réalisations liées à l’affaire
+
+6) Critères d’acceptation
+
+ Si type_affaire=BPU, on voit la tâche parapluie dans Maintenance (par site).
+
+ Clic parapluie → tuile BPU avec affaire verrouillée.
+
+ La liste des Systèmes Élémentaires vient des lignes BPU vendues non soldées.
+
+ Reportée : cause requise, € reconnu = 0, visible KPI.
+
+ Terminée : Consommé(h) ↑ et € reconnu ↑ selon la ligne BPU.
+
+ Gantt parapluie : progress auto hebdo et tooltip chiffré.
+
+ Aucune sur-livraison possible vs quantite BPU.
+
+ Affaire : cartes KPI cohérentes, tableaux exacts.
+
+7) Cas limites & règles fines
+
+Plusieurs affaires BPU actives sur un site : afficher plusieurs cartes ; la tuile ouvre l’affaire cliquée.
+
+Ligne BPU sans “système élémentaire” dans le CSV :
+
+autoriser une sélection manuelle dans un référentiel, ou
+
+forcer le choix du code BPU puis affecter “système élémentaire” libre.
+
+BPU horaire : si pu_horaire présent, € reconnu = heures_metal × pu_horaire (arrondi paramétrable).
+
+Rectificatif : une réalisation annulée (rollback) décrémente qty/€ reconnu et heures consommées.

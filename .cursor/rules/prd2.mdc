@@ -1,0 +1,282 @@
+---
+alwaysApply: true
+---
+
+PRD — Module Sites
+Auteur : Fred Baudry
+Version : 1.1 (version épurée et intégrée)
+Stack : Next.js 15 / Supabase / Tailwind / Recharts
+Objectif principal :
+Gérer la base des sites (unités opérationnelles) servant de clé hiérarchique dans tous les modules — RH, planification, suivi projets et adéquation.
+________________________________________
+1️⃣ Objectif
+Créer un module simple et robuste pour :
+•	Créer / modifier / archiver les sites ;
+•	Assigner un responsable principal et un remplaçant ;
+•	Suivre l’état opérationnel du site (actif / en pause / fermé) ;
+•	Servir de référence centrale pour les collaborateurs, affaires et activités.
+________________________________________
+2️⃣ Utilisateurs cibles
+Rôle	Accès	Actions
+Administratif / RH	Accès total	CRUD complet sur les sites
+Planificateur	Lecture + édition limitée	Modifie le responsable ou statut
+Responsable de site	Lecture seule	Voit uniquement son site et ses données
+Direction	Lecture globale	Vue multi-sites (lecture seule)
+________________________________________
+3️⃣ Fonctionnalités principales
+🔹 3.1 Tableau des sites
+•	Vue synthétique :
+o	Nom du site
+o	Code site (clé unique ex. “E-03A”)
+o	Responsable principal
+o	Remplaçant (optionnel)
+o	Nombre de collaborateurs actifs (auto-calcul)
+o	Nombre d’affaires en cours (auto-calcul)
+o	Statut (Actif / En pause / Fermé)
+•	Filtres rapides : par statut, responsable ou code site.
+•	Recherche libre sur nom ou code.
+•	Boutons :
+o	“+ Nouveau site” (création)
+o	“Exporter CSV / Excel”.
+________________________________________
+🔹 3.2 Création / modification d’un site
+Formulaire allégé :
+•	Champs obligatoires :
+o	Nom du site
+o	Code site (unique)
+o	Responsable principal (collaborateur actif)
+o	Statut (Actif / En pause / Fermé)
+•	Champs facultatifs :
+o	Remplaçant (autre collaborateur actif)
+o	Commentaire libre
+•	Validation :
+o	Code site unique.
+o	Responsable actif obligatoire.
+________________________________________
+🔹 3.3 Gestion du statut
+Statut	Description	Effet
+Actif	Site opérationnel	Visible partout
+En pause	Activité temporairement suspendue	Avertissement dans la Gantt
+Fermé	Site terminé	Archivé, plus d’affectation possible
+Lors du passage à “Fermé” :
+•	Aucune nouvelle affectation possible.
+•	Les activités et affaires en cours sont clôturées automatiquement (statut = terminé).
+________________________________________
+🔹 3.4 Statistiques de base
+Chaque site agrège automatiquement :
+•	Effectif actif (ressources liées)
+•	Nombre d’affaires ouvertes
+•	Nombre total d’activités planifiées
+•	Taux de couverture global (issu du module adéquation)
+Ces valeurs sont générées par une vue ou une fonction Supabase (sites_stats_view).
+________________________________________
+🔹 3.5 Intégration inter-modules
+Module	Interaction
+RH Collaborateurs	Rattachement obligatoire à un site
+Affaires & Activités	Chaque enregistrement doit référencer un site
+Planification Gantt	Filtrage principal par site
+Adéquation charge / compétence	Calculs par site
+Suivi Projets	Vue regroupée par site
+________________________________________
+🔹 3.6 Import / Export
+•	Import Excel/CSV :
+o	Colonnes : nom, code_site, responsable, statut
+o	Validation du code unique et cohérence responsable
+•	Export Excel/CSV :
+o	Tous les champs + effectifs et affaires liés
+________________________________________
+4️⃣ Modèle de données (Supabase)
+Table : sites
+Champ	Type	Description
+id	uuid	Identifiant unique
+code_site	text	Code court, unique (ex. “E-03A”)
+nom	text	Nom complet
+responsable_id	uuid	Lien → ressources.id
+remplaçant_id	uuid (nullable)	Lien → ressources.id
+statut	text	Actif / En pause / Fermé
+commentaires	text	Notes internes
+date_creation	timestamp	Création
+created_by	uuid	Créateur
+Vue / table dérivée : sites_stats_view
+Champ	Type	Description
+site_id	uuid	Lien → sites.id
+nb_collaborateurs	int	Collaborateurs actifs liés
+nb_affaires	int	Affaires ouvertes
+nb_activites	int	Activités planifiées
+couverture_globale	float	% couverture par compétence
+date_maj	timestamp	Mise à jour automatique
+________________________________________
+5️⃣ Règles métiers
+•	Code site obligatoire et unique.
+•	Responsable principal = collaborateur actif obligatoire.
+•	Site “fermé” : bloqué dans tous les écrans de planification.
+•	Suppression physique interdite, archivage uniquement.
+•	Les statistiques sont mises à jour automatiquement (cron Supabase).
+________________________________________
+6️⃣ Critères d’acceptation
+ID	Critère	Validation
+SITE-01	Création site avec code unique et responsable actif	✅
+SITE-02	Statut Fermé bloque la planification	✅
+SITE-03	Sites visibles dans RH / Planif / Adéquation	✅
+SITE-04	Import Excel valide code et cohérence responsable	✅
+SITE-05	Vue stats correcte (collaborateurs + affaires)	✅
+SITE-06	Export complet CSV / Excel	✅
+SITE-07	Interface fluide et responsive	✅
+________________________________________
+7️⃣ Stack technique
+Élément	Lib / Outil
+Backend	Supabase (sites, sites_stats_view)
+Frontend	Next.js + Tailwind
+Forms	React Hook Form + Zod
+Charts	Recharts (vue stats)
+Export / Import	SheetJS
+Auth	Supabase Session (RH / Admin / Planificateur)
+________________________________________
+8️⃣ UI / Composants
+Composant	Rôle
+SitesTable	Liste principale
+SiteFormModal	Création / modification
+SiteStatsCard	KPIs effectif / affaires / couverture
+FilterBar	Filtres code / statut / responsable
+ExportButton	Export Excel
+ImportButton	Import Excel
+
+PRD — Module Sites
+Auteur : Fred Baudry
+Version : 1.1 (version épurée et intégrée)
+Stack : Next.js 15 / Supabase / Tailwind / Recharts
+Objectif principal :
+Gérer la base des sites (unités opérationnelles) servant de clé hiérarchique dans tous les modules — RH, planification, suivi projets et adéquation.
+________________________________________
+1️⃣ Objectif
+Créer un module simple et robuste pour :
+•	Créer / modifier / archiver les sites ;
+•	Assigner un responsable principal et un remplaçant ;
+•	Suivre l’état opérationnel du site (actif / en pause / fermé) ;
+•	Servir de référence centrale pour les collaborateurs, affaires et activités.
+________________________________________
+2️⃣ Utilisateurs cibles
+Rôle	Accès	Actions
+Administratif / RH	Accès total	CRUD complet sur les sites
+Planificateur	Lecture + édition limitée	Modifie le responsable ou statut
+Responsable de site	Lecture seule	Voit uniquement son site et ses données
+Direction	Lecture globale	Vue multi-sites (lecture seule)
+________________________________________
+3️⃣ Fonctionnalités principales
+🔹 3.1 Tableau des sites
+•	Vue synthétique :
+o	Nom du site
+o	Code site (clé unique ex. “E-03A”)
+o	Responsable principal
+o	Remplaçant (optionnel)
+o	Nombre de collaborateurs actifs (auto-calcul)
+o	Nombre d’affaires en cours (auto-calcul)
+o	Statut (Actif / En pause / Fermé)
+•	Filtres rapides : par statut, responsable ou code site.
+•	Recherche libre sur nom ou code.
+•	Boutons :
+o	“+ Nouveau site” (création)
+o	“Exporter CSV / Excel”.
+________________________________________
+🔹 3.2 Création / modification d’un site
+Formulaire allégé :
+•	Champs obligatoires :
+o	Nom du site
+o	Code site (unique)
+o	Responsable principal (collaborateur actif)
+o	Statut (Actif / En pause / Fermé)
+•	Champs facultatifs :
+o	Remplaçant (autre collaborateur actif)
+o	Commentaire libre
+•	Validation :
+o	Code site unique.
+o	Responsable actif obligatoire.
+________________________________________
+🔹 3.3 Gestion du statut
+Statut	Description	Effet
+Actif	Site opérationnel	Visible partout
+En pause	Activité temporairement suspendue	Avertissement dans la Gantt
+Fermé	Site terminé	Archivé, plus d’affectation possible
+Lors du passage à “Fermé” :
+•	Aucune nouvelle affectation possible.
+•	Les activités et affaires en cours sont clôturées automatiquement (statut = terminé).
+________________________________________
+🔹 3.4 Statistiques de base
+Chaque site agrège automatiquement :
+•	Effectif actif (ressources liées)
+•	Nombre d’affaires ouvertes
+•	Nombre total d’activités planifiées
+•	Taux de couverture global (issu du module adéquation)
+Ces valeurs sont générées par une vue ou une fonction Supabase (sites_stats_view).
+________________________________________
+🔹 3.5 Intégration inter-modules
+Module	Interaction
+RH Collaborateurs	Rattachement obligatoire à un site
+Affaires & Activités	Chaque enregistrement doit référencer un site
+Planification Gantt	Filtrage principal par site
+Adéquation charge / compétence	Calculs par site
+Suivi Projets	Vue regroupée par site
+________________________________________
+🔹 3.6 Import / Export
+•	Import Excel/CSV :
+o	Colonnes : nom, code_site, responsable, statut
+o	Validation du code unique et cohérence responsable
+•	Export Excel/CSV :
+o	Tous les champs + effectifs et affaires liés
+________________________________________
+4️⃣ Modèle de données (Supabase)
+Table : sites
+Champ	Type	Description
+id	uuid	Identifiant unique
+code_site	text	Code court, unique (ex. “E-03A”)
+nom	text	Nom complet
+responsable_id	uuid	Lien → ressources.id
+remplaçant_id	uuid (nullable)	Lien → ressources.id
+statut	text	Actif / En pause / Fermé
+commentaires	text	Notes internes
+date_creation	timestamp	Création
+created_by	uuid	Créateur
+Vue / table dérivée : sites_stats_view
+Champ	Type	Description
+site_id	uuid	Lien → sites.id
+nb_collaborateurs	int	Collaborateurs actifs liés
+nb_affaires	int	Affaires ouvertes
+nb_activites	int	Activités planifiées
+couverture_globale	float	% couverture par compétence
+date_maj	timestamp	Mise à jour automatique
+________________________________________
+5️⃣ Règles métiers
+•	Code site obligatoire et unique.
+•	Responsable principal = collaborateur actif obligatoire.
+•	Site “fermé” : bloqué dans tous les écrans de planification.
+•	Suppression physique interdite, archivage uniquement.
+•	Les statistiques sont mises à jour automatiquement (cron Supabase).
+________________________________________
+6️⃣ Critères d’acceptation
+ID	Critère	Validation
+SITE-01	Création site avec code unique et responsable actif	✅
+SITE-02	Statut Fermé bloque la planification	✅
+SITE-03	Sites visibles dans RH / Planif / Adéquation	✅
+SITE-04	Import Excel valide code et cohérence responsable	✅
+SITE-05	Vue stats correcte (collaborateurs + affaires)	✅
+SITE-06	Export complet CSV / Excel	✅
+SITE-07	Interface fluide et responsive	✅
+________________________________________
+7️⃣ Stack technique
+Élément	Lib / Outil
+Backend	Supabase (sites, sites_stats_view)
+Frontend	Next.js + Tailwind
+Forms	React Hook Form + Zod
+Charts	Recharts (vue stats)
+Export / Import	SheetJS
+Auth	Supabase Session (RH / Admin / Planificateur)
+________________________________________
+8️⃣ UI / Composants
+Composant	Rôle
+SitesTable	Liste principale
+SiteFormModal	Création / modification
+SiteStatsCard	KPIs effectif / affaires / couverture
+FilterBar	Filtres code / statut / responsable
+ExportButton	Export Excel
+ImportButton	Import Excel
+

@@ -1,0 +1,275 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Module Terrain : Vue Liste & Tuiles interactives
+
+Auteur : Fred Baudry
+Version : 1.4
+Stack : Next.js / Supabase / Tailwind / Recharts
+Objectif :
+Permettre aux responsables de chantier et aux chargés de réalisation de suivre, mettre à jour et confirmer quotidiennement l’état réel des tâches planifiées, via une interface mixte liste + tuiles visuelles reliée au Gantt et au Dashboard.
+
+1️⃣ Objectif général
+
+Créer une expérience terrain fluide qui combine :
+
+une vue liste consolidée des tâches planifiées pour le site et la période,
+
+une vue tuile ludique et réactive pour les mises à jour de statuts,
+
+des règles automatiques de suivi journalier (confirmation, suspension),
+
+et la gestion des blocages globaux (grèves, accès, météo).
+
+Cette interface remplace les formulaires “classiques” et synchronise en temps réel les données de planification, d’avancement et de reporting.
+
+2️⃣ Vue Liste principale
+🔹 Contenu
+
+Liste des affaires planifiées / en suivi sur le site de l’utilisateur.
+
+Colonnes :
+
+Affaire
+
+Responsable
+
+% avancement
+
+Nombre de tâches du jour
+
+Dernier statut global (calculé à partir des tâches)
+
+Bouton “📋 Ouvrir” → ouvre la vue tuiles
+
+🔹 Actions
+
+🔍 Recherche par mot-clé (affaire, activité)
+
+Filtres rapides :
+
+Statut global (Planifiée / En cours / Suspendue / Reportée / Prolongée / Terminée)
+
+Site
+
+Responsable
+
+Date
+
+Sélection multi-affaires (pour reporting groupé)
+
+3️⃣ Vue Tuiles (au clic sur une affaire)
+
+Quand on clique sur une ligne d’affaire → ouverture d’une vue tuilée (overlay ou panneau latéral selon device).
+
+Chaque tuile représente une tâche du jour ou en cours pour cette affaire.
+
+🔹 Contenu de chaque tuile
+Élément	Description
+🏷️ Libellé tâche	Nom clair de l’activité
+🏗️ Site	Code site
+👷 Responsable exécution	Nom du chargé de réalisation
+📅 Dates	Début planifié / Fin planifiée
+⚙️ Statut actuel	Badge coloré + libellé
+⏱️ Avancement	% affiché + barre de progression
+🧩 Actions rapides	Boutons de statut (Lancer / Suspendre / Reporter / Prolonger / Terminer)
+📖 Notes / commentaires	Champ libre + icône 📓
+🔁 Historique	Petit bouton (⌛) pour voir les dernières modifications
+4️⃣ États possibles des tuiles
+🟡 1️⃣ À lancer (tâche prévue aujourd’hui)
+🟡 À lancer — Prévue le 22/10
+------------------------------------------------
+📍 Site : E-03A | 👷 Steven
+🕒 22/10 → 24/10
+⚙️ En attente de lancement
+[ 🔵 Lancer ] [ 🟠 Reporter ] [ 🟣 Prolonger ]
+
+🔵 2️⃣ En cours
+🔵 En cours — Jour 2/3
+------------------------------------------------
+📍 Site : DAM | 👷 Jason
+🕒 21/10 → 23/10
+⏱️ Avancement : 45%
+[ 🟢 Terminer ] [ ⚫ Suspendre ] [ 🟣 Prolonger ]
+------------------------------------------------
+💬 “Travail normal, zone dégagée”
+
+⚫ 3️⃣ Suspendu (non actif, pas d’heure métal)
+⚫ Suspendu — Depuis 1 jour
+------------------------------------------------
+📍 Site : E-03A | 👷 Steven
+⛔ Activité en pause (absence équipe)
+⏸️ Reprise prévue : 24/10 ?
+[ 🔵 Relancer ] [ 🟠 Reporter ] [ 🟣 Prolonger ]
+------------------------------------------------
+ℹ️ Cause : Absence équipe IEG
+
+🟠 4️⃣ Reporté (planifié plus tard)
+🟠 Reporté — Reprise le 26/10
+------------------------------------------------
+📍 Site : PDC_FBA | 👷 Marc
+🕒 Ancien début : 22/10 | Nouveau : 26/10
+⚙️ Impact fin à confirmer
+[ ✅ Aucun impact ] [ ⏱️ Total ] [ 📊 % ] [ ➕ +X jours ]
+------------------------------------------------
+ℹ️ Cause : Attente matériel
+
+🟣 5️⃣ Prolongé (ex-Bloqué)
+🟣 Prolongé — Durée étendue +2 jours
+------------------------------------------------
+📍 Site : E-03A | 👷 Steven
+🕒 21/10 → 26/10 (au lieu de 24/10)
+📖 Cause : accès limité / météo
+⚙️ Fin recalculée
+[ 🟢 Terminer ] [ ⚫ Suspendre ]
+
+🟢 6️⃣ Terminée
+🟢 Terminée — 100%
+------------------------------------------------
+📍 Site : E-03A | 👷 Steven
+🕒 Réel : 21/10 → 23/10
+✅ Clôturée avec succès
+📈 Temps métal : 21h
+
+5️⃣ Confirmation quotidienne automatique
+Règle :
+
+Chaque jour à 06h30, toutes les tâches En_cours sont interrogées :
+
+“Reprise aujourd’hui sur [Tâche X] ?”
+
+Si Oui → insertion auto de remontee_site (statut = “En_cours”).
+
+Si Non ou pas de réponse avant 12h → tâche → Suspendu + tache_suspensions.
+
+Implémentation :
+
+Cron : cron_confirm_en_cours
+
+Table : confirmation_queue
+
+Notification : Badge ⚠️ “Réponse attendue”
+
+UI : sur tuile “En cours” → petit bandeau jaune “Confirmer la reprise”
+
+6️⃣ Blocage général (grève / accès)
+Déclaration :
+
+Menu “Blocage général” (accessible RH / Planif / Dir)
+
+Sélection :
+
+Site ou périmètre d’affaire
+
+Motif
+
+Début / Fin
+
+Validation → toutes les tâches planifiées ou en cours sur ce site passent :
+
+statut = Suspendu
+
+création d’une tache_suspensions
+
+création d’un site_blocages record
+
+Effets visuels :
+
+Bande grisée verticale sur le Gantt
+
+Message sur liste : “⚠ Site en blocage général — tâches gelées”
+
+Bannière rouge en haut de la page terrain :
+
+“Grève / accès bloqué du 22/10 au 25/10 — reprise à confirmer”
+
+7️⃣ Reprise après Reporté
+
+Quand une tâche “Reportée” est relancée :
+
+“Le report a-t-il impacté la date de fin prévue ?”
+
+Choix :
+
+Aucun impact → on garde la même fin
+
+Impact total → on ajoute Δ report
+
+Impact partiel → on saisit %
+
+Impact valeur → on saisit X jours
+
+→ fn_resume_from_report(tache_id, mode, value) ajuste date_fin_plan + effort_plan_h.
+
+8️⃣ Modèle de données impacté
+Table planning_taches
+
+✅ statut → ajouter valeurs (‘Prolonge’, ‘Suspendu’)
+
+✅ responsable_execution_id uuid fk
+
+✅ descendu_vers_execution bool
+
+✅ date_transfert_execution timestamptz
+
+Table site_blocages
+Champ	Type	Description
+id	uuid	
+site_id	uuid	FK
+affaire_id	uuid nullable	Sous-périmètre optionnel
+cause	text	Grève, accès, etc.
+start_at	timestamptz	
+end_at	timestamptz	
+scope_level	text	'site' / 'affaire'
+created_by	uuid	
+created_at	timestamptz	
+9️⃣ Automatisations
+Fonction / Cron	Description
+fn_auto_descente_realisation()	à 06h00 → transfert des tâches du jour vers exécution
+cron_confirm_en_cours	à 06h30 → confirmation quotidienne
+fn_apply_site_blocage()	applique le gel aux tâches en cours / à lancer
+fn_resume_from_report()	ajuste la fin à la reprise
+fn_auto_close_suspension()	ferme les suspensions à la reprise
+🔟 Règles techniques & UX
+
+Une seule remontée terrain par tâche/jour.
+
+Auto-save sur chaque clic d’action.
+
+Undo 30 secondes après action (toast).
+
+Animation fluide (fade-out tuile terminée).
+
+Overlay latéral sur desktop, plein écran sur mobile.
+
+Couleurs fixes :
+
+🟢 Terminé
+
+🔵 En cours
+
+⚫ Suspendu
+
+🟠 Reporté
+
+🟣 Prolongé
+
+🟡 À lancer
+
+1️⃣1️⃣ Critères d’acceptation
+ID	Critère	Validation
+TUI-01	Liste affaires + ouverture tuiles OK	✅
+TUI-02	Tous les statuts visibles et cliquables	✅
+TUI-03	Confirmation quotidienne auto	✅
+TUI-04	Blocage général gèle les tâches du site	✅
+TUI-05	Reprise après report ajustable	✅
+TUI-06	Remontées cohérentes et uniques	✅
+TUI-07	Animation + UX fluide	✅
+TUI-08	Synchro instantanée Gantt + Dashboard	✅
+1️⃣2️⃣ Intégrations & impacts connexes
+Module	Impact
+Gantt	Statuts mis à jour + couleurs + overlay blocage
+Dashboard	Nouvelles métriques “Tâches prolongées” et “Suspensions actives”
+Claims	Déclencheur sur “Prolongé” possible
+Maintenance	Même logique d’états
+Reporting figé	Capturer les statuts chaque jour à 23h59

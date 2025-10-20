@@ -1,0 +1,16 @@
+Tâche,Affaire,Site,Type,Début,Fin,Avancement,Statut
+Étude technique,AFF-2025-001,Site E-03A,Préparation,2025-10-05,2025-10-10,0,Non lancé
+Contrôle équipements,AFF-2025-002,Site DAM,Contrôle,2025-10-07,2025-10-10,0,Non lancé
+Étude de faisabilité,AFF-2025-001,Site E-03A,Préparation,2025-10-10,2025-10-13,0,Non lancé
+Réparation TGBT,AFF-2025-002,Site DAM,Exécution,2025-10-11,2025-10-21,0,Non lancé
+Réalisation travaux,AFF-2025-004,Site de test générique,Exécution,2025-10-11,2025-10-26,0,Non lancé
+Commande matériel,AFF-2025-001,Site E-03A,Préparation,2025-10-14,2025-10-16,0,Non lancé
+Préparation site,AFF-2025-003,Site PDC_FBA,Préparation,2025-10-15,2025-10-20,0,Non lancé
+Installation équipements,AFF-2025-001,Site E-03A,Exécution,2025-10-18,2025-10-25,0,Non lancé
+Installation automates,AFF-2025-003,Site PDC_FBA,Exécution,2025-10-21,2025-11-02,0,Non lancé
+Remplacement composants,AFF-2025-002,Site DAM,Exécution,2025-10-22,2025-10-28,0,Non lancé
+Câblage et raccordements,AFF-2025-001,Site E-03A,Exécution,2025-10-26,2025-11-02,0,Non lancé
+Mise en service,AFF-2025-004,Site de test générique,Exécution,2025-10-27,2025-10-30,0,Non lancé
+Tests finaux,AFF-2025-004,Site de test générique,Contrôle,2025-10-31,2025-11-05,0,Non lancé
+Tests et contrôles,AFF-2025-001,Site E-03A,Contrôle,2025-11-03,2025-11-09,0,Non lancé
+

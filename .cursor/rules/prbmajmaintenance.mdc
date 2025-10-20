@@ -1,0 +1,174 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Maintenance v1.2.4
+
+(journal 14h–18h, tuiles, Tranche=0..9, Système Élémentaire autonome, pas de confirmation du jour, reporting ciblé “Batterie”)
+
+Auteur : Fred Baudry
+Stack : Next.js 15 / Supabase / Tailwind / Recharts / SMTP / Framer Motion
+Règle clé : Saisie 14:00–18:00 ; mêmes états que Remontée Site ; pas de BPU ici.
+
+1) Objectif
+
+Saisir l’activité maintenance l’après-midi via tuiles, avec états métier, blocage intra-jour, suspension (hors “métal”), et un reporting mensuel opérationnel centré sur :
+
+totaux par état,
+
+total d’heures métal,
+
+liste des activités dont le système contient “Batterie”.
+(Pas de “top tranche”.)
+
+2) Définitions
+
+Tranche : index de point 0..9 (obligatoire).
+
+Système Élémentaire : identifiant technique autonome (ex. LAA001BT, obligatoire).
+
+Système (domaine) : texte libre optionnel (Élec / IEG / CVC, etc.).
+
+3) Fonctionnalités
+3.1 Journal (fenêtre 14:00–18:00)
+
+Par ligne :
+
+tranche (0..9)
+
+systeme_elementaire (obligatoire)
+
+systeme (optionnel)
+
+type_maintenance (texte libre : Décharge semestriel / Contrôle / Correctif…)
+
+etat_reel : Non lancée / En cours / Terminée / Prolongée / Reportée / Suspendue
+
+motif (requis si Suspendue)
+
+description
+
+heures_presence, heures_suspension → heures_metal = max(0, présence – suspension)
+
+Raccourcis : picker tranche 0..9, autocomplete système élémentaire, duplication.
+
+3.2 Blocage intrajournalier & Suspension
+
+Blocage intra-jour : autorise une 2ᵉ ligne (is_block_event=true, motif requis).
+
+Suspension : retirée du “métal”.
+
+3.3 Confirmation du jour
+
+Supprimé : on saisit le réel directement. Aucune étape de confirmation.
+
+3.4 Reporting mensuel (validé)
+
+Le dernier jour du mois à 18:30 (Europe/Paris), envoi d’un mail de synthèse par site avec :
+
+Totaux par état (Terminées / Reportées / Prolongées / Suspendues / En cours / Non lancées),
+
+Total heures métal,
+
+Liste détaillée des activités dont systeme contient “Batterie” (filtre ILIKE '%batterie%').
+
+CSV joint : date, site, tranche, systeme_elementaire, systeme, type_maintenance, etat_reel, heures_presence, heures_suspension, heures_metal, description.
+
+4) Modèle de données (Supabase)
+
+Table maintenance_journal
+
+Champ	Type	Règles
+id	uuid pk	
+site_id	uuid fk → sites	
+date_jour	date	
+tranche	int	0..9, NOT NULL
+systeme_elementaire	text	NOT NULL
+systeme	text	optionnel
+type_maintenance	text	libre
+etat_reel	text	Non_lancee / En_cours / Termine / Prolongee / Reportee / Suspendue
+motif	text	requis si Suspendue
+description	text	
+heures_presence	numeric	≥ 0
+heures_suspension	numeric	≥ 0
+heures_metal	numeric	GREATEST(0, presence - suspension)
+is_block_event	bool	
+created_by	uuid	
+created_at	timestamptz	
+
+Diff vs v1.2.3 : etat_confirme supprimé (plus de confirmation du jour).
+
+Table maintenance_monthly_summary (ou garde maintenance_monthly_digest)
+
+Champ	Type	Description
+id	uuid pk	
+site_id	uuid	
+periode_mois	date	1er du mois
+destinataires	text[]	emails
+kpi	jsonb	{ terminees, reporteés, prolongees, suspendues, en_cours, non_lancees, heures_metal }
+details	jsonb	{ batterie_list: [ {date, tranche, systeme, systeme_elementaire, type, etat, heures_metal, description} ] }
+csv_url	text	lien export
+sent_at	timestamptz	
+5) Automatisations
+Tâche	Quand	Détail
+Restriction saisie	en temps réel	UI/guard 14:00–18:00 (Resp peut outrepasser si tu le souhaites)
+Résumé mensuel	J-dernier 18:30	Mail + CSV. Le backend filtre systeme ILIKE '%batterie%' pour la liste dédiée
+Refresh vues/KPI	nightly	Mise à jour des agrégats
+
+(Le reminder 18:05 saute puisqu’on a supprimé la confirmation.)
+
+6) UI / Tuiles
+
+Tuile = carte avec : Tranche (0..9), Système élém., Système (si rempli), Type, États + boutons, Heures (présence/suspension/métal), Motif (si Suspendue).
+
+Actions :
+
+À réaliser → [Lancer] [Reporter]
+
+En cours → [Terminer] [Suspendre] [Prolonger]
+
+Suspendue → [Reprendre] [Reporter]
+
+Reportée → [Relancer] [Terminer]
+
+Prolongée → [Terminer] [Suspendre]
+
+Terminée → résumé (métal total)
+
+Auto-save silencieux + toast, animations douces (glow/check/fade).
+
+7) KPI & Vues
+
+KPI mensuels : répartition par état, heures métal.
+
+Vues/exports filtrables par : site, mois, tranche (0..9), systeme_elementaire, systeme, état.
+
+Extraction “Batterie” : vue dédiée listant toutes les lignes dont systeme ILIKE '%batterie%' (mêmes colonnes que CSV).
+
+8) Critères d’acceptation
+
+ Saisie 14:00–18:00 stricte (interface verrouillée hors plage).
+
+ Tranche 0..9 et Système Élémentaire obligatoires.
+
+ États & transitions conformes (mêmes que Remontée Site).
+
+ Heures métal correctement calculées (≥ 0).
+
+ Aucune confirmation du jour requise (3.3 supprimé).
+
+ Mail mensuel contient : totaux, heures métal, liste filtrée “Batterie”.
+
+ CSV joint conforme.
+
+9) Migration rapide
+-- 1) Supprimer le champ de confirmation s’il existe
+ALTER TABLE maintenance_journal
+  DROP COLUMN IF EXISTS etat_confirme;
+
+-- 2) S’assurer que tranche et systeme_elementaire sont là et not null
+ALTER TABLE maintenance_journal
+  ALTER COLUMN tranche SET NOT NULL,
+  ADD COLUMN IF NOT EXISTS systeme_elementaire text;
+
+-- 3) Option : ajouter la table de résumé ou conserver l’existante
+-- (aucun changement obligatoire côté résumé si tu gardes maintenance_monthly_digest ; tu adaptes juste le contenu généré)

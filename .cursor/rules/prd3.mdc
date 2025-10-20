@@ -1,0 +1,125 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Page RH Collaborateurs
+Auteur : Fred Baudry
+Version : 1.1 (Options A, C et D activées)
+Stack : Next.js / Supabase / Tailwind / Recharts / SheetJS
+Objectif principal :
+Gérer la base des collaborateurs : identité, coordonnées, statut actif/non-actif, compétences, rattachement site, informations de contact (pro/perso), et intégration des évolutions A (import Excel), C (suivi RH), D (alertes fin de contrat).
+________________________________________
+1️⃣ Objectif
+Créer une interface RH complète pour gérer les collaborateurs de l’entreprise :
+•	Ajouter, modifier, archiver les profils.
+•	Distinguer les actifs et non-actifs (anciens employés, intérim, etc.).
+•	Gérer leurs coordonnées professionnelles et personnelles.
+•	Relier chaque collaborateur à son site, ses compétences et son statut contractuel.
+•	Suivre les formations, visites médicales, habilitations (option C).
+•	Recevoir des alertes de fin de contrat (option D).
+•	Importer en masse les collaborateurs (option A).
+•	Fournir une base exploitable par la planification, les absences et la Gantt.
+________________________________________
+2️⃣ Utilisateurs cibles
+Rôle	Accès	Actions
+Administratif / RH	Accès total	CRUD complet, import, alertes, suivi RH
+Planificateur	Lecture + export	Visualise les collaborateurs pour affectations
+Responsable	Lecture restreinte	Voit uniquement son site et ses équipes
+Direction	Lecture globale	Vue consolidée, non modifiable
+________________________________________
+3️⃣ Fonctionnalités principales
+🔹 3.1 Tableau des collaborateurs
+•	Vue principale en tableau dynamique (sortable + filtrable).
+•	Colonnes : Nom / Prénom / Site / Compétences / Statut / Type contrat / Email pro/perso / Téléphone / Adresse / Dates entrée-sortie.
+•	Filtres : site / compétence / statut / contrat.
+•	Recherche rapide + export CSV / Excel.
+🔹 3.2 Ajout / modification
+•	Bouton “+ Nouveau collaborateur” → modale formulaire.
+•	Champs obligatoires : Nom, Prénom, Site, Statut actif, Type contrat.
+•	Champs optionnels : Email pro/perso, Téléphone, Adresse, Compétences, Dates entrée/sortie.
+•	Validation stricte :
+o	Email valide ; au moins un requis.
+o	Téléphone format +33.
+o	Si actif=false → champ “date fin” obligatoire.
+•	Historisation via table historique_actions.
+🔹 3.3 Statut actif / non-actif
+•	Actif =true → visible dans planif / couverture.
+•	Non-actif =false → archivé (historique conservé).
+•	Si désactivation → suppression auto des affectations futures + enregistrement historique.
+🔹 3.4 Coordination inter-modules
+•	Planification Gantt : n’affiche que actif =true.
+•	Absences : pas d’absence future pour collaborateur inactif.
+•	Adéquation charge/compétence : calcul uniquement sur ressources actives.
+•	Suivi projets : responsable visible seulement si actif.
+________________________________________
+4️⃣ Modèle de données (Supabase)
+Table : ressources
+Champ	Type	Description
+id	uuid	Identifiant unique
+nom	text	Nom
+prenom	text	Prénom
+site	text	Site
+actif	bool	true = actif
+type_contrat	text	CDI / CDD / Intérim / Apprenti / Autre
+email_pro	text	Email pro (nullable)
+email_perso	text	Email perso (nullable)
+telephone	text	Téléphone
+adresse_postale	text	Adresse complète
+competences	text[]	Compétences principales
+date_entree	date	Entrée
+date_sortie	date	Fin contrat
+date_creation	timestamp	Date ajout
+created_by	uuid	Créateur
+Table : historique_actions
+Champ	Type	Exemple
+element_type	text	“ressource”
+action	text	“désactivation”, “ajout”, “modification”
+valeur_avant	json	{ "actif": true }
+valeur_apres	json	{ "actif": false }
+date_action	timestamp	2025-10-18 T08:00:00Z
+Table : suivi_rh (évolution C)
+Champ	Type	Description
+id	uuid	Identifiant
+ressource_id	uuid	Lien → ressources.id
+type_suivi	text	“Visite médicale”, “Formation”, “Habilitation”
+date_realisation	date	Dernière réalisation
+date_expiration	date	Date validité
+statut	text	Valide / Expiré / À renouveler
+commentaire	text	Notes RH
+________________________________________
+5️⃣ Règles métiers
+•	Email pro prioritaire, sinon email perso.
+•	Minimum 1 email valide obligatoire.
+•	Téléphone +33 obligatoire.
+•	Non-actif → aucune affectation future.
+•	Suppression physique interdite ; archivage uniquement.
+•	Si date_sortie approche → alerte automatique (option D).
+________________________________________
+6️⃣ Critères d’acceptation
+ID	Critère	Validation
+RH-01	Ajout collaborateur sans email pro mais avec perso	✅
+RH-02	Filtrage actif/non-actif	✅
+RH-03	Historique désactivation enregistré	✅
+RH-04	Planif Gantt = ressources actives uniquement	✅
+RH-05	Téléphone + adresse enregistrés	✅
+RH-06	Export CSV/XLSX complet	✅
+RH-07	Import Excel (option A) opérationnel	✅
+RH-08	Suivi RH (formations, habilitations) visible (option C)	✅
+RH-09	Alertes fin de contrat J-30 / J-7 envoyées (option D)	✅
+RH-10	Interface fluide et responsive	✅
+________________________________________
+7️⃣ Stack technique
+Élément	Outil	Détails
+Backend	Supabase	Tables : ressources, suivi_rh, historique_actions
+Frontend	Next.js + Tailwind	UI CRUD et filtrage
+Formulaires	React Hook Form + Zod	Validation champs
+Export / Import	SheetJS	CSV / Excel
+Alertes	Supabase Functions + SMTP	Envoi auto mails fin contrat
+Auth	Supabase Session	Accès limité selon rôle
+Charts	Recharts	Statistiques RH
+________________________________________
+8️⃣ Évolutions activées
+Réf	Nom	Description
+A	Import en masse (Excel/CSV)	Upload fichier RH → mapping auto → création / mise à jour collaborateurs. Validation anti-doublons sur email ou (nom+site).
+C	Suivi RH (visites, formations, habilitations)	Onglet individuel par collaborateur avec dates, statuts, alertes “à renouveler”.
+D	Alertes fin de contrat	Fonction cron Supabase envoyant email automatique au RH et au responsable à J-30 et J-7 de la date de sortie.
+

@@ -1,0 +1,97 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Gestion des Utilisateurs & Accès (App)
+Objectif
+Gérer les comptes applicatifs (distincts des collaborateurs RH) : création/invitation, authentification, rôles & permissions, contrôle d’accès par page et par composant, audit.
+1) Parcours & règles
+•	Création utilisateur (admin)
+o	Saisie : email, prénom, nom, rôle(s) initiaux, site(s) de périmètre (option).
+o	Génération MDP provisoire + lien d’activation (48h) via SMTP.
+o	Hook onUserCreated : provision des defaults (préférences, rôles).
+•	Première connexion
+o	Vérif lien encore valide.
+o	Forcer changement de mot de passe (politique : min 12, complexité, pas 3 derniers).
+o	Option : activer 2FA (TOTP) si rôle sensible.
+•	Connexion courante
+o	Sessions sécurisées (JWT/ Supabase session), rotation token, logout partout.
+o	Verrouillage après N échecs (ex. 5), cooldown + email d’alerte.
+•	Réinitialisation
+o	Lien reset (validité 1h), journaux d’audit.
+•	Contrôle d’accès
+o	RBAC (rôles) + permissions fines (capabilities).
+o	Page Access Rules (par route) et Feature Flags / Component Guards (par composant).
+o	Périmètre : filtrage data par site(s) autorisés.
+2) Rôles par défaut (éditables)
+•	Admin : tout.
+•	Planificateur : Gantt, adéquation, lecture RH, écriture planif.
+•	Chargé d’Affaires (CA) : Affaires, lots, reporting finance (lecture), claims (validation).
+•	Responsable de site : vues site, remontées, maintenance (son site).
+•	Maintenance : journal soir, batteries.
+•	RH : module RH/absences, lecture planif.
+•	Direction/PMO : dashboard global (lecture), exports.
+On peut créer/éditer des rôles custom via l’UI.
+3) UI / Pages
+•	/admin/users : table utilisateurs (recherche, filtre rôle/site, état), actions (inviter, désactiver, reset, forcer 2FA).
+•	/admin/roles : CRUD rôles, assignation permissions (scopes : pages, actions).
+•	/admin/access : matrice Pages × Rôles (lecture/écriture/aucun) + granularité composant (toggles).
+•	/profile : préférences, 2FA, mots de passe, clés d’API (si besoin).
+•	Bannières d’accès refusé + redirection vers pages autorisées.
+4) Modèle de données (Supabase)
+Tables core
+•	app_users
+id uuid pk, email text unique, prenom text, nom text, active bool default true, email_verified bool,
+force_pwd_change bool default true, twofa_enabled bool, sites_scope uuid[], created_at, updated_at
+•	roles
+id pk, code text unique, label text, system bool, created_at
+•	permissions
+id pk, code text unique (ex: page.gantt.read, page.gantt.write, comp.claims.validate), label text
+•	role_permissions
+id pk, role_id fk -> roles, permission_id fk -> permissions unique(role,perm)
+•	user_roles
+id pk, user_id fk -> app_users, role_id fk -> roles unique(user,role)
+•	page_access_rules
+id pk, route text (ex: /gantt), role_id fk -> roles, access text check in ('none','read','write'), unique(route,role)
+•	component_flags
+id pk, component_key text (ex: gantt.financeCard), role_id fk -> roles, enabled bool, unique(component_key,role)
+•	user_tokens (activation/reset)
+id pk, user_id fk, type text (activation|reset), token_hash text, expires_at timestamptz, used_at timestamptz
+•	audit_log
+id pk, actor_id uuid, action text, entity text, entity_id uuid, meta jsonb, created_at
+Index & RLS
+•	Index sur email, FK, route, component_key.
+•	RLS :
+o	app_users : lecture par Admin ; self-read sur son profil.
+o	tables d’admin (roles/permissions) : Admin only.
+o	page_access_rules/component_flags : lecture par tous (pour guard côté client), écriture Admin.
+5) Sécurité & politiques
+•	Politique MDP (12+, complexité, rotation 90j option).
+•	2FA optionnel, requis pour Admin/Direction.
+•	IP throttling (rate-limit) sur login/reset.
+•	Email d’alerte si connexion depuis nouvelle IP.
+•	Logs d’admin : toutes les actions critiques dans audit_log.
+6) Hooks & intégrations
+•	onUserCreated(user) : provision rôles par défaut selon domaine email ou invitation.
+•	onFirstLogin(user) : forcer changement MDP, proposer 2FA.
+•	onRoleChanged(user) : régénérer cache d’autorisations.
+•	SMTP : envoi invitation, activation 48h, reset 1h, alertes sécurité.
+•	Option SSO (phase 2) : Azure AD / Google OAuth → mapping groupes → rôles.
+7) Critères d’acceptation
+•	USR-01 Invitation envoie lien 48h + MDP provisoire.
+•	USR-02 Première connexion impose changement MDP.
+•	USR-03 RBAC effectif (page-level & component-level).
+•	USR-04 Périmètre site appliqué aux vues et aux requêtes.
+•	USR-05 Reset MDP (1h) + audit.
+•	USR-06 Admin peut créer/éditer rôles & permissions.
+•	USR-07 “Accès refusé” cohérent + redirection safe.
+•	USR-08 Journalisation des actions d’admin.
+•	USR-09 Temps d’affichage < 2 s sur /admin/users (pagination).
+8) Composants frontend
+•	UsersTable, UserInviteModal, UserResetButton, RoleEditor, PermissionMatrix,
+PageAccessMatrix, ComponentFlagMatrix, TwoFASetup, AuditTable.
+9) Notes d’implé rapide
+•	Guards côté client : hook useAuth() retour can('page.gantt.write') etc.
+•	Guards côté serveur : policies RLS + vérif permission avant requêtes mutatives.
+•	Cache des permissions (par user) en mémoire + invalidation à chaque MAJ rôle.
+•	Feature flags par composant = rendu conditionnel + fallback UX propre.
+

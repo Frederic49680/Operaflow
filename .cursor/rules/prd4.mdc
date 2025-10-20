@@ -1,0 +1,147 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Module Absences & Disponibilités
+Auteur : Fred Baudry
+Version : 1.0
+Stack : Next.js 15 / Supabase / Tailwind / Recharts
+Objectif principal :
+Gérer les absences et les disponibilités du personnel afin d’alimenter la planification Gantt, les calculs de couverture, et le suivi RH.
+________________________________________
+1️⃣ Objectif
+Créer une interface RH et planificateur dédiée à la gestion des absences, permettant de :
+•	Ajouter, modifier et suivre les absences par collaborateur ;
+•	Visualiser les absences à venir, en cours et passées ;
+•	Calculer automatiquement la disponibilité réelle des ressources ;
+•	Exclure les absents des plannings futurs ;
+•	Synchroniser les données avec le module RH et la Gantt.
+________________________________________
+2️⃣ Utilisateurs cibles
+Rôle	Accès	Actions
+RH / Administratif	Accès total	CRUD complet sur toutes les absences
+Planificateur / Conducteur	Lecture + ajout	Peut déclarer une absence ponctuelle sur une ressource
+Responsable de site	Lecture restreinte	Voit les absences de son site uniquement
+Direction	Lecture seule	Vue consolidée multi-sites
+________________________________________
+3️⃣ Fonctionnalités principales
+🔹 3.1 Tableau principal des absences
+•	Vue filtrable et triable :
+o	Colonnes : Collaborateur, Site, Type d’absence, Date début, Date fin, Motif, Statut (à venir / en cours / passée).
+•	Filtres : site / type / statut / période / compétence.
+•	Recherche libre sur nom, site ou motif.
+•	Affichage visuel (icône ou couleur par type d’absence).
+•	Boutons :
+o	“+ Nouvelle absence” → ajout d’une absence.
+o	“Exporter CSV / Excel”.
+________________________________________
+🔹 3.2 Création / modification d’absence
+•	Formulaire “Nouvelle absence” (modale ou page latérale) :
+o	Champs obligatoires :
+	Collaborateur (dropdown dynamique filtré sur ressources actives)
+	Type d’absence (liste : CP, Maladie, Formation, Mission, Autre)
+	Date début / fin
+o	Champs facultatifs :
+	Motif / commentaire
+o	Validations :
+	Pas de chevauchement avec une absence existante.
+	Collaborateur actif obligatoire.
+	Date fin ≥ date début.
+•	L’absence devient “en cours” automatiquement à la date de début.
+________________________________________
+🔹 3.3 Statut et logique métier
+Statut	Définition	Comportement
+À venir	Absence planifiée, date future	Visible dans planning mais non active
+En cours	Absence en cours	Collaborateur indisponible (exclu planif)
+Passée	Date de fin dépassée	Absence terminée (historisée)
+•	Calcul automatique du statut via la date système (cron journalier).
+•	Si collaborateur devient inactif → suppression auto des absences futures.
+________________________________________
+🔹 3.4 Disponibilité & intégration
+•	Disponibilité = (Ressources actives) – (Ressources absentes à la période).
+•	Chaque absence réduit la capacité de la ressource à 0 pour les dates concernées.
+•	Les vues Gantt et Adéquation charge/compétence utilisent cette disponibilité ajustée.
+•	L’absence d’un responsable impacte la disponibilité de son affaire dans le suivi projets.
+________________________________________
+🔹 3.5 Visualisation graphique
+•	Graphique en barres empilées 100 % : disponible / absent par site ou compétence.
+•	Diagramme hebdomadaire : absents par jour (segmentation par type).
+•	Jauge de disponibilité globale (% de ressources disponibles / totales).
+•	Tooltip : liste des collaborateurs absents, type et durée.
+________________________________________
+🔹 3.6 Alertes & notifications
+•	Envoi automatique d’un mail à :
+o	Le responsable de site si > X % de son équipe absente la semaine suivante.
+o	Le RH si absence de plus de 15 jours (contrôle médical / administratif).
+•	Notifications internes via Supabase Function + SMTP.
+•	Journal des alertes dans table alerts.
+________________________________________
+4️⃣ Modèle de données (Supabase)
+Table : absences
+Champ	Type	Description
+id	uuid	Identifiant unique
+ressource_id	uuid	Lien → ressources.id
+type	text	CP / Maladie / Formation / Mission / Autre
+site	text	Site du collaborateur
+date_debut	date	Début absence
+date_fin	date	Fin absence
+motif	text	Description ou raison
+statut	text	à venir / en cours / passée
+created_by	uuid	Utilisateur ayant ajouté
+created_at	timestamp	Date de création
+Table : alerts
+Champ	Type	Description
+id	uuid	Identifiant
+cible	text	RH / Responsable
+type	text	“Taux absence élevé”, “Absence longue”
+message	text	Contenu notification
+date_envoi	timestamp	Date d’envoi
+statut	text	“envoyé”, “lu”
+________________________________________
+5️⃣ Règles métiers
+•	Un collaborateur inactif ne peut pas recevoir d’absence future.
+•	Une absence ne peut pas chevaucher une autre sur le même collaborateur.
+•	Une absence en cours rend la ressource indisponible pour toute affectation.
+•	Statut recalculé automatiquement chaque nuit (cron Supabase).
+•	Les absences impactent la disponibilité dans tous les calculs de charge.
+•	Si absence > 15 jours → mail automatique au RH.
+•	Les absences passées sont archivées mais conservées pour reporting.
+________________________________________
+6️⃣ Critères d’acceptation
+ID	Critère	Validation
+ABS-01	Ajout d’une absence valide sur ressource active	✅
+ABS-02	Détection chevauchement bloquante	✅
+ABS-03	Changement automatique du statut à la date du jour	✅
+ABS-04	Synchronisation disponibilité dans planification	✅
+ABS-05	Export CSV/Excel complet des absences	✅
+ABS-06	Graphiques absents/disponibles par site fonctionnels	✅
+ABS-07	Alertes email automatiques (taux > seuil / absence longue)	✅
+ABS-08	Interface fluide, responsive et filtrable	✅
+ABS-09	Historique conservé et consultable par RH	✅
+________________________________________
+7️⃣ Stack technique
+Élément	Lib / Service	Détails
+Backend	Supabase	Tables absences, alerts
+Frontend	Next.js + Tailwind	Tableaux et graphiques
+Validation	React Hook Form + Zod	Champs et règles métier
+Charts	Recharts	Barres empilées, jauge dispo
+Alertes	Supabase Functions + SMTP	Cron journalières
+Auth	Supabase Session	Filtrage par rôle
+Export	SheetJS	CSV / Excel
+Date	Day.js	Calculs de statut automatique
+________________________________________
+8️⃣ UI / Composants
+Composant	Rôle
+AbsencesTable	Tableau principal (filtrable)
+AbsenceFormModal	Formulaire ajout / modification
+FilterBar	Filtres (site, type, période, statut)
+AvailabilityChart	Jauge / barres 100 % dispo/absent
+AlertsPanel	Liste des notifications
+ExportButton	Export CSV / XLSX
+________________________________________
+9️⃣ Coordination inter-modules
+Module lié	Interaction
+RH Collaborateurs	L’absence est liée à ressources.id, et impossible pour un inactif.
+Planification Gantt	Les ressources absentes sont exclues du pool de planif pendant la période.
+Adéquation charge/compétence	Les absents réduisent la capacité réelle.
+Suivi Projets	Les absences du responsable impactent le statut des activités.
+

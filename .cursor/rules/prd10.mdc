@@ -1,0 +1,220 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Module Réclamations / Claims
+Auteur : Fred Baudry
+Version : 1.0
+Stack : Next.js 15 / Supabase / Tailwind / Recharts / SMTP (notifications)
+________________________________________
+1️⃣ Objectif
+Créer un module central de gestion des réclamations (internes & clients), permettant de :
+•	signaler, qualifier et suivre les claims liés aux affaires, sites ou tâches,
+•	gérer les états, responsabilités et valeurs financières,
+•	stocker les justificatifs (documents, photos, mails),
+•	automatiser les notifications et suivis d’avancement,
+•	et alimenter les dashboards financiers / opérationnels.
+⚙️ Ce module fait le lien entre les remontées terrain, les affaires, les clients et les plans de charge.
+________________________________________
+2️⃣ Typologie
+Type	Description	Exemples
+Interne	Réclamation générée par nos équipes (retard, non-conformité, erreur planif)	Délai fournisseur, erreur exécution
+Client	Réclamation émise ou subie vis-à-vis du client	Retard chantier, travaux supplémentaires, blocage accès
+Fournisseur / Sous-traitant	Réclamation envers un tiers	Retard livraison, prestation non conforme
+________________________________________
+3️⃣ Utilisateurs cibles
+Rôle	Accès	Actions
+Responsable de site / conducteur	Création / MAJ	Crée ou signale une réclamation
+Chargé d’Affaires	Validation / suivi	Valide la réclamation et envoie vers client
+Planificateur	Lecture	Voit impact planning / Gantt
+Direction / PMO	Lecture + pilotage	Synthèse, coût total, taux clôture
+Administratif	Lecture + suivi financier	Vérifie facturation et compensation
+Client (option)	Lecture restreinte via rapport PDF	Peut recevoir les claims client validés
+________________________________________
+4️⃣ Fonctionnalités principales
+🔹 4.1 Création d’une réclamation
+Accessible depuis :
+•	Une affaire,
+•	Une tâche Gantt,
+•	Une remontée site,
+•	Ou la page “Réclamations” directe.
+Champs principaux :
+Champ	Description	Obligatoire
+Type	Interne / Client / Fournisseur	✅
+Source	Affaire / Tâche / Site / Maintenance	✅
+Titre	Résumé court	✅
+Description	Détail de la réclamation	✅
+Montant estimé (€)	Valeur prévisionnelle	✅
+Responsable identifié	Interne / Client / Sous-traitant	✅
+Date de détection	Date du constat	✅
+Impact planning	Oui / Non	✅
+Impact financier	Oui / Non	✅
+Statut	Ouvert / En analyse / Validé / Transmis / Clos	✅
+Pièces jointes	Photos, mails, justificatifs	-
+Lien interlocuteur client	FK → interlocuteur_id	Optionnel
+Observations internes	Commentaire confidentiel	-
+________________________________________
+🔹 4.2 Workflow & états
+Statut	Description	Action principale
+Ouvert	Réclamation créée, en attente d’analyse	Validation CA
+En analyse	Vérification des causes / responsabilités	Ajout justificatifs
+Validé	Confirmée par CA, montant et impact figés	Notification client
+Transmis	Envoyée au client (mail / PDF joint)	Suivi réponse
+Clos	Résolu ou compensé	Archivé
+Changement d’état journalisé (table claim_history).
+Chaque transition peut déclencher un mail automatique (Power Automate ou Supabase Function).
+________________________________________
+🔹 4.3 Gestion financière
+•	Montant estimé : saisi à la création.
+•	Montant final : validé en clôture.
+•	Écart (€) = final – estimé.
+•	Catégorisation :
+o	Retard chantier
+o	Travaux supplémentaires
+o	Non-conformité / SAV
+o	Matériel / Sous-traitant
+o	Autre
+Intégration financière :
+•	Agrégation vers vue V_Dashboard_Affaires (total claim client, total interne).
+•	Possibilité d’associer un code analytique (champ code_ana).
+________________________________________
+🔹 4.4 Suivi des réclamations
+Vue principale :
+•	Tableau filtrable (type, statut, affaire, responsable, date, montant, site, client).
+•	Badges couleur :
+o	🟢 Clos
+o	🟠 En analyse
+o	🔴 Ouvert / Transmis
+•	Colonnes principales :
+o	N° Claim, Affaire, Client, Type, Responsable, Montant estimé/final, Statut, Date MAJ.
+•	Tri et recherche plein texte.
+Filtres rapides :
+•	Par site / affaire
+•	Par statut
+•	Par type
+•	Par responsable
+•	Par client
+________________________________________
+🔹 4.5 Historique & pièces jointes
+Chaque claim garde son log complet :
+•	Changement d’état, montants, responsable, commentaires, fichiers.
+•	Pièces jointes stockées dans Supabase Storage (PDF, photo, email, etc.).
+•	Historique affiché sous forme de timeline (type “conversation”).
+________________________________________
+🔹 4.6 Reporting & intégration Dashboard
+KPI générés automatiquement :
+Indicateur	Description
+Nb de claims ouverts / clos / en analyse	
+Montant total réclamations (estimé / final)	
+Taux de clôture (%)	
+Délai moyen de résolution	
+Claims par type	
+Claims par affaire / client / site	
+Claims client transmis vs validés	
+Intégré dans :
+•	Dashboard Affaires (impact financier)
+•	Dashboard Terrain (claims du jour / semaine)
+•	Dashboard Direction (coût total, dérive cumulée)
+________________________________________
+5️⃣ Modèle de données (Supabase)
+Table claims
+Champ	Type	Description
+id	uuid	PK
+affaire_id	uuid	FK → affaires
+site_id	uuid	FK → sites
+tache_id	uuid (nullable)	FK → planning_taches
+interlocuteur_id	uuid (nullable)	FK → interlocuteurs
+type	text	Interne / Client / Sous-traitant
+titre	text	Titre court
+description	text	Détail complet
+categorie	text	Type de cause
+montant_estime	numeric	€
+montant_final	numeric	€
+impact_financier	bool	
+impact_planning	bool	
+responsable	text	Interne / Client / Sous-traitant
+statut	text	Ouvert / En analyse / Validé / Transmis / Clos
+code_ana	text (nullable)	Code analytique
+date_detection	date	
+date_cloture	date (nullable)	
+fichiers	jsonb[]	Liste pièces jointes
+commentaire_interne	text	Notes non partagées
+created_by	uuid	
+date_creation	timestamptz	
+updated_at	timestamptz	
+________________________________________
+Table claim_history
+Champ	Type	Description
+id	uuid	PK
+claim_id	uuid	FK → claims
+action	text	création / maj / changement état
+ancien_statut	text	
+nouveau_statut	text	
+valeur_avant	jsonb	snapshot
+valeur_apres	jsonb	snapshot
+date_action	timestamptz	
+acteur_id	uuid	utilisateur
+________________________________________
+Table claim_comments
+Champ	Type	Description
+id	uuid	PK
+claim_id	uuid	FK → claims
+auteur_id	uuid	FK → utilisateurs
+message	text	commentaire
+fichier_url	text	(option)
+date_commentaire	timestamptz	
+________________________________________
+6️⃣ Règles métier
+•	Chaque claim doit être rattaché à au moins une affaire.
+•	Un claim “client” doit avoir un interlocuteur client associé.
+•	Un claim ne peut être clos sans montant final.
+•	Notification automatique :
+o	Création → mail à CA & Resp. Site
+o	Passage “Validé” → mail à client + CA
+o	Passage “Clos” → mail interne (Direction + Admin)
+•	Archivage automatique après 12 mois de clôture.
+•	Aucun claim ne peut être supprimé (archivage logique uniquement).
+________________________________________
+7️⃣ Critères d’acceptation
+ID	Critère	Validation
+CLM-01	CRUD complet (création, MAJ, suivi)	✅
+CLM-02	Workflow statuts + historique	✅
+CLM-03	Pièces jointes stockées et consultables	✅
+CLM-04	Liaison Affaire / Tâche / Client	✅
+CLM-05	Notifications automatiques selon état	✅
+CLM-06	Intégration Dashboard correcte	✅
+CLM-07	Temps chargement < 3 s	✅
+CLM-08	Historique complet consultable	✅
+CLM-09	Pas de suppression physique	✅
+________________________________________
+8️⃣ UI / Composants
+Composant	Description
+ClaimsTable	Liste principale (tri, filtres, recherche)
+ClaimFormModal	Formulaire création / MAJ
+ClaimTimeline	Historique des statuts et actions
+ClaimAttachments	Upload + preview fichiers
+ClaimCommentSection	Discussion interne
+ClaimBadge	Statut visuel
+ClaimKpiCards	4 cartes KPI (ouverts, clos, en analyse, total €)
+________________________________________
+9️⃣ Intégrations inter-modules
+Module	Intégration
+Affaires	Claims liés, cumul montants dans bilan affaire
+Remontée Site	Claim possible à partir d’une anomalie terrain
+Interlocuteurs	Contact client associé
+Dashboard	Claims ouverts, coût total, durée moyenne
+Gantt	Indicateur “impact planning” sur tâche
+Maintenance	Réclamation technique sur activité batterie
+Mailing	Automatisation notifications / CR
+________________________________________
+🔟 Exemples de cas d’usage
+Cas 1 : Claim interne
+•	Conducteur signale un retard fournisseur → crée claim “Interne – Retard matériel”.
+•	Montant estimé 2 000 €.
+•	Planificateur marque impact planning = oui.
+•	Claim validé, clos après 5 jours.
+Cas 2 : Claim client
+•	Remontée terrain indique blocage client (accès interdit).
+•	Claim “Client – Blocage d’accès chantier” créé, montant estimé 3 500 €.
+•	Validé → transmis au client (PDF auto).
+•	Clos après réception du bon de compensation.
+

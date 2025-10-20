@@ -1,0 +1,195 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Module Remontée d’Information Site & Reporting Quotidien
+Auteur : Fred Baudry
+Version : 1.2
+Stack : Next.js 15 / Supabase / Tailwind / Recharts / Power Automate (notif)
+Objectif principal :
+Créer un module terrain connecté à la planification Gantt, permettant :
+•	la remontée quotidienne de l’état des tâches,
+•	la gestion des blocages et suspensions,
+•	et la confirmation journalière des statuts réels avant bascule en reporting figé.
+________________________________________
+1️⃣ Objectif général
+Offrir une interface terrain rapide et fiable pour les responsables de site, permettant de :
+•	Mettre à jour l’état réel des tâches planifiées (en cours, terminée, bloquée, suspendue…).
+•	Enregistrer les causes de dérive et claims éventuels.
+•	Suspendre une activité (pause technique, attente, météo…) sans consommer de temps métal.
+•	Confirmer en fin de journée les statuts déclarés.
+•	Basculer automatiquement les tâches “confirmées” vers un reporting figé destiné au planificateur et au tableau de bord.
+________________________________________
+2️⃣ Utilisateurs cibles
+Rôle	Accès	Actions
+Responsable de site	Accès total sur ses chantiers	Crée / met à jour / confirme les remontées
+Chef de chantier / conducteur	Lecture + saisie partielle	Remonte l’état et les effectifs
+Planificateur	Lecture + validation	Suit les confirmations et répercute dans la Gantt
+Chargé d’Affaires	Lecture seule	Voit l’état réel des tâches
+Direction / PMO	Lecture reporting	Exploite les rapports consolidés
+________________________________________
+3️⃣ Fonctionnalités principales
+🔹 3.1 Vue du jour – “Mes tâches du site”
+•	Liste des tâches planifiées sur le site pour aujourd’hui.
+•	Colonnes :
+| Tâche | Affaire | Compétence | Début/Fin planifiée | État planifié | État réel | % Avancement | Présents (réel / prévu) | Motif | Claim |
+•	Filtres :
+o	Par site
+o	Par responsable
+o	Par statut réel (en cours / bloquée / terminée)
+•	Icônes :
+o	🔴 Bloquée
+o	⏸️ Suspendue
+o	✅ Terminée
+o	⏳ En attente de confirmation
+________________________________________
+🔹 3.2 Remontée quotidienne
+Formulaire simplifié (prérempli depuis Gantt) :
+Champ	Type	Obligatoire
+État réel (radio)	Non lancée / En cours / Terminée / Reportée / Prolongée / Bloquée / Suspendue	✅
+% Avancement	Curseur (0–100)	✅ si en cours
+Nombre de ressources présentes	Nombre (vs planifiées)	✅
+Motif (liste + texte libre)	Retard / Météo / Matériel / Attente / Sous-traitant / Autre	⚠️ si blocage/suspension
+Claim ?	Oui / Non → sous-formulaire	⚠️ si Oui
+Photo / justificatif	Upload	Optionnel
+Heure de saisie	Auto	✅
+Cas spéciaux :
+•	Blocage intrajournalier :
+o	Une 2ᵉ remontée autorisée le même jour, taguée is_block_event=true.
+o	Enregistre l’heure du blocage et le motif obligatoire.
+•	Suspension :
+o	Active le mode suspension_flag=true.
+o	Définit suspension_start et suspension_end (ou ouverte).
+o	Exclue les heures du calcul “métal”.
+________________________________________
+🔹 3.3 Gestion du temps métal
+Le temps métal = durée de travail productif hors suspension.
+heures_metal = heures_presence - Σ durées_suspension
+•	Mise à jour automatique du champ effort_reel_h dans la Gantt.
+•	Si suspension_end non renseignée → suspension considérée “ouverte” → affichée comme alerte le lendemain matin.
+________________________________________
+🔹 3.4 Confirmation quotidienne
+Chaque fin de journée, le responsable doit :
+•	Ouvrir la vue “À confirmer” : toutes les tâches avec une remontée non confirmée.
+•	Vérifier et cliquer sur “Confirmer l’état du jour” :
+o	Si validé → la ligne passe en etat_confirme=true.
+o	La donnée du jour est gelée dans la table remontee_site_reporting.
+o	Une copie horodatée est créée dans historique_actions.
+o	La tâche reste active dans la Gantt mais marquée “confirmée du jour”.
+Bonus : un rappel automatique (Power Automate ou Supabase Function) à 17h30 si aucune confirmation reçue.
+________________________________________
+🔹 3.5 Section Reporting (journal figé)
+•	Accès lecture seule (Planificateur / Direction).
+•	Reprend toutes les lignes “confirmées”.
+•	Colonnes clés :
+o	Date / Site / Tâche / Statut réel / Avancement / Présents / Heures métal / Claim / Motif.
+•	Utilisable comme base Power BI.
+•	Les enregistrements ne sont plus modifiables (archivage figé).
+________________________________________
+4️⃣ Modèle de données (Supabase)
+Table remontee_site
+Champ	Type	Description
+id	uuid	Identifiant
+site_id	uuid	FK → sites
+affaire_id	uuid	FK → affaires
+tache_id	uuid	FK → planning_taches
+date_saisie	date	Date du jour
+statut_reel	text	Non lancée / En cours / Terminée / Bloquée / Suspendue / Reportée / Prolongée
+avancement_pct	float	0–100
+nb_present	int	Présents réels
+nb_planifie	int	Planifiés
+heures_presence	numeric	Heures totales
+heures_metal	numeric	Heures productives (hors suspensions)
+motif	text	Motif blocage / suspension
+commentaire	text	Notes
+claim	bool	Oui/Non
+claim_type	text	Type claim
+claim_valeur	float	Coût estimé
+is_block_event	bool	Événement blocage journalier
+block_time	timestamp	Heure blocage
+suspension_flag	bool	Oui si suspension active
+suspension_start	timestamp	Début suspension
+suspension_end	timestamp	Fin suspension
+etat_confirme	bool	true = confirmé du jour
+created_by	uuid	Auteur
+date_creation	timestamp	Horodatage
+________________________________________
+Table remontee_site_reporting
+(copie figée des enregistrements confirmés)
+Champ	Type	Description
+id	uuid	Identifiant unique
+remontee_id	uuid	FK vers la table source
+date_report	date	Date du jour figé
+tache_id	uuid	Lien vers tâche
+site_id	uuid	Lien site
+affaire_id	uuid	Lien affaire
+statut_final	text	Statut réel confirmé
+avancement_final	float	% final
+nb_present	int	Présents
+heures_metal	numeric	Heures productives
+motif	text	Motif
+claim	bool	Claim déclaré
+commentaire	text	Note finale
+confirme_par	uuid	Auteur confirmation
+date_confirmation	timestamp	Heure confirmation
+________________________________________
+Table tache_suspensions
+(mêmes règles que PRD précédent — tracking fin des suspensions)
+________________________________________
+5️⃣ Règles métier
+Cas	Comportement
+1 remontée/jour/tâche	Exception autorisée si blocage intrajournalier
+Blocage intrajournalier	Crée une ligne is_block_event=true
+Suspension active	Exclue du temps métal jusqu’à reprise
+Confirmation quotidienne	Fige la donnée + copie en reporting
+Tâches non confirmées	Alertes planificateur 17h30
+Claim activé	Création auto dans module claims
+État confirmé	Non éditable après validation
+________________________________________
+6️⃣ Critères d’acceptation
+ID	Description	Validation
+REM-01	1 remontée/jour (hors blocage)	✅
+REM-02	Blocage intrajournalier autorisé (motif obligatoire)	✅
+REM-03	Suspension exclue du temps métal	✅
+REM-04	Temps métal recalculé automatiquement	✅
+REM-05	Confirmation quotidienne obligatoire	✅
+REM-06	Données confirmées figées en reporting	✅
+REM-07	Alerte 17h30 si pas confirmé	✅
+REM-08	Synchronisation auto Gantt & finances	✅
+REM-09	Interface fluide + mobile friendly	✅
+________________________________________
+7️⃣ Stack technique
+Élément	Lib / Service
+Backend	Supabase (remontee_site, remontee_site_reporting, tache_suspensions)
+Frontend	Next.js + Tailwind
+Forms	React Hook Form + Zod
+Charts	Recharts
+Realtime	Supabase Realtime
+Cron / Alertes	Supabase Function / Power Automate
+Auth	Supabase Session (rôles Resp / Chef / Planif)
+________________________________________
+8️⃣ UI / Composants
+Composant	Description
+SiteTaskList	Liste des tâches du jour par site
+RemonteeFormModal	Formulaire de saisie état réel
+BlockButton	Bouton “Déclarer blocage immédiat”
+SuspendButton	Bouton “Suspendre / Reprendre activité”
+ConfirmEndOfDayModal	Validation des états du jour
+ReportingTable	Vue figée post-confirmation
+SyncIndicator	Indique si la Gantt a reçu la MAJ
+AlertToast	Rappels et notifications fin de journée
+________________________________________
+9️⃣ Workflow global
+graph TD
+A[Planification Gantt] --> B[Remontée terrain quotidienne]
+B -->|État réel, blocage, suspension| C[Synchronisation Gantt]
+B -->|En fin de journée| D[Confirmation état]
+D -->|Validé| E[Reporting figé]
+E -->|Lecture seule| F[Dashboard / Power BI]
+________________________________________
+🔟 Exemple du cycle d’une journée type
+1.	Matin 07:30 : Chef signale tâche “En cours – 3 présents”.
+2.	11:00 : Blocage matériel → 2ᵉ remontée autorisée is_block_event=true.
+3.	13:30 : Reprise → suspension close, temps métal = 5h.
+4.	17:15 : Responsable confirme les statuts → copie dans remontee_site_reporting.
+5.	18:00 : Tâche visible dans reporting + KPI journaliers mis à jour.
+

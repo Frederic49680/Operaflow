@@ -1,0 +1,124 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Custom Follow-ups Builder (Form/Page Builder interne)
+Auteur : Fred Baudry
+Version : 1.0
+But : Permettre de créer depuis l’application des pages de suivi sur mesure (“masques”), avec champs, règles, workflow, permissions, exports et notifications — reliés aux entités (Site, Affaire, Tâche Gantt, Ressource).
+________________________________________
+1) Objectifs
+1.	Créer des masques de saisie (formulaires/pages) sans coder.
+2.	Définir champs, règles, validations, visibilité conditionnelle, états (mêmes que Remontée Site si voulu).
+3.	Publier un suivi particulier lié à un Site/Affaire/Tâche.
+4.	Gérer workflows (qui saisit, qui valide, quand), rappels et digest.
+5.	Exploiter les données : tableau, exports, KPI, liaison Gantt/Finance (option).
+________________________________________
+2) Rôles & accès
+Rôle	Capacités
+Admin / Builder	Créer/éditer/publier masques, définir permissions, workflows
+Planificateur / Resp. Site	Activer un suivi sur un périmètre (site/affaire/tâche)
+Opérationnel	Saisir/mettre à jour les entrées autorisées
+Direction/Contrôle	Lecture, reporting, exports
+Droits pilotés par ton module rôles/permissions existant (page + composants).
+________________________________________
+3) Fonctionnalités
+3.1 Création de “masques” (form builder)
+•	Champs disponibles : texte, nombre, devise, date/heure, durée, liste, multi-sélection, tag, booléen, fichier, photo, signature, géopoint, lien tâche/affaire/site/ressource.
+•	Sections & groupes répétables (ex. “Lignes d’inspection”).
+•	Logique conditionnelle : afficher/obligatoire selon valeur d’un autre champ.
+•	Règles : regex, min/max, bornes de dates, unicité par (entité, date), fenêtre horaire (ex. soir uniquement).
+•	États : reprendre un set existant (Non lancée / En cours / Terminée / Bloquée / Reportée / Prolongée / Suspendue) ou définir un set custom (ex. “Validée”, “Contrôlée”).
+•	Hooks : à la soumission ou au changement d’état → envoyer mail, ping Teams, mettre à jour une tâche, créer un claim, etc.
+•	Templates : enregistrer comme modèle (ex. “Maintenance journal”, “Contrôle EPI”, “Audit sécurité”).
+3.2 Publication & rattachement
+•	Publier un masque en choisissant la portée :
+o	par Site, par Affaire, par Tâche Gantt ou global.
+•	Paramètres d’instance :
+o	fenêtre de saisie (heures), fréquence (quotidien/hebdo/mensuel/à l’évènement), destinataires des digest et alerts.
+•	Génération automatique d’une page dédiée (URL interne) + apparition dans le menu si autorisé.
+3.3 Saisie & validation
+•	UI mobile-friendly, offline-tolerant (draft local → synchro).
+•	Auto-remplissage depuis le contexte (site/affaire/tâche, ressources planifiées).
+•	Pièces jointes (photos, PDF), signature.
+•	Workflow en 1 ou 2 étapes : saisie → validation (resp).
+•	Journée à confirmer (option) : fin de journée le validateur confirme, puis fige dans reporting.
+3.4 Notifications & digest
+•	Rappels (ex. 17:30 s’il manque des saisies).
+•	Digest périodiques : quotidien/hebdo/mensuel vers mails définis (HTML + PDF en Storage).
+•	Règles d’alertes : si champ X hors tolérance, si état “Bloqué”, si “Suspension ouverte”, etc.
+3.5 Exploitation & intégrations
+•	Tableau des entrées, filtres (site, affaire, tâche, état, période).
+•	Exports CSV/XLSX/PDF.
+•	KPI builder simple : compte par état, % conformité, temps métal cumulé (si champs heure/suspension).
+•	Gantt : option pour pousser % avancement ou statut vers une tâche liée.
+•	Base Affaires/Lots : option pour pousser un indicateur (sans imposer la finance si non voulu).
+________________________________________
+4) Modèle de données (Supabase)
+forms (définition de masque)
+•	id uuid, name text, description text, version int,
+•	schema jsonb (JSON Schema-like des champs/sections/visibilité/validations/états),
+•	permissions jsonb (qui peut créer/lire/valider/exporter),
+•	created_by uuid, created_at timestamptz, published boolean.
+form_instances (publication/portée)
+•	id uuid, form_id uuid,
+•	scope_type text (site|affaire|tache|global), scope_id uuid (nullable),
+•	schedule jsonb (fenêtre horaire, fréquence, rappels),
+•	digest_settings jsonb (périodicité, destinataires),
+•	is_active boolean, created_by, created_at.
+form_entries (données)
+•	id uuid, form_id, instance_id,
+•	site_id uuid (nullable), affaire_id uuid (nullable), tache_id uuid (nullable),
+•	author uuid, date_jour date (option),
+•	state text, data jsonb (payload champs),
+•	attachments jsonb[],
+•	confirmed boolean default false,
+•	created_at, updated_at.
+form_entry_history
+•	id uuid, entry_id uuid, action text (create|update|confirm|validate),
+•	diff jsonb, actor uuid, at timestamptz.
+form_notifications
+•	traces d’envois (rappels/digest/alertes), pour audit.
+Index utiles : (form_id, created_at), (scope_type, scope_id), (state), (date_jour).
+________________________________________
+5) Règles métier
+•	Un masque publié devient en lecture seule côté définition (versionné).
+•	Versioning : modifier un masque → nouvelle version, instances futures utilisent V+1 ; les entrées existantes restent sur V.
+•	Unicité optionnelle par (entité, date) via règle du masque (ex. une entrée par tâche/jour).
+•	Fenêtre horaire respectée si configurée (ex. soir).
+•	Confirmation (si activée) fige l’entrée en “reporting” (flag confirmed=true + log).
+•	Sécurité : permissions du masque + rôles globaux (double garde).
+________________________________________
+6) Acceptation (extraits)
+•	Builder permet de créer champs, sections, répétitions, états, règles conditionnelles.
+•	Publication par Site/Affaire/Tâche opérationnelle.
+•	Saisie mobile, pièces jointes, validations OK.
+•	Rappels et digest configurables et envoyés.
+•	Confirmation fin de journée (si activée) → données figées.
+•	Exports CSV/XLSX/PDF fidèles.
+•	Option push vers Gantt/Affaires fonctionne quand activée.
+•	Journal d’audit complet (history).
+•	Versioning des masques sans casser l’historique.
+________________________________________
+7) UI / composants
+•	FormBuilderStudio (drag-n-drop champs, règles, états, aperçu live)
+•	FormInstancePublisher (portée, fréquence, rappels, digest)
+•	DynamicForm (renderer JSON → UI, offline-draft)
+•	EntryList (tableau, filtres, exports)
+•	ConfirmEndOfDay (bascule reporting)
+•	DigestPreview (aperçu mail/PDF)
+•	FormPermissionsEditor (droits par rôle/page/composant)
+________________________________________
+8) Stack & notes techniques
+•	Renderer basé sur JSON Schema + conditions (ex. if/then/else).
+•	Validation via Zod au runtime (généré depuis schema).
+•	Storage pour fichiers/photos.
+•	SMTP pour mails (rappels/digest/alertes).
+•	Realtime : mise à jour des listes en direct.
+•	Perf : pagination serveur, index ciblés, compression des pièces jointes.
+________________________________________
+9) Exemples d’usages (concrets)
+•	Contrôle EPI mensuel (site) → état “Conforme/Non conforme/À remplacer”, digest mensuel.
+•	Journal Sécurité quotidien (affaire) → blocages HSE, photos, signature du chef.
+•	Suivi Sous-traitants hebdo (tâche) → présentés/planifiés, retard, blocage logistique.
+•	Réception Qualité (tâche) → liste de points (répétable), statut, PV en pièce jointe.
+

@@ -1,0 +1,136 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Base Affaires (socle métier) + Lien Tâches Gantt
+Version : 1.1
+But : Le chargé d’affaire saisit l’affaire (site, activité, compétence, n° de commande, découpage financier). Le planificateur lie ensuite les tâches Gantt à ce découpage pour que l’atterrissage financier suive les avancements réels (dates, %).
+________________________________________
+1) Objet & rôles
+•	Chargé d’Affaires (CA) : crée l’affaire + découpage financier par lots/phases (budgets, coûts prévus, marge).
+•	Planificateur : crée/organise les tâches Gantt et les relie aux lots de l’affaire.
+•	Calcul auto : l’atterrissage (par lot et global) se met à jour selon les % d’avancement des tâches liées, leurs dates réelles et consommés.
+________________________________________
+2) Données de l’affaire (rappel synthétique)
+•	Site, Responsable d’affaire (obligatoires)
+•	Activité / Compétence principale
+•	Client, Numéro de commande
+•	Type contrat (Forfait / Régie / Autre), Montant total HT
+•	Découpage financier (≥ 1 lot) : budget_ht, coût_estime, marge_prev, RAFA (reste à faire), etc.
+•	Statuts : Brouillon → Soumise → Validée (transmise au planif) → Clôturée
+________________________________________
+3) Lien “Découpage financier ↔ Tâches Gantt”
+3.1 Principe
+•	Chaque tâche Gantt peut être rattachée à un (et un seul) lot d’une affaire.
+•	Un lot peut agréger plusieurs tâches.
+•	Les % d’avancement, dates réelles, heures consommées et/ou coûts remontent des tâches vers le lot → puis du lot vers l’affaire.
+3.2 Règles de calcul (lot)
+•	Avancement lot (%) = moyenne pondérée des tâches liées
+o	Pondération par budget_lot ou effort (heures planifiées) → paramètre global ponderation = "heures" | "budget".
+•	Montant consommé lot =
+o	en Forfait : budget_lot * avancement_lot% (méthode à l’avancement)
+o	en Régie : Σ (heures_tâche_consumées * taux horaire), sinon fallback à l’avancement (si pas d’heures)
+•	Reste à faire (RAF) = budget_lot - montant_consommé_lot
+•	Atterrissage lot = montant_consommé_lot + RAF (révisé)
+o	par défaut atterrissage = budget_lot si pas de dérive détectée
+o	si coûts réels disponibles (temps, achats) → on ajuste : atterrissage = coûts_réels + RAF
+•	Dates lot (réelles) :
+o	début réelle = min(date_début_réelle des tâches liées)
+o	fin réelle = max(date_fin_réelle des tâches liées)
+3.3 Règles de calcul (affaire)
+•	Avancement affaire = moyenne pondérée des lots (même règle de pondération que ci-dessus).
+•	Atterrissage affaire = somme des atterrissages lots.
+•	Dates réelles affaire : min début réelle des lots / max fin réelle des lots.
+________________________________________
+4) Modèle de données (ajouts)
+Table affaires (identique à V1.0, rappel utile)
+•	… code_affaire, site_id, responsable_id, competence_principale, num_commande, type_contrat, montant_total_ht, statut, date_debut, date_fin_prevue, date_fin_reelle, …
+Table affaires_lots
+Champ	Type	Notes
+id	uuid	
+affaire_id	uuid	FK → affaires
+libelle_lot	text	
+budget_ht	numeric	
+cout_estime	numeric	
+marge_prevue	numeric	
+ponderation	text	"heures" | "budget" (hérite du global par défaut)
+avancement_pct	numeric	calculé depuis tâches
+montant_consomme	numeric	calculé
+reste_a_faire	numeric	calculé
+atterrissage	numeric	calculé
+date_debut_reelle	date	calculé
+date_fin_reelle	date	calculé
+date_maj	timestamp	
+Table planning_taches (côté Gantt)
+Champ	Type	Notes
+id	uuid	
+affaire_id	uuid	FK → affaires
+lot_id	uuid	FK → affaires_lots (nullable tant que non lié)
+libelle_tache	text	
+date_debut_plan	date	
+date_fin_plan	date	
+date_debut_reelle	date	
+date_fin_reelle	date	
+effort_plan_h	numeric	heures prévues
+effort_reel_h	numeric	heures consommées
+avancement_pct	numeric	0..100
+statut	text	Non lancé / En cours / Terminé / Bloqué / Reporté
+competence	text	(si différent de l’affaire)
+NB : si tu as déjà une table “activites”, on peut la réutiliser et simplement ajouter lot_id.
+________________________________________
+5) Mécanisme de synchro & agrégation
+•	Trigger Supabase / Function planifiée (ex. toutes les 15 min) :
+1.	Aggréger les tâches par lot_id → mettre à jour affaires_lots (avancement, consommés, dates réelles).
+2.	Aggréger les lots par affaire_id → mettre à jour affaires (avancement global, dates, atterrissage).
+•	Temps réel (option) : via Realtime, recalcul immédiat à chaque mise à jour de tâche.
+Formules de base (pseudo)
+avancement_lot = SUM(t.avancement_pct * poids_t) / SUM(poids_t)
+où poids_t = (ponderation=="heures" ? t.effort_plan_h : budget_lot/nb_taches_du_lot)
+
+montant_consomme_lot (forfait) = budget_lot * avancement_lot
+montant_consomme_lot (régie)   = SUM(t.effort_reel_h * taux_horaire)
+
+reste_a_faire_lot = MAX(budget_lot - montant_consomme_lot, 0)
+atterrissage_lot = montant_consomme_lot + reste_a_faire_lot (ou coûts_réels + RAF si dispo)
+________________________________________
+6) UX / workflow
+1.	CA crée l’affaire (+ site, responsabilité, n° commande, lot(s) financiers) → statut Soumise.
+2.	Validation (Admin/Planif) → statut Validée → visible dans Gantt.
+3.	Planificateur crée les tâches et les rattache aux lots (champ lot_id).
+4.	Les tâches avancent (dates réelles, % et heures).
+5.	Synchro met à jour lots puis affaire (avancement, consommé, RAF, atterrissage).
+6.	Clôture : quand toutes les tâches d’un lot sont Terminées, le lot passe 100 %, puis l’affaire se clôt quand tous les lots = 100 %.
+________________________________________
+7) Règles métier & garde-fous
+•	Chaque tâche doit avoir affaire_id et idéalement lot_id.
+•	Tâches sans lot : visibles mais exclues des calculs financiers → badge “à ventiler”.
+•	Dates réelles priment sur planifiées pour les agrégations.
+•	Pour forfait : si effort_reel_h indisponible → méthode à l’avancement (par %).
+•	Pour régie : si pas d’heures → fallback à l’avancement (warning).
+•	Changement de pondération (heures/budget) = recalcul complet au prochain cycle.
+•	Suppression physique interdite (archivage). Historique dans historique_actions.
+________________________________________
+8) Critères d’acceptation (clés)
+•	Liaison tâche ↔ lot opérationnelle (UI + DB).
+•	Avancement lot = agrégation des tâches liées (pondération conforme).
+•	Atterrissage lot = consommé + RAF (selon type contrat).
+•	Atterrissage affaire = somme des lots.
+•	Dates réelles lot/affaire = min/max des tâches liées.
+•	Tâches “non ventilées” (sans lot) exclues des calculs et signalées.
+•	Triggers / Functions de synchro fiables et idempotentes.
+•	Import/Export Excel conserve numéro de commande et lots.
+•	UI fluide : liste des lots dans la modale de la tâche (sélecteur rapide).
+________________________________________
+9) UI – composants utiles
+•	AffairesTable, AffaireFormModal (avec Numéro de commande).
+•	LotsFinanceTable (création/édition des lots).
+•	Dans la Gantt/Activité : TaskFinanceLink (select lot_id + badge “non ventilée”).
+•	FinanceSummaryCard (par affaire : Budget / Consommé / RAF / Atterrissage).
+•	AtterrissageDrilldown (par lot → liste tâches liées, % et dates).
+•	SyncStatusChip (OK / à recalculer).
+________________________________________
+10) Exemple chiffré (rapide)
+•	Affaire A – 2 lots :
+o	Lot 1 (Budget 100k) : 2 tâches (60h, 40h), avancements 50 % et 20 % → avancement pondéré heures = 38 % → consommé forfait = 38k, RAF 62k, atterrissage 100k.
+o	Lot 2 (Budget 50k) : 1 tâche 100h, avancement 10 % → consommé 5k, RAF 45k, atterrissage 50k.
+•	Affaire A – Atterrissage global = 150k (par défaut). Si heures réelles/coûts dérapent, l’atterrissage évolue.
+

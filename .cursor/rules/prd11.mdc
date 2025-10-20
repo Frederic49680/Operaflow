@@ -1,0 +1,182 @@
+---
+alwaysApply: true
+---
+🧭 PRD — Module Dashboard Global (Pilotage & Indicateurs)
+Auteur : Fred Baudry
+Version : 1.0
+Stack : Next.js 15 / Supabase / Tailwind / Recharts / Power BI (option embed)
+Objectif principal :
+Fournir une interface de pilotage unifiée regroupant les KPI stratégiques des modules clés :
+Planification, Affaires, Ressources, Absences, Maintenance, Claims, et Reporting terrain.
+Le Dashboard sert à analyser, anticiper et décider.
+Chaque utilisateur y voit ce qu’il doit suivre :
+•	N1 (Resp. Site) → suivi opérationnel, activités quotidiennes.
+•	N2 (Planificateur) → charge, couverture, conflits, dérives.
+•	N3 (Direction / PMO) → synthèse financière, délais, claims, performance globale.
+________________________________________
+1️⃣ Objectifs
+Créer une vue centralisée et interactive qui :
+•	agrège toutes les données issues des modules (Affaires, RH, Gantt, Claims, Maintenance, Remontées Site, etc.),
+•	calcule et affiche les KPI clés selon le profil utilisateur,
+•	permet un filtrage dynamique (par site, période, responsable, compétence, etc.),
+•	met en évidence les alertes (suraffectations, retards, claims ouverts, absences critiques…),
+•	fournit une synthèse graphique claire, exportable et actualisée automatiquement.
+________________________________________
+2️⃣ Utilisateurs & vues disponibles
+Rôle	Vue principale	Objectif
+Responsable de Site (N1)	Vue terrain	Activités du jour, retards, absences, blocages
+Planificateur (N2)	Vue planif	Couverture, charge, conflits, avancements
+Chargé d’Affaires (N2)	Vue affaires	Finances, marges, claims, échéances
+Direction / PMO (N3)	Vue synthèse	Performance globale, KPIs consolidés
+Maintenance	Vue dédiée	Tâches terminées / reportées par batterie
+________________________________________
+3️⃣ Structure du Dashboard
+🔹 3.1 Barre de filtres globale
+•	Filtres communs à toutes les cartes :
+o	Période : semaine / mois / trimestre / année
+o	Site / Affaire / Responsable / Compétence
+o	Statut (Actif / Terminé / Reporté / Bloqué)
+•	Option de synchronisation des filtres entre cartes (“filtre global activé”).
+________________________________________
+🔹 3.2 Cartes & KPI par module
+🧱 Bloc 1 — Planification & Ressources
+Indicateur	Description	Visuel
+Taux de couverture global	Ratio Ressources dispo / Besoin chantier	Barres empilées 100 %
+Suraffectations détectées	Nb ressources assignées > 100 %	Badge rouge + liste
+Taux de réalisation tâches (semaine)	Moyenne des avancements réels	Ligne évolutive
+Top 5 ressources en surcharge	Par cumul d’affectations	Carte horizontale
+Alertes absences non couvertes	Ressources absentes affectées	Liste priorisée
+________________________________________
+💼 Bloc 2 — Affaires & Financier
+Indicateur	Description	Visuel
+Affaires actives	Nb affaires en cours / validées	Compteur
+Taux d’avancement global	Moyenne pondérée par budget	Jauge circulaire
+Atterrissage vs Budget	Montant consommé + RAF vs Budget total	Barres empilées vert/rouge
+Marge moyenne	Moyenne pondérée sur affaires en cours	Donut chart
+Affaires en dérive (>10%)	Liste dynamique (écart budget > 10 % ou délai dépassé)	Tableau coloré
+________________________________________
+🧑‍💼 Bloc 3 — Ressources humaines
+Indicateur	Description	Visuel
+Ressources actives	Nb total par type contrat	Carte num.
+Taux d’absentéisme	Jours absents / Jours ouvrés	Courbe mensuelle
+Compétences sous tension	Ratio besoin / dispo < 1	Barres rouges
+Turnover / nouvelles entrées	Variation mensuelle	Graph barres + delta
+________________________________________
+🛠 Bloc 4 — Maintenance
+Indicateur	Description	Visuel
+Batteries terminées	Nb vs prévues sur période	Donut chart
+Batteries reportées	Nb vs terminées	Ratio bar chart
+Temps métal cumulé	h total productive (hors suspensions)	Jauge horizontale
+Interventions bloquées / suspendues	Nombre + tendance	Barres verticales
+________________________________________
+⚡ Bloc 5 — Claims / Blocages / Retards
+Indicateur	Description	Visuel
+Claims ouverts	Nb total / site	Badge + liste
+Montant total claims	Somme des coûts estimés	Jauge financière
+Durée moyenne résolution	Jours entre ouverture / clôture	Courbe
+Blocages actifs	Nb par site / affaire	Heatmap ou timeline
+________________________________________
+🏗 Bloc 6 — Activité terrain (Remontée site)
+Indicateur	Description	Visuel
+Tâches confirmées du jour	% vs planifiées	Jauge
+Tâches bloquées / suspendues	Nb total / site	Badge rouge
+Temps métal global du jour	Somme heures productives	Barre horizontale
+Avancement journalier moyen	Moyenne des % avancement tâches actives	Ligne cumulée
+________________________________________
+📞 Bloc 7 — Clients / Interlocuteurs
+Indicateur	Description	Visuel
+Clients actifs	Nb total	Badge
+Affaires/client	Ratio moyen	Histogramme
+Claims/client	Nb + montant cumulé	Barres empilées
+Satisfaction estimée (si ajout futur)	Score moyen par feedback	Smiley gauge
+________________________________________
+🔹 3.3 Alert Center (notifications & anomalies)
+Encadré latéral regroupant :
+•	Sur-affectations en cours
+•	Absences non couvertes
+•	Claims non traités
+•	Activités non confirmées
+•	Batteries reportées
+•	Interlocuteurs non renseignés sur affaires validées
+Chaque alerte → clic = navigation vers module correspondant.
+________________________________________
+🔹 3.4 Section “Reporting & Export”
+•	Export global en PDF / Excel des vues filtrées.
+•	Mail auto journalier / hebdo / mensuel :
+o	Journalier (Responsables Site) → tâches / avancements / anomalies.
+o	Hebdo (Planificateurs) → couverture / charge / absences / dérives.
+o	Mensuel (Direction) → synthèse affaires / marges / claims / RH.
+•	Génération automatique stockée dans Supabase Storage (trace envoyée).
+________________________________________
+4️⃣ Modèle de données (Supabase / vues agrégées)
+•	Vue V_Dashboard_RH → RH / absences / taux dispo.
+•	Vue V_Dashboard_Affaires → avancement, budget, marge, atterrissage.
+•	Vue V_Dashboard_Planif → charge / couverture / conflits.
+•	Vue V_Dashboard_Maintenance → batteries, suspensions, temps métal.
+•	Vue V_Dashboard_Claims → claims actifs, durées moyennes.
+•	Vue V_Dashboard_Site → activité journalière, taux confirmation.
+•	Vue V_Dashboard_Client → clients, affaires, claims.
+Ces vues sont alimentées automatiquement via triggers ou fonctions de synchro quotidienne (à 06h00).
+________________________________________
+5️⃣ Règles métier
+•	Données réelles > planifiées : priorité aux statuts terrain confirmés.
+•	Les cartes se filtrent dynamiquement selon la sélection globale.
+•	Si aucune donnée disponible → affiche un état neutre (gris).
+•	Rafraîchissement auto toutes les 10 minutes (Revalidate).
+•	Accès restreint par rôle :
+o	Resp. Site : uniquement son site.
+o	Planificateur : sites qu’il gère.
+o	Direction : global.
+________________________________________
+6️⃣ Critères d’acceptation
+ID	Critère	Validation
+DASH-01	Données consolidées issues des modules	✅
+DASH-02	Filtres synchronisés inter-cartes	✅
+DASH-03	Vue adaptée au rôle utilisateur	✅
+DASH-04	Alertes dynamiques cohérentes	✅
+DASH-05	Exports et mails auto corrects	✅
+DASH-06	Temps de chargement < 3 s	✅
+DASH-07	Responsive (desktop + mobile)	✅
+DASH-08	Actualisation automatique	✅
+________________________________________
+7️⃣ Stack technique
+Élément	Techno
+Backend	Supabase (vues & fonctions)
+Frontend	Next.js + Tailwind
+Charts	Recharts (ou ECharts si besoin de densité)
+Exports	SheetJS (Excel), PDFKit (PDF)
+Automatisation	Supabase Cron / Power Automate
+Auth	Supabase Session (rôle)
+Storage	Supabase (pour PDF mails)
+________________________________________
+8️⃣ UI / Layout
+•	DashboardLayout : grille 3x2 sur desktop, scroll vertical sur mobile.
+•	FilterBar (sticky)
+•	Cards :
+o	KpiCard (valeur unique)
+o	BarStackChart (charge/couverture)
+o	PieDonutChart (marges / maintenance)
+o	TrendLine (avancement / retard)
+o	AlertList (blocages / claims)
+•	ExportToolbar (PDF / Excel / Mail)
+Design visuel : clean, codes couleur constants (vert OK, orange dérive, rouge alerte).
+________________________________________
+9️⃣ Intégrations inter-modules
+Module	Données alimentées
+RH	Ressources actives / absences / taux dispo
+Affaires	Avancement / budget / marge / atterrissage
+Planification	Couverture / suraffectations / conflits
+Remontée site	Statuts réels / temps métal / confirmations
+Maintenance	Batteries terminées / reportées
+Claims	Claims ouverts / coûts / durées
+Interlocuteurs	Clients actifs / incidents liés
+Power Automate	Envoi rapports périodiques
+________________________________________
+🔟 Exemple de cycle de vie
+1️⃣ 06:00 : rafraîchissement des vues Dashboard (fonctions Supabase).
+2️⃣ 07:00 : ouverture → planificateur voit couverture & conflits.
+3️⃣ 08:00 : responsables terrain saisissent remontées.
+4️⃣ 17:00 : maintenance + validations du jour.
+5️⃣ 20:00 : digest journalier envoyé.
+6️⃣ Fin de mois : tableau consolidé (affaires, marges, claims) envoyé à la direction.
+

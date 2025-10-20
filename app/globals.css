@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 201 96% 32%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 201 96% 32%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 201 96% 40%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 201 96% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Scrollbar personnalisée */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-slate-100;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400;
+  }
+}
+
+/* Frappe-Gantt Styles */
+.gantt-container {
+  font-family: inherit;
+}
+
+.gantt-container .gantt-task-row {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.gantt-container .gantt-task-bar {
+  fill: #3b82f6;
+  stroke: #2563eb;
+  stroke-width: 1px;
+  rx: 3;
+}
+
+.gantt-container .gantt-task-bar-progress {
+  fill: #10b981;
+}
+
+.gantt-container .gantt-task-bar-inprogress {
+  fill: #f59e0b;
+}
+
+.gantt-container .gantt-task-bar-late {
+  fill: #ef4444;
+}
+
+.gantt-container .gantt-task-bar-early {
+  fill: #8b5cf6;
+}
+
+.gantt-container .gantt-task-text {
+  fill: #1e293b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.gantt-container .gantt-grid-row {
+  fill: #ffffff;
+}
+
+.gantt-container .gantt-grid-row:nth-child(even) {
+  fill: #f8fafc;
+}
+
+.gantt-container .gantt-grid-header {
+  fill: #f1f5f9;
+  stroke: #cbd5e1;
+  stroke-width: 1px;
+}
+
+.gantt-container .gantt-grid-ticks {
+  stroke: #e2e8f0;
+}
+
+.gantt-container .gantt-today {
+  stroke: #ef4444;
+  stroke-width: 2px;
+  stroke-dasharray: 5, 5;
+}
+
+.gantt-container .gantt-arrow {
+  stroke: #64748b;
+  stroke-width: 2px;
+  fill: none;
+}
+
+.gantt-container .gantt-arrow-head {
+  fill: #64748b;
+}
+
+.gantt-container .gantt-popup {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.gantt-container .gantt-popup-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.gantt-container .gantt-popup-content {
+  font-size: 12px;
+  color: #64748b;
+}
+
