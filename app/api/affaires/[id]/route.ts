@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server"
 // GET : Récupérer une affaire par ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const { id } = params
+    const { id } = await params
 
     const { data, error } = await supabase
       .from("affaires")
@@ -50,11 +50,11 @@ export async function GET(
 // PUT : Modifier une affaire
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
 
     // Calculer la capacité pour BPU si modifié
@@ -92,11 +92,11 @@ export async function PUT(
 // DELETE : Supprimer une affaire
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const { id } = params
+    const { id } = await params
 
     const { error } = await supabase
       .from("affaires")

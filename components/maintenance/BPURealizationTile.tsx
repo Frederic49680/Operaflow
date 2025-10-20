@@ -111,7 +111,7 @@ export function BPURealizationTile({
         tache_id: tacheId,
         bpu_ligne_id: bpuLigneId,
         tranche: parseInt(tranche),
-        systeme_elementaire,
+        systeme_elementaire: systemeElementaire,
         type_maintenance: typeMaintenance,
         etat_reel: etatReel,
         heures_presence: parseFloat(heuresPresence),

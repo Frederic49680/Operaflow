@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 // GET : Liste des affaires
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const siteId = searchParams.get("site_id")
 

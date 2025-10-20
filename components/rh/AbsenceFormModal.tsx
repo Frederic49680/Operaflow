@@ -111,7 +111,7 @@ export function AbsenceFormModal({
           id,
           nom,
           prenom,
-          site_id:sites (
+          site_id:sites!inner (
             code_site,
             nom
           )
@@ -121,7 +121,13 @@ export function AbsenceFormModal({
 
       if (error) throw error
       
-      setRessources(data || [])
+      // Transformer les données pour que site_id soit un objet unique
+      const transformedData = (data || []).map((r: any) => ({
+        ...r,
+        site_id: Array.isArray(r.site_id) ? r.site_id[0] : r.site_id
+      }))
+      
+      setRessources(transformedData as any)
     } catch (err) {
       console.error('Erreur chargement ressources:', err)
       if (onError) onError('Erreur lors du chargement des collaborateurs')

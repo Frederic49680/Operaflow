@@ -205,7 +205,7 @@ export default function AffairesPage() {
         if (!file) return
         
         const text = await file.text()
-        const lines = text.split('\n').filter(line => line.trim())
+        const lines = text.split('\n').filter((line: string) => line.trim())
         
         if (lines.length < 2) {
           setToast({ type: 'error', message: 'Le fichier CSV est vide ou invalide' })
@@ -233,7 +233,7 @@ export default function AffairesPage() {
         let errorCount = 0
         
         for (const line of dataLines) {
-          const [code_affaire, nom, nom_client, site_nom, responsable_nom, num_commande, type_contrat, montant_ht, statut, avancement_pct] = line.split(',').map(s => s.trim())
+          const [code_affaire, nom, nom_client, site_nom, responsable_nom, num_commande, type_contrat, montant_ht, statut, avancement_pct] = line.split(',').map((s: string) => s.trim())
           
           if (!code_affaire || !nom || !nom_client || !site_nom || !responsable_nom || !type_contrat) {
             errorCount++

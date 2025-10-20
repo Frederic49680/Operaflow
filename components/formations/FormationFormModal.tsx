@@ -57,7 +57,7 @@ export function FormationFormModal({ formation, onClose, onSuccess, children }: 
     type_formation: 'Technique',
     duree_heures: 0,
     duree_jours: 0,
-    validite_mois: null,
+    validite_mois: undefined,
     modalite: 'Présentiel',
     prerequis: '',
     competences: [],
@@ -157,7 +157,7 @@ export function FormationFormModal({ formation, onClose, onSuccess, children }: 
         type_formation: 'Technique',
         duree_heures: 0,
         duree_jours: 0,
-        validite_mois: null,
+        validite_mois: undefined,
         modalite: 'Présentiel',
         prerequis: '',
         competences: [],
@@ -310,7 +310,7 @@ export function FormationFormModal({ formation, onClose, onSuccess, children }: 
                   id="validite_mois"
                   type="number"
                   value={formData.validite_mois || ''}
-                  onChange={(e) => setFormData({ ...formData, validite_mois: e.target.value ? parseInt(e.target.value) : null })}
+                  onChange={(e) => setFormData({ ...formData, validite_mois: e.target.value ? parseInt(e.target.value) : undefined })}
                   placeholder="36"
                 />
               </div>

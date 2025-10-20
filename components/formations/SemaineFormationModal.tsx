@@ -186,7 +186,7 @@ export function SemaineFormationModal({ plan, onClose, onSuccess, children }: Se
                 daysToAdd = Math.ceil(data.duree_heures / 7) // 7 heures = 1 jour
               }
               
-              if (daysToAdd > 0) {
+              if (daysToAdd > 0 && formData.date_debut) {
                 const startDate = new Date(formData.date_debut)
                 const endDate = new Date(startDate)
                 // Ajouter les jours (si 1 jour, on reste sur le lundi, si 5 jours, on va au vendredi)
