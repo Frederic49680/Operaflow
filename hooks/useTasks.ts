@@ -40,6 +40,13 @@ export interface Task {
     prenom: string
   }>
   enfants?: Task[]
+  // Colonnes migration 039
+  level?: number
+  parent_id?: string
+  order_index?: number
+  is_milestone?: boolean
+  manual?: boolean
+  template_origin_id?: string
 }
 
 export function useTasks() {
@@ -72,9 +79,15 @@ export function useTasks() {
           ressource_ids,
           created_by,
           date_creation,
-          updated_at
+          updated_at,
+          level,
+          parent_id,
+          order_index,
+          is_milestone,
+          manual,
+          template_origin_id
         `)
-        .order('date_creation', { ascending: true })
+        .order('order_index', { ascending: true })
 
       if (error) throw error
 

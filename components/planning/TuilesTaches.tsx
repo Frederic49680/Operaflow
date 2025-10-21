@@ -103,13 +103,26 @@ function TaskTile({
       ref={setNodeRef}
       style={style}
       className={`relative border rounded-lg p-4 mb-2 transition-all ${
+        task.level === 0 ? "bg-blue-50 border-blue-200" :
+        task.level === 1 ? "bg-green-50 border-green-200" :
+        task.level === 2 ? "bg-yellow-50 border-yellow-200" :
+        task.level === 3 ? "bg-orange-50 border-orange-200" :
         "bg-gray-50 border-gray-200"
       } ${hasConflicts ? "ring-2 ring-red-300" : ""}`}
     >
       {/* Indicateur de niveau */}
       <div className="flex items-center gap-2 mb-2">
         <div className="flex items-center gap-1">
-          {/* Indicateur de niveau désactivé - colonne level n'existe pas */}
+          {task.level !== undefined && (
+            <span className="text-xs font-medium text-gray-600">
+              Niveau {task.level}
+            </span>
+          )}
+          {task.is_milestone && (
+            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+              🎯 Jalón
+            </span>
+          )}
         </div>
         
         {/* Bouton expand/collapse pour les tâches avec enfants */}
@@ -213,7 +226,7 @@ function TaskTile({
             Modifier
           </Button>
           
-          {true && (
+          {task.level !== undefined && task.level < 3 && (
             <Button
               variant="outline"
               size="sm"
@@ -283,7 +296,8 @@ export default function TuilesTaches() {
     }
 
     if (selectedLevel !== "all") {
-      // Filtrage par niveau désactivé - colonne level n'existe pas dans la base
+      const level = parseInt(selectedLevel)
+      filtered = filtered.filter(task => task.level === level)
     }
 
     if (selectedStatus !== "all") {

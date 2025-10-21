@@ -182,8 +182,7 @@ export default function PlanningPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* <TaskTemplateManager /> */}
-              <p className="text-sm text-muted-foreground">Templates disponibles après migration 039</p>
+              <TaskTemplateManager />
             </CardContent>
           </Card>
         </TabsContent>
