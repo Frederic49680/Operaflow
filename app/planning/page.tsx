@@ -15,9 +15,9 @@ import {
   Target,
   RefreshCw
 } from "lucide-react"
-import TuilesTachesSimple from "@/components/tuiles-taches/TuilesTachesSimple"
-import TaskTemplateManager from "@/components/tuiles-taches/TaskTemplateManager"
-import AffairesAPlanifierSimple from "@/components/tuiles-taches/AffairesAPlanifierSimple"
+import TuilesTachesSimple from "@/components/planning/TuilesTachesSimple"
+import TaskTemplateManager from "@/components/planning/TaskTemplateManager"
+import AffairesAPlanifierSimple from "@/components/planning/AffairesAPlanifierSimple"
 import { useTaskStats } from "@/hooks/useTaskStats"
 
 export default function TuilesTachesPage() {
