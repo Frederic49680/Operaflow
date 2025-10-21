@@ -51,24 +51,7 @@ import { useTasks, Task } from "@/hooks/useTasks"
 import TaskCard from "./TaskCard"
 import NewTaskButton from "./NewTaskButton"
 
-// Types
-interface Task {
-  id: string
-  libelle_tache: string
-  level: number
-  parent_id?: string
-  order_index: number
-  date_debut_plan: string
-  date_fin_plan: string
-  avancement_pct: number
-  statut: string
-  ressource_ids?: string[]
-  affaire_id?: string
-  site_id?: string
-  is_milestone?: boolean
-  children?: Task[]
-  expanded?: boolean
-}
+// Types - Task est maintenant importé du hook useTasks
 
 interface TaskTileProps {
   task: Task
