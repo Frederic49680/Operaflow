@@ -182,11 +182,11 @@ function TaskTile({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            <span>{formatDate(task.date_debut_plan)}</span>
+            <span>{task.date_debut_plan ? formatDate(task.date_debut_plan) : 'Non définie'}</span>
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            <span>{formatDate(task.date_fin_plan)}</span>
+            <span>{task.date_fin_plan ? formatDate(task.date_fin_plan) : 'Non définie'}</span>
           </div>
           <div className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
@@ -217,7 +217,7 @@ function TaskTile({
             Modifier
           </Button>
           
-          {task.level < 3 && (
+          {task.niveau < 3 && (
             <Button
               variant="outline"
               size="sm"
@@ -287,7 +287,7 @@ export default function TuilesTaches() {
     }
 
     if (selectedLevel !== "all") {
-      filtered = filtered.filter(task => task.level === parseInt(selectedLevel))
+      filtered = filtered.filter(task => task.niveau === parseInt(selectedLevel))
     }
 
     if (selectedStatus !== "all") {
