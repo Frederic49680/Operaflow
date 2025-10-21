@@ -136,21 +136,6 @@ export function AbsenceFormModal({
     }
   }, [open, loadRessources])
 
-  // Charger les données de l'absence si édition
-  useEffect(() => {
-    if (open && absenceId) {
-      loadAbsenceData()
-    } else if (open && !absenceId) {
-      // Réinitialiser le formulaire pour une nouvelle absence
-      setFormData({
-        ressource_id: "",
-        date_debut: "",
-        date_fin: "",
-        motif: ""
-      })
-    }
-  }, [open, absenceId, loadAbsenceData])
-
   const loadAbsenceData = useCallback(async () => {
     try {
       const supabase = createClient()
@@ -186,6 +171,21 @@ export function AbsenceFormModal({
       if (onError) onError('Erreur lors du chargement de l\'absence')
     }
   }, [absenceId, onError])
+
+  // Charger les données de l'absence si édition
+  useEffect(() => {
+    if (open && absenceId) {
+      loadAbsenceData()
+    } else if (open && !absenceId) {
+      // Réinitialiser le formulaire pour une nouvelle absence
+      setFormData({
+        ressource_id: "",
+        date_debut: "",
+        date_fin: "",
+        motif: ""
+      })
+    }
+  }, [open, absenceId, loadAbsenceData])
 
   const handleMotifClick = (motif: string) => {
     setFormData({ ...formData, motif })

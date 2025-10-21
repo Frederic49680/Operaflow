@@ -91,15 +91,6 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
     actif: "true"
   })
 
-  useEffect(() => {
-    if (open) {
-      loadSites()
-      if (collaborateurId) {
-        loadCollaborateurData()
-      }
-    }
-  }, [open, collaborateurId, loadCollaborateurData])
-
   const loadSites = useCallback(async () => {
     setLoadingSites(true)
     const supabase = createClient()
@@ -146,6 +137,15 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
       if (onError) onError('Erreur lors du chargement du collaborateur')
     }
   }, [collaborateurId, onError])
+
+  useEffect(() => {
+    if (open) {
+      loadSites()
+      if (collaborateurId) {
+        loadCollaborateurData()
+      }
+    }
+  }, [open, collaborateurId, loadCollaborateurData, loadSites])
 
   const toggleCompetence = (competence: string) => {
     setCompetencesSelectionnees(prev => 
