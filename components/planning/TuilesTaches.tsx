@@ -316,7 +316,7 @@ export default function TuilesTaches() {
       data?.forEach((task: any) => {
         const taskWithChildren: Task = {
           ...task,
-          children: [],
+          enfants: [],
           expanded: true
         }
         taskMap.set(task.id, taskWithChildren)
@@ -327,8 +327,8 @@ export default function TuilesTaches() {
         if (task.parent_id) {
           const parent = taskMap.get(task.parent_id)
           if (parent) {
-            parent.children = parent.children || []
-            parent.children.push(task)
+            parent.enfants = parent.enfants || []
+            parent.enfants.push(task)
           }
         } else {
           rootTasks.push(task)
