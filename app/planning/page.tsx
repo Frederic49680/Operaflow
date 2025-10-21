@@ -16,7 +16,7 @@ import {
   RefreshCw
 } from "lucide-react"
 import TuilesTachesSimple from "@/components/planning/TuilesTachesSimple"
-// import TaskTemplateManager from "@/components/planning/TaskTemplateManager" // Désactivé - migration 039 non appliquée
+import TaskTemplateManager from "@/components/planning/TaskTemplateManager"
 import AffairesAPlanifierSimple from "@/components/planning/AffairesAPlanifierSimple"
 import { useTaskStats } from "@/hooks/useTaskStats"
 
