@@ -127,7 +127,7 @@ export function AbsenceFormModal({
     } finally {
       setLoadingRessources(false)
     }
-  }, [])
+  }, [onError])
 
   // Charger les ressources actives
   useEffect(() => {
@@ -170,7 +170,7 @@ export function AbsenceFormModal({
       console.error('Erreur chargement absence:', err)
       if (onError) onError('Erreur lors du chargement de l\'absence')
     }
-  }, [absenceId, onError])
+  }, [absenceId, onError, MOTIFS_PREDEFINIS])
 
   // Charger les données de l'absence si édition
   useEffect(() => {
