@@ -54,14 +54,7 @@ export function useTasks() {
 
       const { data, error } = await supabase
         .from('planning_taches')
-        .select(`
-          *,
-          affaires!inner(nom, code_affaire),
-          sites!inner(nom, code_site),
-          taches_ressources(
-            ressources!inner(id, nom, prenom)
-          )
-        `)
+        .select('*')
         .order('ordre_affichage', { ascending: true })
 
       if (error) throw error
@@ -73,9 +66,6 @@ export function useTasks() {
       data?.forEach((task: any) => {
         const taskWithRelations: Task = {
           ...task,
-          affaire: task.affaires,
-          site: task.sites,
-          ressources: task.taches_ressources?.map((tr: any) => tr.ressources) || [],
           enfants: []
         }
         tasksMap.set(task.id, taskWithRelations)
