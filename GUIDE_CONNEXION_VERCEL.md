@@ -69,7 +69,7 @@ vercel
 
 **Réponses à donner** :
 ```
-? Set up and deploy "~/Appli DE dev"? [Y/n] Y
+? Set up and deploy "~/Appli DE dev"? [Y/n] Yy
 ? Which scope? [Votre compte]
 ? Link to existing project? [y/N] N
 ? What's your project's name? operaflow
