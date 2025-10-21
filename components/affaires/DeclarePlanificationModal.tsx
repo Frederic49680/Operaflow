@@ -18,6 +18,8 @@ interface Affaire {
   type_contrat: string
   montant_total_ht: number
   statut: string
+  date_debut?: string
+  date_fin_prevue?: string
   nb_lots_financiers: number
   montant_lots_ht: number
 }
