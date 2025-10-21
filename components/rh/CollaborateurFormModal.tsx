@@ -98,7 +98,7 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
         loadCollaborateurData()
       }
     }
-  }, [open, collaborateurId])
+  }, [open, collaborateurId, loadCollaborateurData])
 
   const loadSites = async () => {
     setLoadingSites(true)

@@ -30,7 +30,7 @@ export default function AffairesListWithTiles({ siteId }: AffairesListWithTilesP
   // Charger les affaires
   useEffect(() => {
     loadAffaires()
-  }, [siteId])
+  }, [siteId, loadAffaires])
 
   // Charger les tâches de l'affaire sélectionnée
   useEffect(() => {

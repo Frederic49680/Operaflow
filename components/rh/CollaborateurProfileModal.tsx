@@ -62,7 +62,7 @@ export function CollaborateurProfileModal({
     if (open && collaborateurId) {
       loadCollaborateurProfile()
     }
-  }, [open, collaborateurId])
+  }, [open, collaborateurId, loadCollaborateurProfile])
 
   const loadCollaborateurProfile = async () => {
     try {

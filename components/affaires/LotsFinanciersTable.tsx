@@ -49,7 +49,7 @@ export function LotsFinanciersTable({ affaireId }: LotsFinanciersTableProps) {
 
   useEffect(() => {
     loadLots()
-  }, [affaireId])
+  }, [affaireId, loadLots])
 
   const handleDelete = async (lotId: string, e?: React.MouseEvent) => {
     e?.stopPropagation()

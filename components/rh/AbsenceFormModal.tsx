@@ -98,7 +98,7 @@ export function AbsenceFormModal({
     if (open) {
       loadRessources()
     }
-  }, [open])
+  }, [open, loadRessources])
 
   const loadRessources = async () => {
     try {
@@ -149,7 +149,7 @@ export function AbsenceFormModal({
         motif: ""
       })
     }
-  }, [open, absenceId])
+  }, [open, absenceId, loadAbsenceData])
 
   const loadAbsenceData = async () => {
     try {

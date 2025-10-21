@@ -162,7 +162,7 @@ export function SemaineFormationModal({ plan, onClose, onSuccess, children }: Se
   // Générer les semaines ISO quand l'année change
   useEffect(() => {
     generateISOweeks(selectedYear)
-  }, [selectedYear])
+  }, [selectedYear, generateISOweeks])
 
   // Calculer automatiquement la date de fin en fonction de la durée
   useEffect(() => {
@@ -218,7 +218,7 @@ export function SemaineFormationModal({ plan, onClose, onSuccess, children }: Se
         }))
       }
     }
-  }, [formData.semaine_iso])
+  }, [formData.semaine_iso, plan?.id])
 
   // Charger les tarifs disponibles quand formation et organisme sont sélectionnés
   useEffect(() => {
