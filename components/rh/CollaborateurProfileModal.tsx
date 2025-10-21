@@ -58,12 +58,6 @@ export function CollaborateurProfileModal({
   const [collaborateur, setCollaborateur] = useState<CollaborateurData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (open && collaborateurId) {
-      loadCollaborateurProfile()
-    }
-  }, [open, collaborateurId, loadCollaborateurProfile])
-
   const loadCollaborateurProfile = useCallback(async () => {
     try {
       setLoading(true)
@@ -109,6 +103,12 @@ export function CollaborateurProfileModal({
       setLoading(false)
     }
   }, [collaborateurId])
+
+  useEffect(() => {
+    if (open && collaborateurId) {
+      loadCollaborateurProfile()
+    }
+  }, [open, collaborateurId, loadCollaborateurProfile])
 
   const getContratBadge = (contrat: string) => {
     switch (contrat) {
