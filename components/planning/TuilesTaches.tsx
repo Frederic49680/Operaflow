@@ -73,6 +73,7 @@ function TaskTile({
   onAddLink,
   conflicts = []
 }: TaskTileProps) {
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set())
   const {
     attributes,
     listeners,
@@ -89,7 +90,7 @@ function TaskTile({
   }
 
   const hasConflicts = conflicts.some(c => c.task_id === task.id)
-  const hasChildren = task.children && task.children.length > 0
+  const hasChildren = task.enfants && task.enfants.length > 0
   const levelColors = [
     "bg-blue-50 border-blue-200", // Niveau 0 - Projet
     "bg-green-50 border-green-200", // Niveau 1 - Phase
@@ -121,7 +122,7 @@ function TaskTile({
             onClick={() => onToggleExpand(task.id)}
             className="p-1 h-6 w-6"
           >
-            {task.expanded ? (
+            {expandedTasks.has(task.id) ? (
               <ChevronDown className="h-3 w-3" />
             ) : (
               <ChevronRight className="h-3 w-3" />
