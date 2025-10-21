@@ -57,19 +57,30 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
+    // Nettoyer les champs de date vides
+    const cleanedBody = { ...body }
+    
+    // Convertir les chaînes vides en null pour les champs de date
+    const dateFields = ['date_debut', 'date_fin_prevue', 'date_fin_reelle', 'periode_debut', 'periode_fin']
+    dateFields.forEach(field => {
+      if (cleanedBody[field] === '' || cleanedBody[field] === null) {
+        cleanedBody[field] = null
+      }
+    })
+
     // Calculer la capacité pour BPU si modifié
-    if (body.type_affaire === "BPU" && body.nb_ressources_ref && body.heures_semaine_ref && body.periode_debut && body.periode_fin) {
-      const debut = new Date(body.periode_debut)
-      const fin = new Date(body.periode_fin)
+    if (cleanedBody.type_affaire === "BPU" && cleanedBody.nb_ressources_ref && cleanedBody.heures_semaine_ref && cleanedBody.periode_debut && cleanedBody.periode_fin) {
+      const debut = new Date(cleanedBody.periode_debut)
+      const fin = new Date(cleanedBody.periode_fin)
       const diffTime = Math.abs(fin.getTime() - debut.getTime())
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
       const nbSemaines = Math.ceil(diffDays / 7)
-      body.heures_capacite = body.nb_ressources_ref * body.heures_semaine_ref * nbSemaines
+      cleanedBody.heures_capacite = cleanedBody.nb_ressources_ref * cleanedBody.heures_semaine_ref * nbSemaines
     }
 
     const { data, error } = await supabase
       .from("affaires")
-      .update(body)
+      .update(cleanedBody)
       .eq("id", id)
       .select()
       .single()
