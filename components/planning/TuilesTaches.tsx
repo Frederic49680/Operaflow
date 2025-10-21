@@ -103,13 +103,13 @@ function TaskTile({
       ref={setNodeRef}
       style={style}
       className={`relative border rounded-lg p-4 mb-2 transition-all ${
-        levelColors[task.level] || "bg-gray-50 border-gray-200"
+        levelColors[task.niveau] || "bg-gray-50 border-gray-200"
       } ${hasConflicts ? "ring-2 ring-red-300" : ""}`}
     >
       {/* Indicateur de niveau */}
       <div className="flex items-center gap-2 mb-2">
         <div className="flex items-center gap-1">
-          {Array.from({ length: task.level }).map((_, i) => (
+          {Array.from({ length: task.niveau }).map((_, i) => (
             <div key={i} className="w-4 h-0.5 bg-gray-300" />
           ))}
         </div>
