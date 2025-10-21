@@ -68,7 +68,7 @@ export default function TaskActionButtons({
     }
   }
 
-  const canCreateSubTask = task.level < 3
+  const canCreateSubTask = true // Hiérarchie désactivée - colonne level n'existe pas
 
   return (
     <div className="flex gap-1">

@@ -18,16 +18,13 @@ export interface Task {
   effort_reel_h?: number
   avancement_pct: number
   statut: string
-  level: number
-  parent_id?: string
-  order_index: number
+  type_tache?: string
+  competence?: string
   ressource_ids?: string[]
-  is_milestone?: boolean
-  manual?: boolean
-  template_origin_id?: string
-  expanded?: boolean
-  created_at: string
+  created_by?: string
+  date_creation: string
   updated_at: string
+  expanded?: boolean
   // Relations
   affaire?: {
     nom: string
@@ -70,17 +67,14 @@ export function useTasks() {
           effort_reel_h,
           avancement_pct,
           statut,
-          level,
-          parent_id,
-          order_index,
+          type_tache,
+          competence,
           ressource_ids,
-          is_milestone,
-          manual,
-          template_origin_id,
-          created_at,
+          created_by,
+          date_creation,
           updated_at
         `)
-        .order('order_index', { ascending: true })
+        .order('date_creation', { ascending: true })
 
       if (error) throw error
 
@@ -134,9 +128,8 @@ export function useTasks() {
           effort_plan_h: taskData.effort_plan_h,
           avancement_pct: taskData.avancement_pct || 0,
           statut: taskData.statut || 'Non lancé',
-          level: taskData.level || 0,
-          parent_id: taskData.parent_id,
-          order_index: taskData.order_index || 0
+          type_tache: taskData.type_tache || 'Autre',
+          competence: taskData.competence
         }])
         .select()
         .single()
@@ -169,9 +162,8 @@ export function useTasks() {
           effort_reel_h: updates.effort_reel_h,
           avancement_pct: updates.avancement_pct,
           statut: updates.statut,
-          level: updates.level,
-          parent_id: updates.parent_id,
-          order_index: updates.order_index,
+          type_tache: updates.type_tache,
+          competence: updates.competence,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -211,27 +203,21 @@ export function useTasks() {
     try {
       const supabase = createClient()
 
-      // Récupérer le niveau du parent
-      const { data: parentTask } = await supabase
-        .from('planning_taches')
-        .select('niveau')
-        .eq('id', parentId)
-        .single()
-
-      if (!parentTask) throw new Error('Tâche parent introuvable')
-
-      const newLevel = parentTask.level + 1
-      if (newLevel > 4) {
-        throw new Error('Niveau maximum (4) atteint')
-      }
-
-      const { data, error } = await supabase
+      // Créer une sous-tâche simple (la hiérarchie via parent_id n'est pas supportée dans la base actuelle)
+      const { data, error} = await supabase
         .from('planning_taches')
         .insert([{
-          ...taskData,
-          parent_id: parentId,
-          level: newLevel,
-          order_index: 0
+          libelle_tache: taskData.libelle_tache,
+          affaire_id: taskData.affaire_id,
+          lot_id: taskData.lot_id,
+          site_id: taskData.site_id,
+          date_debut_plan: taskData.date_debut_plan,
+          date_fin_plan: taskData.date_fin_plan,
+          effort_plan_h: taskData.effort_plan_h,
+          avancement_pct: taskData.avancement_pct || 0,
+          statut: taskData.statut || 'Non lancé',
+          type_tache: taskData.type_tache || 'Autre',
+          competence: taskData.competence
         }])
         .select()
         .single()
