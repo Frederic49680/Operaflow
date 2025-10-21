@@ -20,7 +20,7 @@ import TaskTemplateManager from "@/components/planning/TaskTemplateManager"
 import AffairesAPlanifierSimple from "@/components/planning/AffairesAPlanifierSimple"
 import { useTaskStats } from "@/hooks/useTaskStats"
 
-export default function TuilesTachesPage() {
+export default function PlanningPage() {
   const [activeTab, setActiveTab] = useState("tasks")
   const { stats, loading: statsLoading, refreshStats } = useTaskStats()
 
