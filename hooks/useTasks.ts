@@ -23,6 +23,7 @@ export interface Task {
   ordre_affichage: number
   ressource_ids?: string[]
   is_milestone?: boolean
+  expanded?: boolean
   created_at: string
   updated_at: string
   // Relations

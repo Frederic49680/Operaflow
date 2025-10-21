@@ -423,8 +423,8 @@ export default function TuilesTaches() {
       if (task.id === taskId) {
         return { ...task, expanded: !task.expanded }
       }
-      if (task.children) {
-        return { ...task, children: updateTaskExpansion(task.children, taskId) }
+      if (task.enfants) {
+        return { ...task, enfants: updateTaskExpansion(task.enfants, taskId) }
       }
       return task
     })
@@ -456,9 +456,9 @@ export default function TuilesTaches() {
         </SortableContext>
         
         {/* Rendu récursif des enfants */}
-        {task.children && task.children.length > 0 && task.expanded && (
+        {task.enfants && task.enfants.length > 0 && task.expanded && (
           <div className="ml-4">
-            {renderTasks(task.children, level + 1)}
+            {renderTasks(task.enfants, level + 1)}
           </div>
         )}
       </div>
