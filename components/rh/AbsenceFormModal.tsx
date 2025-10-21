@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -93,14 +93,7 @@ export function AbsenceFormModal({
   const [motifPersonnalise, setMotifPersonnalise] = useState("")
   const [showMotifPersonnalise, setShowMotifPersonnalise] = useState(false)
 
-  // Charger les ressources actives
-  useEffect(() => {
-    if (open) {
-      loadRessources()
-    }
-  }, [open, loadRessources])
-
-  const loadRessources = async () => {
+  const loadRessources = useCallback(async () => {
     try {
       setLoadingRessources(true)
       const supabase = createClient()
@@ -134,7 +127,14 @@ export function AbsenceFormModal({
     } finally {
       setLoadingRessources(false)
     }
-  }
+  }, [])
+
+  // Charger les ressources actives
+  useEffect(() => {
+    if (open) {
+      loadRessources()
+    }
+  }, [open, loadRessources])
 
   // Charger les données de l'absence si édition
   useEffect(() => {
@@ -151,7 +151,7 @@ export function AbsenceFormModal({
     }
   }, [open, absenceId, loadAbsenceData])
 
-  const loadAbsenceData = async () => {
+  const loadAbsenceData = useCallback(async () => {
     try {
       const supabase = createClient()
       const { data, error } = await supabase
@@ -185,7 +185,7 @@ export function AbsenceFormModal({
       console.error('Erreur chargement absence:', err)
       if (onError) onError('Erreur lors du chargement de l\'absence')
     }
-  }
+  }, [absenceId, onError])
 
   const handleMotifClick = (motif: string) => {
     setFormData({ ...formData, motif })

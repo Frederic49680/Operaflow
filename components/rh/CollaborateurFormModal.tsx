@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -100,7 +100,7 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
     }
   }, [open, collaborateurId, loadCollaborateurData])
 
-  const loadSites = async () => {
+  const loadSites = useCallback(async () => {
     setLoadingSites(true)
     const supabase = createClient()
     const { data } = await supabase
@@ -110,9 +110,9 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
       .order('nom')
     setSites(data || [])
     setLoadingSites(false)
-  }
+  }, [])
 
-  const loadCollaborateurData = async () => {
+  const loadCollaborateurData = useCallback(async () => {
     if (!collaborateurId) return
     
     try {
@@ -145,7 +145,7 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
       console.error('Erreur chargement collaborateur:', error)
       if (onError) onError('Erreur lors du chargement du collaborateur')
     }
-  }
+  }, [collaborateurId, onError])
 
   const toggleCompetence = (competence: string) => {
     setCompetencesSelectionnees(prev => 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -30,7 +30,7 @@ export function LotsFinanciersTable({ affaireId }: LotsFinanciersTableProps) {
   const [showModal, setShowModal] = useState(false)
   const [selectedLot, setSelectedLot] = useState<Lot | undefined>(undefined)
 
-  const loadLots = async () => {
+  const loadLots = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/affaires/lots?affaire_id=${affaireId}`)
@@ -45,7 +45,7 @@ export function LotsFinanciersTable({ affaireId }: LotsFinanciersTableProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [affaireId])
 
   useEffect(() => {
     loadLots()

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,7 +39,7 @@ export default function AffairesListWithTiles({ siteId }: AffairesListWithTilesP
     }
   }, [selectedAffaire])
 
-  const loadAffaires = async () => {
+  const loadAffaires = useCallback(async () => {
     setIsLoading(true)
     try {
       const url = siteId 
@@ -55,7 +55,7 @@ export default function AffairesListWithTiles({ siteId }: AffairesListWithTilesP
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [siteId])
 
   const loadTasks = async (affaireId: string) => {
     setIsLoading(true)

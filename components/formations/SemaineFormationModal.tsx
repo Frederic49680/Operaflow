@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import {
   Dialog,
@@ -117,7 +117,7 @@ export function SemaineFormationModal({ plan, onClose, onSuccess, children }: Se
   }
 
   // Générer les semaines ISO de l'année
-  const generateISOweeks = (year: number) => {
+  const generateISOweeks = useCallback((year: number) => {
     const weeks: Array<{ value: string, label: string }> = []
     
     for (let week = 1; week <= 52; week++) {
@@ -128,7 +128,7 @@ export function SemaineFormationModal({ plan, onClose, onSuccess, children }: Se
     }
     
     setSemainesISO(weeks)
-  }
+  }, [])
 
   useEffect(() => {
     loadData()

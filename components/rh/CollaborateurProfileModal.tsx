@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -64,7 +64,7 @@ export function CollaborateurProfileModal({
     }
   }, [open, collaborateurId, loadCollaborateurProfile])
 
-  const loadCollaborateurProfile = async () => {
+  const loadCollaborateurProfile = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -108,7 +108,7 @@ export function CollaborateurProfileModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [collaborateurId])
 
   const getContratBadge = (contrat: string) => {
     switch (contrat) {
