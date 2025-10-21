@@ -204,10 +204,10 @@ export default function PlanningPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Niveau maximum par défaut
                       </label>
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md" defaultValue="4">
                         <option value="2">2 niveaux</option>
                         <option value="3">3 niveaux</option>
-                        <option value="4" selected>4 niveaux</option>
+                        <option value="4">4 niveaux</option>
                       </select>
                     </div>
                     <div>
