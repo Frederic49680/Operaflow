@@ -20,19 +20,22 @@ import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import TaskTemplateModal from "./TaskTemplateModal"
 
+interface TemplateItem {
+  id: string
+  title: string
+  level: number
+  duration_days: number
+  offset_days: number
+  link_from_prev?: string
+}
+
 interface TaskTemplate {
   id: string
   name: string
   description: string
   max_level: number
   structure: {
-    items: Array<{
-      title: string
-      level: number
-      duration_days: number
-      offset_days: number
-      link_from_prev?: string
-    }>
+    items: TemplateItem[]
   }
   defaults: {
     status: string
@@ -48,7 +51,7 @@ export default function TaskTemplateManager() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null)
+  const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null | undefined>(null)
 
   useEffect(() => {
     loadTemplates()
@@ -79,7 +82,19 @@ export default function TaskTemplateManager() {
 
       if (error) throw error
 
-      setTemplates(data || [])
+      // S'assurer que chaque item a un id
+      const templatesWithIds = (data || []).map(template => ({
+        ...template,
+        structure: {
+          ...template.structure,
+          items: template.structure.items.map((item: any, index: number) => ({
+            ...item,
+            id: item.id || `item-${template.id}-${index}`
+          }))
+        }
+      }))
+
+      setTemplates(templatesWithIds)
     } catch (error) {
       console.error('Erreur lors du chargement des templates:', error)
       toast.error("Erreur lors du chargement des templates")
