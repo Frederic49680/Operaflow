@@ -18,11 +18,9 @@ export interface Task {
   effort_reel_h?: number
   avancement_pct: number
   statut: string
-  niveau: number
   parent_id?: string
   ordre_affichage: number
   ressource_ids?: string[]
-  is_milestone?: boolean
   expanded?: boolean
   created_at: string
   updated_at: string
@@ -54,7 +52,26 @@ export function useTasks() {
 
       const { data, error } = await supabase
         .from('planning_taches')
-        .select('*')
+        .select(`
+          id,
+          libelle_tache,
+          affaire_id,
+          lot_id,
+          site_id,
+          date_debut_plan,
+          date_fin_plan,
+          date_debut_reelle,
+          date_fin_reelle,
+          effort_plan_h,
+          effort_reel_h,
+          avancement_pct,
+          statut,
+          parent_id,
+          ordre_affichage,
+          ressource_ids,
+          created_at,
+          updated_at
+        `)
         .order('ordre_affichage', { ascending: true })
 
       if (error) throw error

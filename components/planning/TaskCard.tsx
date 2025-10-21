@@ -113,8 +113,8 @@ export default function TaskCard({
             <div className="flex-1">
               <CardTitle className="text-lg">{task.libelle_tache}</CardTitle>
               <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className={getLevelColor(task.niveau)}>
-                  Niveau {task.niveau}
+                <Badge variant="outline" className={getLevelColor(0)}>
+                  Tâche
                 </Badge>
                 <Badge variant="outline" className={getStatusColor(task.statut)}>
                   {task.statut}
