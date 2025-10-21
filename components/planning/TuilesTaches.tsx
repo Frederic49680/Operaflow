@@ -166,7 +166,7 @@ function TaskTile({
         )}
 
         {/* Badge milestone */}
-        {task.is_milestone && (
+        {task.type === 'jalon' && (
           <Badge variant="outline" className="text-xs">
             <Target className="h-3 w-3 mr-1" />
             Jalon
