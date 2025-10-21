@@ -62,7 +62,7 @@ export default function SitesPage() {
           code_site,
           nom,
           statut,
-          responsable_id:ressources (
+          ressources!sites_responsable_id_fkey (
             nom,
             prenom
           )
@@ -81,8 +81,8 @@ export default function SitesPage() {
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase()
         filteredData = filteredData.filter((site: any) => {
-          const responsable = site.responsable_id && site.responsable_id[0]
-            ? `${site.responsable_id[0].prenom || ''} ${site.responsable_id[0].nom || ''}`.trim()
+          const responsable = site.ressources && site.ressources[0]
+            ? `${site.ressources[0].prenom || ''} ${site.ressources[0].nom || ''}`.trim()
             : ''
           return (
             site.code_site.toLowerCase().includes(searchLower) ||
@@ -95,8 +95,8 @@ export default function SitesPage() {
       // Convertir en CSV
       const csvHeaders = ['Code Site', 'Nom', 'Responsable', 'Statut']
       const csvRows = filteredData.map((site: any) => {
-        const responsable = site.responsable_id && site.responsable_id[0]
-          ? `${site.responsable_id[0].prenom || ''} ${site.responsable_id[0].nom || ''}`.trim()
+        const responsable = site.ressources && site.ressources[0]
+          ? `${site.ressources[0].prenom || ''} ${site.ressources[0].nom || ''}`.trim()
           : 'N/A'
         return [
           site.code_site,
