@@ -27,18 +27,6 @@ export default function AffairesListWithTiles({ siteId }: AffairesListWithTilesP
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  // Charger les affaires
-  useEffect(() => {
-    loadAffaires()
-  }, [siteId, loadAffaires])
-
-  // Charger les tâches de l'affaire sélectionnée
-  useEffect(() => {
-    if (selectedAffaire) {
-      loadTasks(selectedAffaire)
-    }
-  }, [selectedAffaire])
-
   const loadAffaires = useCallback(async () => {
     setIsLoading(true)
     try {
@@ -56,6 +44,18 @@ export default function AffairesListWithTiles({ siteId }: AffairesListWithTilesP
       setIsLoading(false)
     }
   }, [siteId])
+
+  // Charger les affaires
+  useEffect(() => {
+    loadAffaires()
+  }, [siteId, loadAffaires])
+
+  // Charger les tâches de l'affaire sélectionnée
+  useEffect(() => {
+    if (selectedAffaire) {
+      loadTasks(selectedAffaire)
+    }
+  }, [selectedAffaire])
 
   const loadTasks = async (affaireId: string) => {
     setIsLoading(true)
