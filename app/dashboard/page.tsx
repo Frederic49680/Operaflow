@@ -195,9 +195,9 @@ export default function DashboardPage() {
                   </a>
                 </Button>
                 <Button variant="ghost" className="w-full justify-start hover:bg-cyan-50 hover:text-cyan-700" asChild>
-                  <a href="/gantt">
+                  <a href="/tuiles-taches">
                     <GanttChart className="h-4 w-4 mr-2" />
-                    Gantt
+                    Tuiles Tâches
                   </a>
                 </Button>
               </CardContent>

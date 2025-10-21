@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { useState, useMemo, useEffect } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,6 +36,37 @@ export function DeclarePlanificationModal({ open, onClose, onSuccess, affaire }:
     date_fin: ''
   })
 
+  // Pré-remplir les dates avec celles de l'affaire
+  useEffect(() => {
+    if (open && affaire) {
+      // Extraire la partie date (YYYY-MM-DD) si format ISO complet
+      const formatDate = (dateStr: string) => {
+        if (!dateStr) return ''
+        // Si la date contient 'T' ou l'heure, extraire uniquement la partie date
+        if (dateStr.includes('T')) {
+          return dateStr.split('T')[0]
+        }
+        return dateStr
+      }
+
+      const dateDebut = formatDate(affaire.date_debut || '')
+      const dateFin = formatDate(affaire.date_fin_prevue || '')
+
+      console.log('📅 Dates de l\'affaire:', {
+        affaire_id: affaire.id,
+        date_debut_brute: affaire.date_debut,
+        date_fin_prevue_brute: affaire.date_fin_prevue,
+        date_debut_formattee: dateDebut,
+        date_fin_formattee: dateFin
+      })
+
+      setFormData({
+        date_debut: dateDebut,
+        date_fin: dateFin
+      })
+    }
+  }, [open, affaire])
+
   // Validation des champs obligatoires
   const isFormValid = useMemo(() => {
     return formData.date_debut !== '' && formData.date_fin !== ''
@@ -56,18 +87,24 @@ export function DeclarePlanificationModal({ open, onClose, onSuccess, affaire }:
     e.preventDefault()
     setLoading(true)
 
+    const payload = {
+      affaire_id: affaire.id,
+      date_debut: formData.date_debut,
+      date_fin: formData.date_fin
+    }
+
+    console.log('📤 Envoi de la déclaration de planification:', payload)
+
     try {
       const response = await fetch('/api/affaires/declare-planification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          affaire_id: affaire.id,
-          date_debut: formData.date_debut,
-          date_fin: formData.date_fin
-        })
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()
+
+      console.log('📥 Réponse de l\'API:', result)
 
       if (!result.success) {
         throw new Error(result.error || 'Erreur lors de la déclaration')
@@ -89,6 +126,9 @@ export function DeclarePlanificationModal({ open, onClose, onSuccess, affaire }:
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Déclarer la planification</DialogTitle>
+          <DialogDescription>
+            Définissez les dates de planification pour cette affaire
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -132,14 +172,14 @@ export function DeclarePlanificationModal({ open, onClose, onSuccess, affaire }:
               </div>
 
               <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
-                <p className="text-sm text-yellow-800">
+                <div className="text-sm text-yellow-800">
                   <strong>Action :</strong> Cette déclaration va créer :
                   <ul className="list-disc list-inside mt-2 space-y-1">
                     <li>Une tâche parapluie pour l'affaire</li>
                     <li>{affaire.nb_lots_financiers} jalon(s) à partir des lots financiers</li>
                     <li>Changer le statut de l'affaire à "Validée"</li>
                   </ul>
-                </p>
+                </div>
               </div>
             </div>
 

@@ -82,8 +82,9 @@ export function LotsFinanciersTable({ affaireId }: LotsFinanciersTableProps) {
     setShowModal(true)
   }
 
-  const handleAdd = (e?: React.MouseEvent) => {
-    e?.stopPropagation()
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     setSelectedLot(undefined)
     setShowModal(true)
   }
@@ -127,7 +128,7 @@ export function LotsFinanciersTable({ affaireId }: LotsFinanciersTableProps) {
             {lots.length} lot(s) • Total : {totalMontant.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
           </p>
         </div>
-        <Button onClick={(e) => handleAdd(e)} size="sm">
+        <Button onClick={(e) => handleAdd(e)} size="sm" type="button">
           <Plus className="h-4 w-4 mr-2" />
           Ajouter un lot
         </Button>
@@ -178,6 +179,7 @@ export function LotsFinanciersTable({ affaireId }: LotsFinanciersTableProps) {
                       <Button
                         variant="ghost"
                         size="icon"
+                        type="button"
                         onClick={(e) => handleEdit(lot, e)}
                       >
                         <Pencil className="h-4 w-4" />
@@ -185,6 +187,7 @@ export function LotsFinanciersTable({ affaireId }: LotsFinanciersTableProps) {
                       <Button
                         variant="ghost"
                         size="icon"
+                        type="button"
                         onClick={(e) => handleDelete(lot.id, e)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />

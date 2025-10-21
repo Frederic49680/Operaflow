@@ -1,0 +1,150 @@
+---
+alwaysApply: true
+---
+PRD — Tuile “Tâches 4 niveaux” (v2) — drag&drop, liens, masques, génération Affaires
+0) Qu’est-ce qui change vs version précédente
+
+Profondeur hiérarchique : 4 niveaux max (0..3). Blocage à l’indentation > niveau 3.
+
+Option v2 activée :
+
+Détection de sur-affectation (par ressource, période, calendrier) avec alertes.
+
+Notifications / Webhooks : passage “À planifier → Planifié”, “Liens modifiés”, “Conflits détectés”.
+
+Masques de tâches (templates) : insertion rapide d’un pattern de tâches/sous-tâches préconfiguré.
+
+Génération depuis Affaire : auto-création des Lots & Jalon(s) à partir du découpage Affaires.
+
+1) Masques de tâches (Templates)
+1.1 Modèle de données
+
+Table TaskTemplates
+
+id (uuid), name (text), description (text), max_level (int ≤ 4), default_calendar_id (ref|null).
+
+structure (jsonb) : liste hiérarchique statique (titres, durées, offsets, liens internes).
+
+{
+  "items":[
+    {"title":"Lot type — Prépa","level":0,"duration_days":3,"offset_days":0},
+    {"title":"Étude","level":1,"duration_days":1,"offset_days":0,"link_from_prev":"FS"},
+    {"title":"Appro","level":1,"duration_days":2,"offset_days":1,"link_from_prev":"FS"}
+  ]
+}
+
+
+defaults (jsonb) : status, assignees (optionnel), work_days_only (bool).
+
+Table TaskTemplateMappings (optionnelle)
+
+Permet de mapper les champs de l’Affaire (ex. LotName, Acheteur, DateCommande) vers des champs de tâches lors d’une insertion de masque conditionnelle.
+
+1.2 UX
+
+Bouton “Appliquer un masque…” ⇒ modal :
+
+Sélecteur de masque ; options : date de départ, appliquer work days only, assignations par défaut.
+
+Aperçu hiérarchique avant insertion.
+
+Choix du parent où insérer (racine ou tâche sélectionnée).
+
+Règles :
+
+On respecte la limite 4 niveaux (si le masque dépasse, on bloque avec message).
+
+Offsets & liens internes du masque sont conservés ; recalcul selon calendrier courant.
+
+1.3 API
+
+GET /task-templates
+
+POST /task-templates (admin)
+
+POST /tasks/apply-template body: { template_id, parent_id, start_date, affaire_id?, site_id?, options{} }
+
+2) Génération automatique depuis la table Affaires
+2.1 Hypothèse de structure Affaires
+
+Table Affaires (déjà existante)
+
+affaire_id, site_id, decoupage_lots (jsonb array), date_debut_prevue, date_fin_prevue, statut, etc.
+
+Exemple decoupage_lots :
+
+[
+  {"lot_code":"L1","label":"Prépa","type":"LOT","duration_days":3,"links":[{"to":"L2","type":"FS"}]},
+  {"lot_code":"L2","label":"Réalisation","type":"LOT","duration_days":6},
+  {"lot_code":"FCT","label":"Facturation","type":"JALON","trigger":"100% preceding","lag_days":0}
+]
+
+2.2 Règles de génération
+
+Bouton “Générer depuis Affaire” ⇒ sélection de l’Affaire (ou auto si contexte), mapping des champs :
+
+LOTS ⇒ tâches niveau 1 sous une tâche parapluie (niveau 0) “<Affaire – Lot>”.
+
+type:"JALON" ⇒ tâche dur=0 j (barre fine) avec liens FF vers les précédents lots, ou trigger “100% preceding”.
+
+Applique les liens décrits dans decoupage_lots.links.
+
+Si l’Affaire contient un “Lot Financier” ⇒ création de jalon facturation; quand les tâches précédentes atteignent 100%, alerte “CA facturable” (webhook/notification).
+
+Parent enveloppe (tâche parapluie) se cale sur min(start enfants) / max(end enfants).
+
+Respect du calendrier (jours ouvrés si activé).
+
+Idempotence : si on régénère, option “mettre à jour si existant / créer doublons / ignorer existants”.
+
+2.3 API
+
+POST /tasks/generate-from-affaire body: { affaire_id, parent_id?, options{ updateMode, createMilestones, calendarId } }
+
+3) Hiérarchie & limites (4 niveaux)
+
+level ∈ {0,1,2,3} ; blocage à l’indentation quand level==3.
+
+Suppression parent : choix “supprimer enfants” ou “remonter d’un niveau”.
+
+Tri stable via order_index (float); DnD met à jour parent + order_index.
+
+4) Autoscheduling & liens (inchangé + précisions)
+
+Types: FS (défaut), SS, FF, SF + lag_days.
+
+Parent enveloppe auto ; si parent manuellement fixé, proposer “recalcule descendants ? Oui/Non”.
+
+Conflits: dates invalides, cycles de liens ⇒ message + rollback.
+
+5) Option v2 — Sur-affectation & Notifications
+
+Sur-affectation : quand Σ(tâches actives sur plage) > capacité_calendrier(ressource) ⇒ badge 🔴 sur ligne + panneau “Conflits de ressource”.
+
+Notifications (email/push/webhook) :
+
+Passage À planifier → Planifié, Jalon atteint 100%, Lien modifié impactant plus de N jours, Conflit de ressource.
+
+Paramètres : seuils, destinataires, modes (batch quotidien, instantané).
+
+6) Modèle de données (delta)
+
+Tasks : level (0..3), template_origin_id (uuid|null), is_milestone (bool), manual (bool), order_index (float).
+
+TaskLinks : type (enum), lag_days (int).
+
+Affaires : decoupage_lots (jsonb), champs “Lot Financier” si besoin.
+
+TaskTemplates (+ TaskTemplateMappings optionnel).
+
+7) Critères d’acceptation (extraits)
+
+Impossible d’indenter au-delà du 4ᵉ niveau.
+
+“Appliquer un masque…” insère la structure annoncée (titres, offsets, durées, liens) sans dépasser 4 niveaux.
+
+“Générer depuis Affaire” crée Lots + Jalon de facturation selon decoupage_lots, avec liens et notification CA facturable (si 100% atteint).
+
+Détection sur-affectation visible en temps réel sur DnD/resize.
+
+Notifications envoyées selon règles configurées.
