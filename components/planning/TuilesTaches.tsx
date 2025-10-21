@@ -141,9 +141,9 @@ function TaskTile({
 
         {/* Badge de niveau */}
         <Badge variant="outline" className="text-xs">
-          {task.level === 0 ? "Projet" : 
-           task.level === 1 ? "Phase" : 
-           task.level === 2 ? "Tâche" : "Sous-tâche"}
+          {task.niveau === 0 ? "Projet" : 
+            task.niveau === 1 ? "Phase" : 
+            task.niveau === 2 ? "Tâche" : "Sous-tâche"}
         </Badge>
 
         {/* Badge de statut */}
