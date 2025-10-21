@@ -50,7 +50,7 @@ export default function AffairesAPlanifierSimple() {
           ressources!inner(nom, prenom)
         `)
         .eq('statut', 'A_planifier')
-        .order('created_at', { ascending: false })
+        .order('date_creation', { ascending: false })
 
       if (error) throw error
 

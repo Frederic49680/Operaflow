@@ -16,7 +16,7 @@ import {
   RefreshCw
 } from "lucide-react"
 import TuilesTachesSimple from "@/components/planning/TuilesTachesSimple"
-import TaskTemplateManager from "@/components/planning/TaskTemplateManager"
+// import TaskTemplateManager from "@/components/planning/TaskTemplateManager" // Désactivé - migration 039 non appliquée
 import AffairesAPlanifierSimple from "@/components/planning/AffairesAPlanifierSimple"
 import { useTaskStats } from "@/hooks/useTaskStats"
 
@@ -182,7 +182,8 @@ export default function PlanningPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <TaskTemplateManager />
+              {/* <TaskTemplateManager /> */}
+              <p className="text-sm text-muted-foreground">Templates disponibles après migration 039</p>
             </CardContent>
           </Card>
         </TabsContent>
