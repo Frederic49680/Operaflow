@@ -18,9 +18,13 @@ export interface Task {
   effort_reel_h?: number
   avancement_pct: number
   statut: string
+  level: number
   parent_id?: string
-  ordre_affichage: number
+  order_index: number
   ressource_ids?: string[]
+  is_milestone?: boolean
+  manual?: boolean
+  template_origin_id?: string
   expanded?: boolean
   created_at: string
   updated_at: string
@@ -66,13 +70,17 @@ export function useTasks() {
           effort_reel_h,
           avancement_pct,
           statut,
+          level,
           parent_id,
-          ordre_affichage,
+          order_index,
           ressource_ids,
+          is_milestone,
+          manual,
+          template_origin_id,
           created_at,
           updated_at
         `)
-        .order('ordre_affichage', { ascending: true })
+        .order('order_index', { ascending: true })
 
       if (error) throw error
 
@@ -126,9 +134,9 @@ export function useTasks() {
           effort_plan_h: taskData.effort_plan_h,
           avancement_pct: taskData.avancement_pct || 0,
           statut: taskData.statut || 'Non lancé',
-          niveau: taskData.niveau || 0,
+          level: taskData.level || 0,
           parent_id: taskData.parent_id,
-          ordre_affichage: taskData.ordre_affichage || 0
+          order_index: taskData.order_index || 0
         }])
         .select()
         .single()
@@ -161,9 +169,9 @@ export function useTasks() {
           effort_reel_h: updates.effort_reel_h,
           avancement_pct: updates.avancement_pct,
           statut: updates.statut,
-          niveau: updates.niveau,
+          level: updates.level,
           parent_id: updates.parent_id,
-          ordre_affichage: updates.ordre_affichage,
+          order_index: updates.order_index,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -212,7 +220,7 @@ export function useTasks() {
 
       if (!parentTask) throw new Error('Tâche parent introuvable')
 
-      const newLevel = parentTask.niveau + 1
+      const newLevel = parentTask.level + 1
       if (newLevel > 4) {
         throw new Error('Niveau maximum (4) atteint')
       }
@@ -222,8 +230,8 @@ export function useTasks() {
         .insert([{
           ...taskData,
           parent_id: parentId,
-          niveau: newLevel,
-          ordre_affichage: 0
+          level: newLevel,
+          order_index: 0
         }])
         .select()
         .single()

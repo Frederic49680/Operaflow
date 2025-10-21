@@ -103,13 +103,13 @@ function TaskTile({
       ref={setNodeRef}
       style={style}
       className={`relative border rounded-lg p-4 mb-2 transition-all ${
-        levelColors[0] || "bg-gray-50 border-gray-200"
+        levelColors[task.level] || "bg-gray-50 border-gray-200"
       } ${hasConflicts ? "ring-2 ring-red-300" : ""}`}
     >
       {/* Indicateur de niveau */}
       <div className="flex items-center gap-2 mb-2">
         <div className="flex items-center gap-1">
-          {Array.from({ length: 0 }).map((_, i) => (
+          {Array.from({ length: task.level }).map((_, i) => (
             <div key={i} className="w-4 h-0.5 bg-gray-300" />
           ))}
         </div>
@@ -141,7 +141,9 @@ function TaskTile({
 
         {/* Badge de niveau */}
         <Badge variant="outline" className="text-xs">
-          {"Tâche"}
+          {task.level === 0 ? "Projet" : 
+            task.level === 1 ? "Phase" : 
+            task.level === 2 ? "Tâche" : "Sous-tâche"}
         </Badge>
 
         {/* Badge de statut */}
@@ -215,7 +217,7 @@ function TaskTile({
             Modifier
           </Button>
           
-          {true && (
+          {task.level < 3 && (
             <Button
               variant="outline"
               size="sm"
@@ -285,8 +287,7 @@ export default function TuilesTaches() {
     }
 
     if (selectedLevel !== "all") {
-      // Niveau n'est plus supporté - on affiche toutes les tâches
-      // filtered = filtered.filter(task => 0 === parseInt(selectedLevel))
+      filtered = filtered.filter(task => task.level === parseInt(selectedLevel))
     }
 
     if (selectedStatus !== "all") {

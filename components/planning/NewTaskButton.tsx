@@ -24,8 +24,8 @@ export default function NewTaskButton({ onTaskCreated }: NewTaskButtonProps) {
         libelle_tache: taskName,
         statut: 'Non lancé',
         avancement_pct: 0,
-        niveau: 0,
-        ordre_affichage: 0
+        level: 0,
+        order_index: 0
       })
       
       onTaskCreated?.(newTask)

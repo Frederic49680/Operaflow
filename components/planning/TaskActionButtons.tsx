@@ -68,7 +68,7 @@ export default function TaskActionButtons({
     }
   }
 
-  const canCreateSubTask = true // Toujours autoriser les sous-tâches
+  const canCreateSubTask = task.level < 3
 
   return (
     <div className="flex gap-1">
