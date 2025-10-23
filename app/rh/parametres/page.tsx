@@ -8,6 +8,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -68,6 +76,18 @@ export default function ParametresPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [originalSettings, setOriginalSettings] = useState<typeof settings | null>(null)
+  
+  // États pour la gestion du premier utilisateur
+  const [showFirstUserModal, setShowFirstUserModal] = useState(false)
+  const [firstUserData, setFirstUserData] = useState({
+    email: "",
+    prenom: "",
+    nom: "",
+    motDePasse: ""
+  })
+  const [creatingFirstUser, setCreatingFirstUser] = useState(false)
+  const [collaborateursCount, setCollaborateursCount] = useState(0)
+  
   const supabase = createClient()
 
   const loadSettings = useCallback(async () => {
@@ -127,11 +147,77 @@ export default function ParametresPage() {
   // Chargement des paramètres au montage du composant
   useEffect(() => {
     loadSettings()
-  }, [loadSettings])
+    checkCollaborateursCount()
+  }, [loadSettings, checkCollaborateursCount])
 
   const getSettingValue = (data: any[], category: string, key: string, defaultValue: string) => {
     const setting = data?.find(s => s.category === category && s.setting_key === key)
     return setting?.setting_value || defaultValue
+  }
+
+  // Fonction pour vérifier le nombre de collaborateurs
+  const checkCollaborateursCount = useCallback(async () => {
+    try {
+      const { count, error } = await supabase
+        .from('ressources')
+        .select('*', { count: 'exact', head: true })
+      
+      if (error) throw error
+      setCollaborateursCount(count || 0)
+    } catch (error) {
+      console.error('Erreur lors de la vérification des collaborateurs:', error)
+    }
+  }, [supabase])
+
+  // Fonction pour créer le premier utilisateur
+  const createFirstUser = async () => {
+    if (!firstUserData.email || !firstUserData.prenom || !firstUserData.nom || !firstUserData.motDePasse) {
+      toast.error('Tous les champs sont obligatoires')
+      return
+    }
+
+    setCreatingFirstUser(true)
+    try {
+      // Créer le collaborateur dans la table ressources
+      const { data: collaborateur, error: collaborateurError } = await supabase
+        .from('ressources')
+        .insert({
+          nom: firstUserData.nom,
+          prenom: firstUserData.prenom,
+          email_pro: firstUserData.email,
+          type_contrat: 'CDI',
+          actif: true,
+          date_entree: new Date().toISOString().split('T')[0]
+        })
+        .select()
+        .single()
+
+      if (collaborateurError) throw collaborateurError
+
+      // Créer l'utilisateur dans auth.users via Supabase Auth
+      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+        email: firstUserData.email,
+        password: firstUserData.motDePasse,
+        email_confirm: true,
+        user_metadata: {
+          prenom: firstUserData.prenom,
+          nom: firstUserData.nom,
+          role: 'admin'
+        }
+      })
+
+      if (authError) throw authError
+
+      toast.success('Premier utilisateur créé avec succès !')
+      setShowFirstUserModal(false)
+      setFirstUserData({ email: "", prenom: "", nom: "", motDePasse: "" })
+      checkCollaborateursCount()
+    } catch (error) {
+      console.error('Erreur lors de la création du premier utilisateur:', error)
+      toast.error('Erreur lors de la création du premier utilisateur')
+    } finally {
+      setCreatingFirstUser(false)
+    }
   }
 
   const handleSave = async () => {
@@ -252,6 +338,44 @@ export default function ParametresPage() {
         </div>
 
         <div className="space-y-6">
+          {/* Section Premier utilisateur */}
+          {collaborateursCount === 0 && (
+            <Card className="border-orange-200 bg-orange-50">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-orange-800">Configuration initiale</CardTitle>
+                    <CardDescription className="text-orange-600">
+                      Aucun collaborateur trouvé. Créez le premier utilisateur administrateur.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-orange-700 mb-2">
+                      Pour commencer à utiliser l'application, vous devez créer le premier utilisateur administrateur.
+                    </p>
+                    <p className="text-xs text-orange-600">
+                      Cet utilisateur aura tous les droits d'administration.
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => setShowFirstUserModal(true)}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Créer le premier utilisateur
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Informations générales */}
           <Card>
             <CardHeader>
@@ -564,6 +688,90 @@ export default function ParametresPage() {
           </Card>
         </div>
       </div>
+
+      {/* Modal pour créer le premier utilisateur */}
+      <Dialog open={showFirstUserModal} onOpenChange={setShowFirstUserModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Créer le premier utilisateur</DialogTitle>
+            <DialogDescription>
+              Créez le compte administrateur principal pour commencer à utiliser l'application.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="prenom">Prénom *</Label>
+                <Input
+                  id="prenom"
+                  value={firstUserData.prenom}
+                  onChange={(e) => setFirstUserData({...firstUserData, prenom: e.target.value})}
+                  placeholder="Jean"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nom">Nom *</Label>
+                <Input
+                  id="nom"
+                  value={firstUserData.nom}
+                  onChange={(e) => setFirstUserData({...firstUserData, nom: e.target.value})}
+                  placeholder="Dupont"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={firstUserData.email}
+                onChange={(e) => setFirstUserData({...firstUserData, email: e.target.value})}
+                placeholder="jean.dupont@entreprise.com"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="motDePasse">Mot de passe *</Label>
+              <Input
+                id="motDePasse"
+                type="password"
+                value={firstUserData.motDePasse}
+                onChange={(e) => setFirstUserData({...firstUserData, motDePasse: e.target.value})}
+                placeholder="Mot de passe sécurisé"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowFirstUserModal(false)}
+              disabled={creatingFirstUser}
+            >
+              Annuler
+            </Button>
+            <Button 
+              onClick={createFirstUser}
+              disabled={creatingFirstUser}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {creatingFirstUser ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Création...
+                </>
+              ) : (
+                <>
+                  <Users className="h-4 w-4 mr-2" />
+                  Créer l'utilisateur
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
