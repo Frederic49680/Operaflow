@@ -67,7 +67,7 @@ export default function ParametresPage() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [originalSettings, setOriginalSettings] = useState({})
+  const [originalSettings, setOriginalSettings] = useState<typeof settings | null>(null)
   const supabase = createClient()
 
   const loadSettings = useCallback(async () => {
@@ -206,7 +206,7 @@ export default function ParametresPage() {
 
   const handleReset = () => {
     if (originalSettings) {
-      setSettings(originalSettings)
+      setSettings(originalSettings as typeof settings)
       toast.info('Paramètres réinitialisés')
     }
   }
