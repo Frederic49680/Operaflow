@@ -450,7 +450,6 @@ export default function CompetencesPage() {
                   <TableHead>Catégorie</TableHead>
                   <TableHead>Niveau requis</TableHead>
                   <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -490,25 +489,6 @@ export default function CompetencesPage() {
                       >
                         {competence.actif ? 'Actif' : 'Inactif'}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditCompetence(competence)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-800"
-                          onClick={() => handleDeleteCompetence(competence)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -576,17 +556,29 @@ export default function CompetencesPage() {
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setShowEditModal(false)
-                setEditingCompetence(null)
-                setFormData({ code: "", label: "", description: "", category: "", niveau_requis: 1 })
-              }}>
-                Annuler
+            <DialogFooter className="flex justify-between">
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  setShowEditModal(false)
+                  handleDeleteCompetence(editingCompetence!)
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer
               </Button>
-              <Button onClick={handleUpdateCompetence}>
-                Enregistrer
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => {
+                  setShowEditModal(false)
+                  setEditingCompetence(null)
+                  setFormData({ code: "", label: "", description: "", category: "", niveau_requis: 1 })
+                }}>
+                  Annuler
+                </Button>
+                <Button onClick={handleUpdateCompetence}>
+                  Enregistrer
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
