@@ -155,6 +155,30 @@ export default function CompetencesPage() {
     category: "",
     niveau_requis: 1
   })
+  const [showNewCategory, setShowNewCategory] = useState(false)
+  const [newCategory, setNewCategory] = useState("")
+
+  // Catégories prédéfinies
+  const categoriesDisponibles = [
+    "TECHNIQUE",
+    "SECURITE", 
+    "QUALITE",
+    "MANAGEMENT",
+    "ADMINISTRATIF",
+    "COMMERCIAL"
+  ]
+
+  // Niveaux disponibles
+  const niveauxDisponibles = [
+    { niveau: 1, label: "N1 - Débutant", description: "Connaissances de base" },
+    { niveau: 2, label: "N2 - Intermédiaire", description: "Compétences développées" },
+    { niveau: 3, label: "N3 - Avancé", description: "Expertise confirmée" },
+    { niveau: 4, label: "N4 - Expert", description: "Maîtrise complète" },
+    { niveau: 5, label: "N5 - Senior", description: "Expertise approfondie" },
+    { niveau: 6, label: "N6 - Lead", description: "Encadrement technique" },
+    { niveau: 7, label: "N7 - Manager", description: "Gestion d'équipe" },
+    { niveau: 8, label: "N8 - Directeur", description: "Direction stratégique" }
+  ]
 
   const filteredCompetences = competences.filter(comp =>
     comp.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -267,6 +291,23 @@ export default function CompetencesPage() {
     handleEditCompetence(competence)
   }
 
+  const handleCategorySelect = (category: string) => {
+    setFormData({...formData, category})
+    setShowNewCategory(false)
+  }
+
+  const handleNewCategory = () => {
+    if (newCategory.trim()) {
+      setFormData({...formData, category: newCategory.toUpperCase()})
+      setNewCategory("")
+      setShowNewCategory(false)
+    }
+  }
+
+  const handleNiveauSelect = (niveau: number) => {
+    setFormData({...formData, niveau_requis: niveau})
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -322,25 +363,80 @@ export default function CompetencesPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="category">Catégorie *</Label>
-                    <Input 
-                      id="category" 
-                      placeholder="Ex: TECHNIQUE" 
-                      value={formData.category}
-                      onChange={(e) => setFormData({...formData, category: e.target.value})}
-                    />
+                    <Label>Catégorie *</Label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {categoriesDisponibles.map((cat) => (
+                        <Button
+                          key={cat}
+                          type="button"
+                          variant={formData.category === cat ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleCategorySelect(cat)}
+                          className="text-xs"
+                        >
+                          {cat}
+                        </Button>
+                      ))}
+                    </div>
+                    {!showNewCategory ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowNewCategory(true)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        + Ajouter une catégorie
+                      </Button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Nouvelle catégorie"
+                          value={newCategory}
+                          onChange={(e) => setNewCategory(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleNewCategory}
+                          disabled={!newCategory.trim()}
+                        >
+                          Ajouter
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowNewCategory(false)
+                            setNewCategory("")
+                          }}
+                        >
+                          Annuler
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="niveau">Niveau requis (1-8) *</Label>
-                    <Input 
-                      id="niveau" 
-                      type="number" 
-                      min="1" 
-                      max="8" 
-                      placeholder="3"
-                      value={formData.niveau_requis}
-                      onChange={(e) => setFormData({...formData, niveau_requis: parseInt(e.target.value) || 1})}
-                    />
+                    <Label>Niveau requis *</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {niveauxDisponibles.map((niveau) => (
+                        <Button
+                          key={niveau.niveau}
+                          type="button"
+                          variant={formData.niveau_requis === niveau.niveau ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleNiveauSelect(niveau.niveau)}
+                          className="justify-start text-left h-auto p-3"
+                        >
+                          <div>
+                            <div className="font-medium">{niveau.label}</div>
+                            <div className="text-xs text-gray-500">{niveau.description}</div>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
@@ -535,25 +631,80 @@ export default function CompetencesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-category">Catégorie *</Label>
-                <Input 
-                  id="edit-category" 
-                  placeholder="Ex: TECHNIQUE" 
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                />
+                <Label>Catégorie *</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {categoriesDisponibles.map((cat) => (
+                    <Button
+                      key={cat}
+                      type="button"
+                      variant={formData.category === cat ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleCategorySelect(cat)}
+                      className="text-xs"
+                    >
+                      {cat}
+                    </Button>
+                  ))}
+                </div>
+                {!showNewCategory ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowNewCategory(true)}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    + Ajouter une catégorie
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nouvelle catégorie"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleNewCategory}
+                      disabled={!newCategory.trim()}
+                    >
+                      Ajouter
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowNewCategory(false)
+                        setNewCategory("")
+                      }}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-niveau">Niveau requis (1-8) *</Label>
-                <Input 
-                  id="edit-niveau" 
-                  type="number" 
-                  min="1" 
-                  max="8" 
-                  placeholder="3"
-                  value={formData.niveau_requis}
-                  onChange={(e) => setFormData({...formData, niveau_requis: parseInt(e.target.value) || 1})}
-                />
+                <Label>Niveau requis *</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {niveauxDisponibles.map((niveau) => (
+                    <Button
+                      key={niveau.niveau}
+                      type="button"
+                      variant={formData.niveau_requis === niveau.niveau ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleNiveauSelect(niveau.niveau)}
+                      className="justify-start text-left h-auto p-3"
+                    >
+                      <div>
+                        <div className="font-medium">{niveau.label}</div>
+                        <div className="text-xs text-gray-500">{niveau.description}</div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
             <DialogFooter className="flex justify-between">
