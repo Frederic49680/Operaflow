@@ -103,11 +103,7 @@ export default function PlanFormationManager() {
       
       let query = supabase
         .from('plan_formations')
-        .select(`
-          *,
-          ressource:ressources(nom, prenom, site),
-          formation:catalogue_formations(intitule, category)
-        `)
+        .select('*')
         .eq('annee', selectedAnnee)
         .order('mois_cible', { ascending: true });
 
@@ -428,13 +424,11 @@ export default function PlanFormationManager() {
               {planFormations.map((formation) => (
                 <TableRow key={formation.id}>
                   <TableCell>
-                    {formation.ressource?.prenom} {formation.ressource?.nom}
-                    <br />
-                    <span className="text-sm text-muted-foreground">
-                      {formation.ressource?.site}
-                    </span>
+                    Ressource {formation.resource_id}
                   </TableCell>
-                  <TableCell>{formation.formation?.intitule}</TableCell>
+                  <TableCell>
+                    Formation {formation.formation_id}
+                  </TableCell>
                   <TableCell>
                     <Badge className={getCategoryColor(formation.category)}>
                       {formation.category}
@@ -446,7 +440,7 @@ export default function PlanFormationManager() {
                   <TableCell>{getPhaseBadge(formation.phase)}</TableCell>
                   <TableCell>{getStatutBadge(formation.statut)}</TableCell>
                   <TableCell>
-                    {formation.cost_planned ? `${formation.cost_planned}€` : '-'}
+                    {formation.cout_estime ? `${formation.cout_estime}€` : '-'}
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-1">
