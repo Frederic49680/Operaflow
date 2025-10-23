@@ -204,12 +204,6 @@ export default function SessionsFormationManager() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Sessions de Formation</h2>
-          <p className="text-muted-foreground">
-            Gestion des sessions de formation planifiées
-          </p>
-        </div>
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogTrigger asChild>
             <Button>
