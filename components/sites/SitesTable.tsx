@@ -59,6 +59,8 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
   const [newStatus, setNewStatus] = useState<string>('')
   const [isUpdating, setIsUpdating] = useState(false)
   const [statusSiteId, setStatusSiteId] = useState<string | null>(null)
+  const [siteToDelete, setSiteToDelete] = useState<{ id: string, nom: string } | null>(null)
+  const [deletingSite, setDeletingSite] = useState(false)
 
   useEffect(() => {
     loadSites()
@@ -153,32 +155,43 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
   }
 
   const handleDeleteSite = async (siteId: string, siteNom: string) => {
+    // Ouvrir directement le modal de confirmation de suppression
+    setSiteToDelete({ id: siteId, nom: siteNom })
+  }
+
+  const confirmDeleteSite = async () => {
+    if (!siteToDelete) return
+
     try {
+      setDeletingSite(true)
       const supabase = createClient()
       
-      // Vérifier si le site a des tâches actives
-      const { data: taches, error: tachesError } = await supabase
-        .from('planning_taches')
-        .select('id, libelle_tache, statut')
-        .eq('site_id', siteId)
-        .neq('statut', 'Terminé')
+      // Supprimer le site directement
+      const { error } = await supabase
+        .from('sites')
+        .delete()
+        .eq('id', siteToDelete.id)
       
-      if (tachesError) throw tachesError
+      if (error) throw error
       
-      // Si des tâches actives existent, empêcher la fermeture
-      if (taches && taches.length > 0) {
-        setToast({ 
-          type: 'error', 
-          message: `Impossible de fermer le site "${siteNom}" ! Le site contient ${taches.length} tâche(s) active(s) dans le planning Gantt. Veuillez terminer ou supprimer ces tâches avant de fermer le site.` 
-        })
-        return
-      }
+      setToast({ 
+        type: 'success', 
+        message: `Site "${siteToDelete.nom}" supprimé avec succès !` 
+      })
       
-      // Ouvrir le modal de confirmation
-      setSiteToClose({ id: siteId, nom: siteNom })
+      // Recharger la liste des sites
+      await loadSites()
+      
+      // Fermer le modal
+      setSiteToDelete(null)
     } catch (err) {
-      console.error('Erreur vérification tâches:', err)
-      setToast({ type: 'error', message: 'Erreur lors de la vérification des tâches' })
+      console.error('Erreur suppression site:', err)
+      setToast({ 
+        type: 'error', 
+        message: `Erreur lors de la suppression du site "${siteToDelete.nom}". Vérifiez qu'aucune donnée n'est liée à ce site.` 
+      })
+    } finally {
+      setDeletingSite(false)
     }
   }
 
@@ -371,6 +384,7 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
               <TableHead className="font-semibold text-slate-700">Statut</TableHead>
               <TableHead className="font-semibold text-slate-700 text-center">Collaborateurs</TableHead>
               <TableHead className="font-semibold text-slate-700 text-center">Affaires</TableHead>
+              <TableHead className="font-semibold text-slate-700 text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -401,6 +415,20 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
                 </TableCell>
                 <TableCell className="text-center text-slate-600">
                   {site.nb_affaires || 0}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteSite(site.id, site.nom)
+                    }}
+                    className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Supprimer le site"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -525,6 +553,68 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
                 </>
               ) : (
                 'Mettre à jour'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmation de suppression */}
+      <Dialog open={!!siteToDelete} onOpenChange={(open) => !open && setSiteToDelete(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-slate-900">
+              Confirmer la suppression du site
+            </DialogTitle>
+            <DialogDescription>
+              Cette action est irréversible et supprimera définitivement le site.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="font-medium text-red-900">
+                  Site : <span className="font-bold">{siteToDelete?.nom}</span>
+                </p>
+                <p className="text-sm text-red-700 mt-1">
+                  Êtes-vous sûr de vouloir supprimer définitivement ce site ?
+                </p>
+                <p className="text-xs text-red-600 mt-2">
+                  ⚠️ Cette action supprimera toutes les données associées à ce site.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSiteToDelete(null)}
+              disabled={deletingSite}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={confirmDeleteSite}
+              disabled={deletingSite}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deletingSite ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Suppression...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer définitivement
+                </>
               )}
             </Button>
           </DialogFooter>
