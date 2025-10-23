@@ -99,12 +99,7 @@ export default function TuilesTachesSimple() {
     return matchesSearch && matchesStatus
   })
 
-  // Log pour déboguer le chargement des tâches
-  console.log('Tâches chargées:', {
-    total: tasks.length,
-    filtered: filteredTasks.length,
-    bpuTasks: tasks.filter(t => t.libelle_tache?.includes('[PARAPLUIE BPU]')).length
-  })
+  // Tâches chargées
 
   // Grouper les tâches par affaire
   const tasksByAffaire = filteredTasks.reduce((acc, task) => {
@@ -112,16 +107,7 @@ export default function TuilesTachesSimple() {
     const affaireName = task.affaire?.nom || 'Sans affaire'
     const affaireCode = task.affaire?.code_affaire || 'N/A'
     
-    // Log pour déboguer les tâches BPU
-    if (task.libelle_tache?.includes('[PARAPLUIE BPU]')) {
-      console.log('Tâche parapluie BPU trouvée:', {
-        id: task.id,
-        libelle: task.libelle_tache,
-        affaire_id: task.affaire_id,
-        affaire_nom: task.affaire?.nom,
-        affaire_code: task.affaire?.code_affaire
-      })
-    }
+    // Tâche parapluie BPU détectée
     
     if (!acc[affaireId]) {
       acc[affaireId] = {

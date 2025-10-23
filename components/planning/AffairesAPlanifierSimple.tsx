@@ -122,7 +122,7 @@ export default function AffairesAPlanifierSimple() {
       // Mettre à jour le statut de l'affaire
       const { error } = await supabase
         .from('affaires')
-        .update({ statut: 'Validee' })
+        .update({ statut: 'Validée' })
         .eq('id', affaireId)
 
       if (error) throw error

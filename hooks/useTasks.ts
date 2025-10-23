@@ -93,13 +93,7 @@ export function useTasks() {
 
       if (error) throw error
 
-      // Log pour déboguer
-      console.log('📊 Données brutes chargées depuis Supabase:', {
-        total: data?.length || 0,
-        bpuTasks: data?.filter((t: any) => t.libelle_tache?.includes('[PARAPLUIE BPU]')).length || 0,
-        sample: data?.[0],
-        bpuSample: data?.find((t: any) => t.libelle_tache?.includes('[PARAPLUIE BPU]'))
-      })
+      // Données chargées depuis Supabase
 
       // Organiser les tâches en hiérarchie
       const tasksMap = new Map<string, Task>()
@@ -258,7 +252,7 @@ export function useTasks() {
           return
         }
 
-        console.log('Affaire parent trouvée:', affaire)
+        // Affaire parent trouvée
 
         // Si l'affaire n'a pas un statut valide, on ne peut pas créer de sous-tâche
         const statutsValides = ['Brouillon', 'Soumise', 'Validée', 'Planifiée', 'En suivi', 'Clôturée']
@@ -268,7 +262,7 @@ export function useTasks() {
           return
         }
 
-        console.log(`Affaire ${affaire.code_affaire} a un statut valide: ${affaire.statut}`)
+        // Affaire avec statut valide
       }
 
       // Créer une sous-tâche SANS parent_id pour éviter les cycles
@@ -298,7 +292,7 @@ export function useTasks() {
         updated_at: new Date().toISOString()
       }
 
-      console.log('Données à insérer:', insertData)
+      // Données à insérer
 
       const { data, error} = await supabase
         .from('planning_taches')
@@ -326,7 +320,7 @@ export function useTasks() {
           console.error('Erreur lors de la mise à jour de l\'affaire_id:', updateError)
           // Ne pas faire échouer la création, juste logger l'erreur
         } else {
-          console.log('affaire_id mis à jour avec succès')
+          // affaire_id mis à jour avec succès
         }
       }
       
