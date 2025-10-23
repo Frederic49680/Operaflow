@@ -109,7 +109,7 @@ export default function DashboardGlobalPage() {
                       <GanttChart className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-slate-900">Tuiles Tâches</h4>
+                      <h4 className="font-semibold text-slate-900">Planning</h4>
                       <p className="text-xs text-slate-500">Planification</p>
                     </div>
                   </div>

@@ -10,9 +10,9 @@ export default function TuilesTaches() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Gestion des Tâches</h2>
+          <h2 className="text-2xl font-bold">Planning</h2>
           <p className="text-muted-foreground">
-            Interface en tuiles pour la planification et le suivi des tâches
+            Planification et suivi des tâches
           </p>
         </div>
         <Button>
@@ -87,10 +87,10 @@ export default function TuilesTaches() {
               <Calendar className="h-8 w-8 text-blue-600" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              Module Tuiles Tâches
+              Module Planning
             </h3>
             <p className="text-slate-600 mb-6">
-              Cette interface sera bientôt disponible pour la gestion des tâches en mode tuiles.
+              Cette interface sera bientôt disponible pour la planification et la gestion des tâches.
             </p>
             <Button variant="outline">
               En savoir plus
