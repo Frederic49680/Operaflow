@@ -67,7 +67,7 @@ export default function ProvisionalAssignmentsManager() {
             libelle_tache,
             affaire:affaires(nom)
           ),
-          user:ressources!inner(prenom, nom),
+          user:ressources!user_id(prenom, nom),
           substitution_rule:substitution_rules(description, max_days)
         `)
         .order('created_at', { ascending: false })
