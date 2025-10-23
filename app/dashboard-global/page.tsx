@@ -100,8 +100,8 @@ export default function DashboardGlobalPage() {
               </Card>
             </Link>
 
-            {/* Module Gantt */}
-            <Link href="/gantt">
+            {/* Module Tuiles Tâches */}
+            <Link href="/tuiles-taches">
               <Card className="hover:shadow-lg transition-all cursor-pointer border-slate-200 hover:border-blue-300">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
@@ -109,7 +109,7 @@ export default function DashboardGlobalPage() {
                       <GanttChart className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-slate-900">Gantt</h4>
+                      <h4 className="font-semibold text-slate-900">Tuiles Tâches</h4>
                       <p className="text-xs text-slate-500">Planification</p>
                     </div>
                   </div>
