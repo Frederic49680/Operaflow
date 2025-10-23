@@ -158,35 +158,38 @@ export function SiteFormModal({ children, siteId, onClose }: SiteFormModalProps)
       setDeleting(true)
       const supabase = createClient()
       
-      // Supprimer le site directement
-      const { error } = await supabase
-        .from('sites')
-        .delete()
-        .eq('id', siteId)
+      // Utiliser la fonction RPC de suppression en cascade
+      const { data, error } = await supabase
+        .rpc('delete_site_cascade', { site_id_to_delete: siteId })
       
       if (error) throw error
       
-      setToast({ 
-        type: 'success', 
-        message: `Site "${siteData?.nom || 'sélectionné'}" supprimé avec succès !` 
-      })
-      
-      // Fermer le modal et recharger
-      setOpen(false)
-      setSiteData(null)
-      setSelectedResponsable("")
-      setSelectedRemplaçant("")
-      setShowDeleteModal(false)
-      
-      if (onClose) {
-        onClose()
+      // Vérifier le résultat de la fonction
+      if (data && data.success) {
+        setToast({ 
+          type: 'success', 
+          message: data.message || `Site "${siteData?.nom || 'sélectionné'}" supprimé avec succès !` 
+        })
+        
+        // Fermer le modal et recharger
+        setOpen(false)
+        setSiteData(null)
+        setSelectedResponsable("")
+        setSelectedRemplaçant("")
+        setShowDeleteModal(false)
+        
+        if (onClose) {
+          onClose()
+        }
+        window.dispatchEvent(new Event('site-created'))
+      } else {
+        throw new Error(data?.message || 'Erreur lors de la suppression')
       }
-      window.dispatchEvent(new Event('site-created'))
     } catch (err) {
       console.error('Erreur suppression site:', err)
       setToast({ 
         type: 'error', 
-        message: `Erreur lors de la suppression du site. Vérifiez qu'aucune donnée n'est liée à ce site.` 
+        message: `Erreur lors de la suppression du site: ${err instanceof Error ? err.message : 'Erreur inconnue'}` 
       })
     } finally {
       setDeleting(false)

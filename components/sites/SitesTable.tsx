@@ -166,29 +166,32 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
       setDeletingSite(true)
       const supabase = createClient()
       
-      // Supprimer le site directement
-      const { error } = await supabase
-        .from('sites')
-        .delete()
-        .eq('id', siteToDelete.id)
+      // Utiliser la fonction RPC de suppression en cascade
+      const { data, error } = await supabase
+        .rpc('delete_site_cascade', { site_id_to_delete: siteToDelete.id })
       
       if (error) throw error
       
-      setToast({ 
-        type: 'success', 
-        message: `Site "${siteToDelete.nom}" supprimé avec succès !` 
-      })
-      
-      // Recharger la liste des sites
-      await loadSites()
-      
-      // Fermer le modal
-      setSiteToDelete(null)
+      // Vérifier le résultat de la fonction
+      if (data && data.success) {
+        setToast({ 
+          type: 'success', 
+          message: data.message || `Site "${siteToDelete.nom}" supprimé avec succès !` 
+        })
+        
+        // Recharger la liste des sites
+        await loadSites()
+        
+        // Fermer le modal
+        setSiteToDelete(null)
+      } else {
+        throw new Error(data?.message || 'Erreur lors de la suppression')
+      }
     } catch (err) {
       console.error('Erreur suppression site:', err)
       setToast({ 
         type: 'error', 
-        message: `Erreur lors de la suppression du site "${siteToDelete.nom}". Vérifiez qu'aucune donnée n'est liée à ce site.` 
+        message: `Erreur lors de la suppression du site "${siteToDelete.nom}": ${err instanceof Error ? err.message : 'Erreur inconnue'}` 
       })
     } finally {
       setDeletingSite(false)
