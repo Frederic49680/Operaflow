@@ -2,6 +2,16 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { 
   Edit, 
   Plus, 
@@ -14,6 +24,7 @@ import {
 import { useTasks } from "@/hooks/useTasks"
 import { Task } from "@/hooks/useTasks"
 import { toast } from "sonner"
+import TaskAssignmentModal from "./TaskAssignmentModal"
 
 interface TaskActionButtonsProps {
   task: Task
@@ -34,6 +45,9 @@ export default function TaskActionButtons({
 }: TaskActionButtonsProps) {
   const { deleteTask, createSubTask } = useTasks()
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showSubTaskModal, setShowSubTaskModal] = useState(false)
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false)
+  const [subTaskName, setSubTaskName] = useState("")
 
   const handleDelete = async () => {
     if (!confirm(`Êtes-vous sûr de vouloir supprimer la tâche "${task.libelle_tache}" ?`)) {
@@ -51,21 +65,40 @@ export default function TaskActionButtons({
     }
   }
 
-  const handleSubTask = async () => {
-    try {
-      const subTaskName = prompt("Nom de la sous-tâche :")
-      if (!subTaskName) return
+  const handleSubTask = () => {
+    setShowSubTaskModal(true)
+  }
 
+  const handleCreateSubTask = async () => {
+    if (!subTaskName.trim()) {
+      toast.error("Le nom de la sous-tâche est requis")
+      return
+    }
+
+    try {
       await createSubTask(task.id, {
-        libelle_tache: subTaskName,
+        libelle_tache: subTaskName.trim(),
         statut: 'Non lancé',
         avancement_pct: 0
       })
       
+      setShowSubTaskModal(false)
+      setSubTaskName("")
       onSubTask?.(task.id)
+      toast.success("Sous-tâche créée avec succès")
     } catch (error) {
       console.error('Erreur lors de la création de la sous-tâche:', error)
+      toast.error("Erreur lors de la création de la sous-tâche")
     }
+  }
+
+  const handleCancelSubTask = () => {
+    setShowSubTaskModal(false)
+    setSubTaskName("")
+  }
+
+  const handleAssignResource = () => {
+    setShowAssignmentModal(true)
   }
 
   const canCreateSubTask = true // Hiérarchie désactivée - colonne level n'existe pas
@@ -106,16 +139,16 @@ export default function TaskActionButtons({
         <Link className="h-3 w-3" />
       </Button>
 
-      {/* Bouton Assigner Ressource */}
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => onAssignResource?.(task.id)}
-        className="h-8 px-2"
-        title="Assigner une ressource"
-      >
-        <User className="h-3 w-3" />
-      </Button>
+            {/* Bouton Assigner Ressource */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAssignResource}
+              className="h-8 px-2"
+              title="Assigner une ressource"
+            >
+              <User className="h-3 w-3" />
+            </Button>
 
       {/* Bouton Supprimer */}
       <Button
@@ -128,6 +161,71 @@ export default function TaskActionButtons({
       >
         <Trash2 className="h-3 w-3" />
       </Button>
+
+      {/* Modal de création de sous-tâche */}
+      <Dialog open={showSubTaskModal} onOpenChange={setShowSubTaskModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-blue-600" />
+              Créer une sous-tâche
+            </DialogTitle>
+            <DialogDescription>
+              Ajoutez une nouvelle sous-tâche à "{task.libelle_tache}"
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="subtask-name" className="text-sm font-medium">
+                Nom de la sous-tâche
+              </Label>
+              <Input
+                id="subtask-name"
+                value={subTaskName}
+                onChange={(e) => setSubTaskName(e.target.value)}
+                placeholder="Saisissez le nom de la sous-tâche..."
+                className="w-full"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateSubTask()
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleCancelSubTask}
+              className="flex-1"
+            >
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleCreateSubTask}
+              disabled={!subTaskName.trim()}
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Créer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal d'affectation de ressource */}
+      <TaskAssignmentModal
+        isOpen={showAssignmentModal}
+        onClose={() => setShowAssignmentModal(false)}
+        task={task}
+        onAssignmentComplete={() => {
+          setShowAssignmentModal(false)
+          onAssignResource?.(task.id)
+        }}
+      />
     </div>
   )
 }

@@ -8,10 +8,10 @@ CREATE OR REPLACE VIEW V_Dashboard_RH AS
 SELECT 
     COUNT(*) FILTER (WHERE actif = true) as nb_ressources_actives,
     COUNT(*) FILTER (WHERE actif = false) as nb_ressources_inactives,
-    COUNT(*) FILTER (WHERE type_contrat = 'CDI') as nb_cdi,
-    COUNT(*) FILTER (WHERE type_contrat = 'CDD') as nb_cdd,
-    COUNT(*) FILTER (WHERE type_contrat = 'Intérim') as nb_interim,
-    COUNT(*) FILTER (WHERE type_contrat = 'Apprenti') as nb_apprenti,
+    COUNT(*) FILTER (WHERE type_contrat = 'CDI' AND actif = true) as nb_cdi,
+    COUNT(*) FILTER (WHERE type_contrat = 'CDD' AND actif = true) as nb_cdd,
+    COUNT(*) FILTER (WHERE type_contrat = 'Intérim' AND actif = true) as nb_interim,
+    COUNT(*) FILTER (WHERE type_contrat = 'Apprenti' AND actif = true) as nb_apprenti,
     COUNT(*) as nb_total_ressources
 FROM ressources;
 

@@ -298,7 +298,7 @@ export function AffaireFormModal({ children, affaireId, onClose }: AffaireFormMo
         competence_principale: selectedCompetence,
         num_commande: numCommande,
         type_affaire: typeAffaire,
-        montant_total_ht: montant ? parseFloat(montant) : null,
+        montant_total_ht: montant ? parseFloat(montant.replace(/[,\s]/g, '')) : null,
         // Pour BPU, utiliser les dates de période ; sinon les dates classiques
         date_debut: typeAffaire === "BPU" ? periodeDebut : dateDebut,
         date_fin_prevue: typeAffaire === "BPU" ? periodeFin : dateFin,
@@ -550,8 +550,8 @@ export function AffaireFormModal({ children, affaireId, onClose }: AffaireFormMo
                   <Input
                     id="montant"
                     name="montant"
-                    type="number"
-                    placeholder="150000"
+                    type="text"
+                    placeholder="150000 ou 150,000"
                     required
                     value={montant}
                     onChange={(e) => setMontant(e.target.value)}

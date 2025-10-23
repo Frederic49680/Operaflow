@@ -73,6 +73,52 @@ export default function AffairesAPlanifierSimple() {
     try {
       const supabase = createClient()
 
+      // Récupérer les données de l'affaire pour vérifier si c'est BPU
+      const { data: affaire, error: affaireError } = await supabase
+        .from('affaires')
+        .select('*')
+        .eq('id', affaireId)
+        .single()
+
+      if (affaireError) throw affaireError
+
+      // Si c'est une affaire BPU, créer automatiquement la tâche parapluie
+      if (affaire.type_affaire === 'BPU') {
+        console.log('Affaire BPU détectée, création automatique de la tâche parapluie')
+        
+        // Créer la tâche parapluie BPU
+        const { error: taskError } = await supabase
+          .from('planning_taches')
+          .insert({
+            libelle_tache: `[PARAPLUIE BPU] ${affaire.nom}`,
+            affaire_id: affaireId,
+            site_id: affaire.site_id,
+            date_debut_plan: affaire.periode_debut || affaire.date_debut || new Date().toISOString().split('T')[0],
+            date_fin_plan: affaire.periode_fin || affaire.date_fin_prevue || new Date().toISOString().split('T')[0],
+            effort_plan_h: affaire.heures_capacite || 0,
+            effort_reel_h: 0,
+            avancement_pct: 0,
+            statut: 'Non lancé',
+            type_tache: 'Autre',
+            competence: affaire.competence_principale || null,
+            ressource_ids: [],
+            is_parapluie_bpu: true,
+            level: 0,
+            order_index: 0,
+            created_by: null,
+            date_creation: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+
+        if (taskError) {
+          console.error('Erreur création tâche parapluie:', taskError)
+          throw taskError
+        }
+
+        console.log('Tâche parapluie BPU créée avec succès')
+      }
+
+      // Mettre à jour le statut de l'affaire
       const { error } = await supabase
         .from('affaires')
         .update({ statut: 'Validee' })
@@ -80,7 +126,11 @@ export default function AffairesAPlanifierSimple() {
 
       if (error) throw error
 
-      toast.success("Affaire déclarée en planification")
+      const message = affaire.type_affaire === 'BPU' 
+        ? "Affaire BPU planifiée automatiquement avec tâche parapluie"
+        : "Affaire déclarée en planification"
+      
+      toast.success(message)
       await loadAffaires()
     } catch (error) {
       console.error('Erreur lors de la déclaration:', error)
@@ -158,9 +208,16 @@ export default function AffairesAPlanifierSimple() {
                       {affaire.code_affaire}
                     </p>
                   </div>
-                  <Badge variant="outline" className="bg-orange-100 text-orange-800">
-                    À Planifier
-                  </Badge>
+                  <div className="flex gap-2">
+                    <Badge variant="outline" className="bg-orange-100 text-orange-800">
+                      À Planifier
+                    </Badge>
+                    {affaire.type_affaire === 'BPU' && (
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                        BPU
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               
@@ -211,7 +268,10 @@ export default function AffairesAPlanifierSimple() {
                     size="sm"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Déclarer la Planification
+                    {affaire.type_affaire === 'BPU' 
+                      ? "Planifier automatiquement (BPU)" 
+                      : "Déclarer la Planification"
+                    }
                   </Button>
                 </div>
               </CardContent>

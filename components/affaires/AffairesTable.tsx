@@ -24,6 +24,7 @@ import { Plus } from "lucide-react"
 import { formatDate, formatCurrency } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { ErrorToast } from "@/components/ui/error-toast"
+import DeleteConfirmationModal from "./DeleteConfirmationModal"
 
 interface Affaire {
   id: string
@@ -48,6 +49,7 @@ interface AffairesTableProps {
   filterStatut?: string
   filterTypeContrat?: string
   showClosedAffaires?: boolean
+  onRefresh?: () => void
 }
 
 export function AffairesTable({ 
@@ -55,7 +57,8 @@ export function AffairesTable({
   filterSite = "", 
   filterStatut = "",
   filterTypeContrat = "",
-  showClosedAffaires = false
+  showClosedAffaires = false,
+  onRefresh
 }: AffairesTableProps) {
   const [affaires, setAffaires] = useState<Affaire[]>([])
   const [loading, setLoading] = useState(true)
@@ -64,6 +67,19 @@ export function AffairesTable({
   const [viewingAffaireId, setViewingAffaireId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<{ affaire: Affaire } | null>(null)
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean
+    affaire: Affaire | null
+    tasksCount: number
+    lotsCount: number
+    isLoading: boolean
+  }>({
+    isOpen: false,
+    affaire: null,
+    tasksCount: 0,
+    lotsCount: 0,
+    isLoading: false
+  })
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
 
@@ -129,6 +145,131 @@ export function AffairesTable({
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDeleteConfirmed = async () => {
+    if (!deleteModal.affaire) return
+
+    setDeleteModal(prev => ({ ...prev, isLoading: true }))
+
+    try {
+      const supabase = createClient()
+      const affaireId = deleteModal.affaire.id
+
+      // Utiliser la fonction de suppression directe
+      await deleteAffaireDirect(affaireId)
+      
+      setToast({ type: 'success', message: `Affaire ${deleteModal.affaire.code_affaire} supprimée avec succès` })
+      setDeleteModal({ isOpen: false, affaire: null, tasksCount: 0, lotsCount: 0, isLoading: false })
+      
+      // Refresh complet
+      await loadAffaires()
+      onRefresh?.()
+      
+      // Déclencher un événement global
+      window.dispatchEvent(new CustomEvent('affaire-deleted', { 
+        detail: { affaireId: deleteModal.affaire.id } 
+      }))
+      
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error)
+      setToast({ type: 'error', message: `Erreur lors de la suppression de l'affaire ${deleteModal.affaire.code_affaire}` })
+      setDeleteModal(prev => ({ ...prev, isLoading: false }))
+    }
+  }
+
+  const deleteAffaireDirect = async (affaireId: string) => {
+    const supabase = createClient()
+    
+    // Utiliser la fonction SQL de suppression en cascade
+    const { data, error } = await supabase.rpc('delete_affaire_cascade', {
+      affaire_uuid: affaireId
+    })
+
+    if (error) {
+      console.error('Erreur lors de la suppression en cascade:', error)
+      throw error
+    }
+
+    console.log(`🗑️ Suppression en cascade réussie pour l'affaire ${affaireId}`)
+    return true
+  }
+
+  const deleteAffaire = async (affaireId: string) => {
+    const supabase = createClient()
+    
+    // Récupérer les informations de l'affaire
+    const { data: affaire, error: affaireError } = await supabase
+      .from('affaires')
+      .select('id, code_affaire, nom, statut')
+      .eq('id', affaireId)
+      .single()
+
+    if (affaireError) throw affaireError
+
+    // Créer un objet Affaire minimal pour la modal
+    const affaireForModal: Affaire = {
+      id: affaire.id,
+      code_affaire: affaire.code_affaire,
+      nom: affaire.nom,
+      statut: affaire.statut,
+      nom_client: '', // Pas nécessaire pour la modal
+      site_nom: '', // Pas nécessaire pour la modal
+      responsable_nom: '', // Pas nécessaire pour la modal
+      responsable_prenom: '', // Pas nécessaire pour la modal
+      type_contrat: 'Forfait',
+      montant_total_ht: 0,
+      avancement_pct: 0
+    }
+
+    // Vérifier s'il y a des tâches liées
+    const { data: tasks, error: tasksError } = await supabase
+      .from('planning_taches')
+      .select('id, libelle_tache')
+      .eq('affaire_id', affaireId)
+
+    if (tasksError) throw tasksError
+
+    // Si l'affaire est planifiée (statut = 'Planifiée' ou 'En suivi'), supprimer aussi les tâches
+    // Pour les autres statuts (Brouillon, Soumise, etc.), empêcher la suppression si des tâches existent
+    if (affaire.statut === 'Planifiée' || affaire.statut === 'En suivi') {
+      if (tasks && tasks.length > 0) {
+        console.log(`🗑️ Suppression des ${tasks.length} tâches liées à l'affaire ${affaire.code_affaire}`)
+        
+        // Supprimer toutes les tâches liées
+        const { error: deleteTasksError } = await supabase
+          .from('planning_taches')
+          .delete()
+          .eq('affaire_id', affaireId)
+
+        if (deleteTasksError) throw deleteTasksError
+      }
+    }
+
+    // Vérifier s'il y a des lots financiers
+    const { data: lots, error: lotsError } = await supabase
+      .from('affaires_lots_financiers')
+      .select('id')
+      .eq('affaire_id', affaireId)
+      .limit(1)
+
+    if (lotsError) throw lotsError
+
+    // Si des dépendances existent, ouvrir la modal de confirmation
+    if ((tasks && tasks.length > 0) || (lots && lots.length > 0)) {
+      setDeleteModal({
+        isOpen: true,
+        affaire: affaireForModal,
+        tasksCount: tasks?.length || 0,
+        lotsCount: lots?.length || 0,
+        isLoading: false
+      })
+      return // Sortir de la fonction, la suppression sera gérée par la modal
+    }
+
+    // Supprimer l'affaire (sans dépendances)
+    await deleteAffaireDirect(affaireId)
+    console.log(`✅ Affaire ${affaire.code_affaire} supprimée avec succès`)
   }
 
   // Rafraîchir la liste après création
@@ -441,10 +582,43 @@ export function AffairesTable({
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                console.log('Supprimer affaire:', confirmDelete.affaire.id)
-                setToast({ type: 'error', message: `Suppression de l'affaire ${confirmDelete.affaire.code_affaire}. Cette fonctionnalité sera implémentée prochainement.` })
-                setConfirmDelete(null)
+              onClick={async () => {
+                try {
+                  await deleteAffaire(confirmDelete.affaire.id)
+                  setToast({ type: 'success', message: `Affaire ${confirmDelete.affaire.code_affaire} supprimée avec succès` })
+                  setConfirmDelete(null)
+                  
+                  // Refresh complet
+                  await loadAffaires() // Recharger la liste des affaires
+                  onRefresh?.() // Déclencher le refresh parent (stats, etc.)
+                  
+                  // Déclencher un événement global pour notifier les autres composants
+                  window.dispatchEvent(new CustomEvent('affaire-deleted', { 
+                    detail: { affaireId: confirmDelete.affaire.id } 
+                  }))
+                  
+                } catch (error) {
+                  console.error('Erreur lors de la suppression:', error)
+                  
+                  // Messages d'erreur plus spécifiques
+                  let errorMessage = `Erreur lors de la suppression de l'affaire ${confirmDelete.affaire.code_affaire}`
+                  
+                  if (error instanceof Error) {
+                    if (error.message.includes('annulée par l\'utilisateur')) {
+                      // Ne pas afficher de toast pour les annulations
+                      setConfirmDelete(null)
+                      return
+                    } else if (error.message.includes('tâches planifiées')) {
+                      errorMessage = `Impossible de supprimer l'affaire ${confirmDelete.affaire.code_affaire} : elle contient des tâches planifiées`
+                    } else if (error.message.includes('lots financiers')) {
+                      errorMessage = `Impossible de supprimer l'affaire ${confirmDelete.affaire.code_affaire} : elle contient des lots financiers`
+                    } else {
+                      errorMessage = `Erreur lors de la suppression : ${error.message}`
+                    }
+                  }
+                  
+                  setToast({ type: 'error', message: errorMessage })
+                }
               }}
               className="gap-2"
             >
@@ -454,6 +628,19 @@ export function AffairesTable({
           </div>
         </div>
       </div>
+    )}
+
+    {/* Modal de confirmation de suppression */}
+    {deleteModal.affaire && (
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, affaire: null, tasksCount: 0, lotsCount: 0, isLoading: false })}
+        onConfirm={handleDeleteConfirmed}
+        affaire={deleteModal.affaire}
+        tasksCount={deleteModal.tasksCount}
+        lotsCount={deleteModal.lotsCount}
+        isLoading={deleteModal.isLoading}
+      />
     )}
     </>
   )

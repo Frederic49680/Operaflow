@@ -26,27 +26,6 @@ export default function PlanningPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* En-tête principal avec logo et titre */}
-      <div className="bg-white border-b">
-        <div className="px-6 py-4">
-          <div className="flex items-center gap-4">
-            {/* Logo */}
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <GripVertical className="h-6 w-6 text-white" />
-            </div>
-            
-            {/* Titre avec gradient */}
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Planning
-              </h1>
-              <p className="text-gray-600 text-sm mt-1">
-                Gestion des tâches et planification opérationnelle
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Contenu principal */}
       <div className="px-6 py-6 space-y-6">
@@ -146,31 +125,11 @@ export default function PlanningPage() {
         </TabsList>
 
         <TabsContent value="tasks" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GripVertical className="h-5 w-5" />
-                Gestion des Tâches (4 niveaux)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TuilesTachesSimple />
-            </CardContent>
-          </Card>
+          <TuilesTachesSimple />
         </TabsContent>
 
         <TabsContent value="affaires" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Affaires en Attente de Planification
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AffairesAPlanifierSimple />
-            </CardContent>
-          </Card>
+          <AffairesAPlanifierSimple />
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-6">

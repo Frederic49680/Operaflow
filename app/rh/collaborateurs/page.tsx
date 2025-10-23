@@ -38,8 +38,8 @@ export default function CollaborateursPage() {
   // Statistiques
   const [stats, setStats] = useState({
     total: 0,
-    actifs: 0,
-    cdi: 0,
+    cdiActif: 0,
+    interimActif: 0,
     aRenouveler: 0
   })
 
@@ -79,8 +79,8 @@ export default function CollaborateursPage() {
 
       // Calculer les statistiques
       const total = data?.length || 0
-      const actifs = data?.filter((c: any) => c.actif).length || 0
-      const cdi = data?.filter((c: any) => c.type_contrat === 'CDI').length || 0
+      const cdiActif = data?.filter((c: any) => c.type_contrat === 'CDI' && c.actif).length || 0
+      const interimActif = data?.filter((c: any) => c.type_contrat === 'Intérim' && c.actif).length || 0
       
       // À renouveler : collaborateurs actifs avec date de sortie dans les 30 prochains jours
       const aujourdHui = new Date()
@@ -93,7 +93,7 @@ export default function CollaborateursPage() {
         return dateSortie >= aujourdHui && dateSortie <= dans30Jours
       }).length || 0
 
-      setStats({ total, actifs, cdi, aRenouveler })
+      setStats({ total, cdiActif, interimActif, aRenouveler })
     } catch (error) {
       console.error('Erreur chargement stats:', error)
     }
@@ -280,28 +280,6 @@ export default function CollaborateursPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-slate-100">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 transition-transform hover:scale-105">
-                <span className="text-white text-lg font-bold">OF</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">OperaFlow</h1>
-                <p className="text-sm text-slate-500">Pilotage Opérationnel</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="px-3 py-1.5 shadow-sm">Admin</Badge>
-              <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all">
-                Dashboard
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -342,16 +320,16 @@ export default function CollaborateursPage() {
           <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-slate-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-slate-700">
-                Actifs
+                CDI Actif
               </CardTitle>
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md shadow-green-500/30">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/30">
                 <Users className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{stats.actifs}</div>
+              <div className="text-3xl font-bold text-slate-900">{stats.cdiActif}</div>
               <p className="text-xs text-slate-500 mt-1">
-                En activité
+                Contrats permanents actifs
               </p>
             </CardContent>
           </Card>
@@ -359,16 +337,16 @@ export default function CollaborateursPage() {
           <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-slate-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-slate-700">
-                CDI
+                Intérim Actif
               </CardTitle>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/30">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md shadow-orange-500/30">
                 <Users className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{stats.cdi}</div>
+              <div className="text-3xl font-bold text-slate-900">{stats.interimActif}</div>
               <p className="text-xs text-slate-500 mt-1">
-                Contrats permanents
+                Intérimaires actifs
               </p>
             </CardContent>
           </Card>

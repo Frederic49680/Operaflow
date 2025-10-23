@@ -1,3 +1,5 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,32 +20,12 @@ import {
   Settings,
   GraduationCap
 } from "lucide-react"
+import { useDashboardStats } from "@/hooks/useDashboardStats"
 
 export default function DashboardPage() {
+  const { stats } = useDashboardStats()
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-slate-100">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200/50 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 transition-transform hover:scale-105">
-                <span className="text-white text-lg font-bold">OF</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">OperaFlow</h1>
-                <p className="text-sm text-slate-500">Pilotage Opérationnel</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="px-3 py-1.5 shadow-sm">Admin</Badge>
-              <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all">
-                Déconnexion
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -69,9 +51,11 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
+              <div className="text-3xl font-bold text-slate-900">
+                {stats.loading ? "..." : stats.sitesActifs}
+              </div>
               <p className="text-xs text-slate-500 mt-1">
-                En attente de configuration
+                {stats.sitesActifs > 0 ? "Sites opérationnels" : "En attente de configuration"}
               </p>
             </CardContent>
           </Card>
@@ -86,9 +70,11 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
+              <div className="text-3xl font-bold text-slate-900">
+                {stats.loading ? "..." : stats.collaborateurs}
+              </div>
               <p className="text-xs text-slate-500 mt-1">
-                En attente de configuration
+                {stats.collaborateurs > 0 ? "Équipe active" : "En attente de configuration"}
               </p>
             </CardContent>
           </Card>
@@ -103,9 +89,11 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
+              <div className="text-3xl font-bold text-slate-900">
+                {stats.loading ? "..." : stats.affairesEnCours}
+              </div>
               <p className="text-xs text-slate-500 mt-1">
-                En attente de configuration
+                {stats.affairesEnCours > 0 ? "Projets actifs" : "En attente de configuration"}
               </p>
             </CardContent>
           </Card>
@@ -113,16 +101,18 @@ export default function DashboardPage() {
           <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-slate-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-slate-700">
-                Tâches actives
+                Planning
               </CardTitle>
               <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-md shadow-teal-500/30">
                 <GanttChart className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
+              <div className="text-3xl font-bold text-slate-900">
+                {stats.loading ? "..." : stats.tachesActives}
+              </div>
               <p className="text-xs text-slate-500 mt-1">
-                En attente de configuration
+                {stats.tachesActives > 0 ? "Tâches en cours" : "En attente de configuration"}
               </p>
             </CardContent>
           </Card>
@@ -195,9 +185,9 @@ export default function DashboardPage() {
                   </a>
                 </Button>
                 <Button variant="ghost" className="w-full justify-start hover:bg-cyan-50 hover:text-cyan-700" asChild>
-                  <a href="/tuiles-taches">
+                  <a href="/planning">
                     <GanttChart className="h-4 w-4 mr-2" />
-                    Tuiles Tâches
+                    Planning
                   </a>
                 </Button>
               </CardContent>
@@ -292,50 +282,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Status */}
-        <Card className="border-slate-200 shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-slate-800">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
-              État du système
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200/50 shadow-sm">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
-                  <AlertTriangle className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-blue-900">Configuration initiale</p>
-                  <p className="text-sm text-blue-700">
-                    Le système est prêt. Commencez par configurer vos sites et collaborateurs.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg border border-slate-200 hover:shadow-md transition-all">
-                  <div className="text-sm font-medium text-slate-600 mb-1">Phase actuelle</div>
-                  <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Phase 1</div>
-                  <div className="text-xs text-slate-500">Accès & Référentiels</div>
-                </div>
-                
-                <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg border border-slate-200 hover:shadow-md transition-all">
-                  <div className="text-sm font-medium text-slate-600 mb-1">Modules actifs</div>
-                  <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">0 / 12</div>
-                  <div className="text-xs text-slate-500">En cours de développement</div>
-                </div>
-                
-                <div className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg border border-slate-200 hover:shadow-md transition-all">
-                  <div className="text-sm font-medium text-slate-600 mb-1">Version</div>
-                  <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">0.1.0</div>
-                  <div className="text-xs text-slate-500">Socle technique</div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   )

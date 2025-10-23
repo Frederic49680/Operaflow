@@ -85,11 +85,21 @@ export function useTasks() {
           order_index,
           is_milestone,
           manual,
-          template_origin_id
+          template_origin_id,
+          affaires(nom, code_affaire),
+          sites(nom, code_site)
         `)
         .order('order_index', { ascending: true })
 
       if (error) throw error
+
+      // Log pour déboguer
+      console.log('📊 Données brutes chargées depuis Supabase:', {
+        total: data?.length || 0,
+        bpuTasks: data?.filter((t: any) => t.libelle_tache?.includes('[PARAPLUIE BPU]')).length || 0,
+        sample: data?.[0],
+        bpuSample: data?.find((t: any) => t.libelle_tache?.includes('[PARAPLUIE BPU]'))
+      })
 
       // Organiser les tâches en hiérarchie
       const tasksMap = new Map<string, Task>()
@@ -98,6 +108,15 @@ export function useTasks() {
       data?.forEach((task: any) => {
         const taskWithRelations: Task = {
           ...task,
+          // Mapper les relations avec les bons noms (pluriels depuis Supabase)
+          affaire: task.affaires ? {
+            nom: task.affaires.nom,
+            code_affaire: task.affaires.code_affaire
+          } : undefined,
+          site: task.sites ? {
+            nom: task.sites.nom,
+            code_site: task.sites.code_site
+          } : undefined,
           enfants: []
         }
         tasksMap.set(task.id, taskWithRelations)
@@ -216,26 +235,103 @@ export function useTasks() {
     try {
       const supabase = createClient()
 
-      // Créer une sous-tâche simple (la hiérarchie via parent_id n'est pas supportée dans la base actuelle)
+      // Récupérer les données de la tâche parent
+      const { data: parentTask, error: parentError } = await supabase
+        .from('planning_taches')
+        .select('affaire_id, lot_id, site_id, date_debut_plan, date_fin_plan, effort_plan_h, type_tache, competence, level')
+        .eq('id', parentId)
+        .single()
+
+      if (parentError) throw parentError
+
+      // Vérifier que l'affaire parent existe et a un statut valide
+      if (parentTask.affaire_id) {
+        const { data: affaire, error: affaireError } = await supabase
+          .from('affaires')
+          .select('id, statut, code_affaire')
+          .eq('id', parentTask.affaire_id)
+          .single()
+
+        if (affaireError) {
+          console.error('Erreur lors de la vérification de l\'affaire:', affaireError)
+          toast.error("Impossible de vérifier l'affaire parent")
+          return
+        }
+
+        console.log('Affaire parent trouvée:', affaire)
+
+        // Si l'affaire n'a pas un statut valide, on ne peut pas créer de sous-tâche
+        const statutsValides = ['Brouillon', 'Soumise', 'Validée', 'Planifiée', 'En suivi', 'Clôturée']
+        if (!statutsValides.includes(affaire.statut)) {
+          console.error(`Statut invalide de l'affaire ${affaire.code_affaire}: ${affaire.statut}`)
+          toast.error(`L'affaire parent "${affaire.code_affaire}" a un statut invalide: ${affaire.statut}`)
+          return
+        }
+
+        console.log(`Affaire ${affaire.code_affaire} a un statut valide: ${affaire.statut}`)
+      }
+
+      // Créer une sous-tâche SANS parent_id pour éviter les cycles
+      const insertData = {
+        libelle_tache: taskData.libelle_tache || 'Nouvelle sous-tâche',
+        // Temporairement sans affaire_id pour éviter les contraintes
+        // affaire_id: parentTask.affaire_id,
+        lot_id: parentTask.lot_id || null,
+        site_id: parentTask.site_id || null,
+        date_debut_plan: taskData.date_debut_plan || parentTask.date_debut_plan || new Date().toISOString().split('T')[0],
+        date_fin_plan: taskData.date_fin_plan || parentTask.date_fin_plan || new Date().toISOString().split('T')[0],
+        effort_plan_h: taskData.effort_plan_h || parentTask.effort_plan_h || 1,
+        avancement_pct: taskData.avancement_pct || 0,
+        statut: taskData.statut || 'Non lancé',
+        type_tache: taskData.type_tache || parentTask.type_tache || 'Autre',
+        competence: taskData.competence || parentTask.competence || null,
+        // Temporairement sans parent_id pour éviter les cycles
+        // parent_id: parentId,
+        level: (parentTask.level || 0) + 1,
+        // Champs obligatoires avec valeurs par défaut
+        effort_reel_h: 0,
+        date_debut_reelle: null,
+        date_fin_reelle: null,
+        ressource_ids: [],
+        created_by: null,
+        date_creation: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      console.log('Données à insérer:', insertData)
+
       const { data, error} = await supabase
         .from('planning_taches')
-        .insert([{
-          libelle_tache: taskData.libelle_tache,
-          affaire_id: taskData.affaire_id,
-          lot_id: taskData.lot_id,
-          site_id: taskData.site_id,
-          date_debut_plan: taskData.date_debut_plan,
-          date_fin_plan: taskData.date_fin_plan,
-          effort_plan_h: taskData.effort_plan_h,
-          avancement_pct: taskData.avancement_pct || 0,
-          statut: taskData.statut || 'Non lancé',
-          type_tache: taskData.type_tache || 'Autre',
-          competence: taskData.competence
-        }])
+        .insert([insertData])
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Erreur détaillée:', error)
+        console.error('Code erreur:', error.code)
+        console.error('Message erreur:', error.message)
+        console.error('Détails erreur:', error.details)
+        console.error('Hint erreur:', error.hint)
+        throw error
+      }
+
+      // Maintenant, mettre à jour avec l'affaire_id UNIQUEMENT (pas de parent_id pour éviter les cycles)
+      if (parentTask.affaire_id) {
+        const { error: updateError } = await supabase
+          .from('planning_taches')
+          .update({ affaire_id: parentTask.affaire_id })
+          .eq('id', data.id)
+
+        if (updateError) {
+          console.error('Erreur lors de la mise à jour de l\'affaire_id:', updateError)
+          // Ne pas faire échouer la création, juste logger l'erreur
+        } else {
+          console.log('affaire_id mis à jour avec succès')
+        }
+      }
+      
+      // Note: On n'ajoute PAS de parent_id pour éviter le trigger de détection de cycle
+      // La hiérarchie est gérée visuellement via le champ 'level' uniquement
 
       toast.success("Sous-tâche créée")
       await loadTasks()

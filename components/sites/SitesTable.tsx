@@ -22,6 +22,7 @@ import { SiteFormModal } from "./SiteFormModal"
 import { createClient } from "@/lib/supabase/client"
 import { SuccessToast } from "@/components/ui/success-toast"
 import { ErrorToast } from "@/components/ui/error-toast"
+import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,10 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
   const [toast, setToast] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [siteToClose, setSiteToClose] = useState<{ id: string, nom: string } | null>(null)
   const [closingSite, setClosingSite] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [newStatus, setNewStatus] = useState<string>('')
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [statusSiteId, setStatusSiteId] = useState<string | null>(null)
 
   useEffect(() => {
     loadSites()
@@ -223,6 +228,51 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
     }
   }
 
+  // Fonction pour gérer le clic sur la ligne
+  const handleRowClick = (siteId: string) => {
+    handleEditSite(siteId)
+  }
+
+  // Fonction pour gérer le clic sur le statut
+  const handleStatusClick = (siteId: string, currentStatus: string) => {
+    setStatusSiteId(siteId)
+    setUpdatingStatus(true)
+    setNewStatus(currentStatus)
+  }
+
+  // Fonction pour fermer le modal de modification du statut
+  const handleCloseStatusUpdate = () => {
+    setUpdatingStatus(false)
+    setNewStatus('')
+    setStatusSiteId(null)
+  }
+
+  // Fonction pour mettre à jour le statut
+  const handleStatusUpdate = async () => {
+    if (!statusSiteId || !newStatus) return
+
+    try {
+      setIsUpdating(true)
+      const supabase = createClient()
+      
+      const { error } = await supabase
+        .from('sites')
+        .update({ statut: newStatus })
+        .eq('id', statusSiteId)
+
+      if (error) throw error
+
+      // Recharger les sites
+      loadSites()
+      handleCloseStatusUpdate()
+    } catch (error) {
+      console.error('Erreur mise à jour statut:', error)
+      setToast({ type: 'error', message: 'Erreur lors de la mise à jour du statut' })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   // Fonction pour filtrer les sites
   const getFilteredSites = () => {
     return sites.filter(site => {
@@ -321,48 +371,36 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
               <TableHead className="font-semibold text-slate-700">Statut</TableHead>
               <TableHead className="font-semibold text-slate-700 text-center">Collaborateurs</TableHead>
               <TableHead className="font-semibold text-slate-700 text-center">Affaires</TableHead>
-              <TableHead className="font-semibold text-slate-700 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {getFilteredSites().map((site) => (
-              <TableRow key={site.id} className="hover:bg-slate-50/50">
+              <TableRow 
+                key={site.id} 
+                className="hover:bg-slate-50/50 cursor-pointer"
+                onClick={() => handleRowClick(site.id)}
+              >
                 <TableCell className="font-mono font-semibold text-blue-600">
                   {site.code_site}
                 </TableCell>
                 <TableCell className="font-medium">{site.nom}</TableCell>
                 <TableCell className="text-slate-600">{site.responsable || "-"}</TableCell>
-                <TableCell>{getStatusBadge(site.statut)}</TableCell>
+                <TableCell>
+                  <div 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleStatusClick(site.id, site.statut)
+                    }}
+                    className="cursor-pointer"
+                  >
+                    {getStatusBadge(site.statut)}
+                  </div>
+                </TableCell>
                 <TableCell className="text-center text-slate-600">
                   {site.nb_collaborateurs || 0}
                 </TableCell>
                 <TableCell className="text-center text-slate-600">
                   {site.nb_affaires || 0}
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem 
-                        className="gap-2 cursor-pointer"
-                        onClick={() => handleEditSite(site.id)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        Modifier
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="gap-2 text-red-600 cursor-pointer"
-                        onClick={() => handleDeleteSite(site.id, site.nom)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Fermer le site
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
@@ -431,6 +469,62 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
                   <Trash2 className="h-4 w-4 mr-2" />
                   Confirmer la fermeture
                 </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de modification du statut */}
+      <Dialog open={updatingStatus} onOpenChange={(open) => !open && handleCloseStatusUpdate()}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-slate-900">
+              Modifier le statut du site
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Sélectionnez le nouveau statut pour ce site.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="status">Nouveau statut</Label>
+              <select
+                id="status"
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="Actif">Actif</option>
+                <option value="En pause">En pause</option>
+                <option value="Fermé">Fermé</option>
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseStatusUpdate}
+              disabled={isUpdating}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={handleStatusUpdate}
+              disabled={isUpdating}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Mise à jour...
+                </>
+              ) : (
+                'Mettre à jour'
               )}
             </Button>
           </DialogFooter>

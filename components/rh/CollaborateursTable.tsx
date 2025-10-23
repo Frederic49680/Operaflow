@@ -19,6 +19,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { CollaborateurFormModal } from "./CollaborateurFormModal"
 import { CollaborateurProfileModal } from "./CollaborateurProfileModal"
 import { CollaborateurDesactivationModal } from "./CollaborateurDesactivationModal"
@@ -36,6 +45,7 @@ interface Collaborateur {
   email_perso?: string
   telephone?: string
   competences?: string[]
+  role_principal?: string
   actif: boolean
   date_entree?: string
   date_sortie?: string
@@ -66,6 +76,10 @@ export function CollaborateursTable({
   const [editingCollaborateurId, setEditingCollaborateurId] = useState<string | undefined>(undefined)
   const [viewingCollaborateurId, setViewingCollaborateurId] = useState<string | undefined>(undefined)
   const [desactivatingCollaborateur, setDesactivatingCollaborateur] = useState<{id: string, nom: string} | undefined>(undefined)
+  const [updatingStatus, setUpdatingStatus] = useState<{id: string, nom: string, currentStatus: string} | undefined>(undefined)
+  const [newStatus, setNewStatus] = useState<string>("")
+  const [newDate, setNewDate] = useState<string>("")
+  const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
     loadCollaborateurs()
@@ -77,10 +91,18 @@ export function CollaborateursTable({
       setError(null)
       const supabase = createClient()
 
-      // Charger les collaborateurs
+      // Charger les collaborateurs avec leur rôle principal
       const { data: collabsData, error: collabsError } = await supabase
         .from('ressources')
-        .select('*')
+        .select(`
+          *,
+          resource_roles!inner(
+            role_code,
+            is_primary,
+            roles!inner(label)
+          )
+        `)
+        .eq('resource_roles.is_primary', true)
         .order('nom')
 
       if (collabsError) throw collabsError
@@ -103,6 +125,9 @@ export function CollaborateursTable({
         const site = siteData ? siteData.nom : '-'
         const site_code = siteData ? siteData.code_site : ''
         
+        // Récupérer le rôle principal
+        const rolePrincipal = collab.resource_roles?.[0]?.roles?.label || '-'
+        
         return {
           id: collab.id,
           nom: collab.nom,
@@ -114,6 +139,7 @@ export function CollaborateursTable({
           email_perso: collab.email_perso,
           telephone: collab.telephone,
           competences: collab.competences || [],
+          role_principal: rolePrincipal,
           actif: collab.actif,
           date_entree: collab.date_entree,
           date_sortie: collab.date_sortie,
@@ -166,12 +192,85 @@ export function CollaborateursTable({
     loadCollaborateurs()
   }
 
+  // Fonction pour calculer le statut d'un collaborateur
+  const getCollaborateurStatus = (collab: Collaborateur) => {
+    if (!collab.actif) return 'Inactif'
+    
+    // Vérifier si c'est un contrat intérim avec date de fin proche
+    if (collab.type_contrat === 'Intérim' && collab.date_sortie) {
+      const dateFin = new Date(collab.date_sortie)
+      const aujourdHui = new Date()
+      const diffTime = dateFin.getTime() - aujourdHui.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays <= 14 && diffDays >= 0) {
+        return 'À renouveler'
+      }
+    }
+    
+    return 'Actif'
+  }
+
+  const handleStatusClick = (collab: Collaborateur) => {
+    const currentStatus = getCollaborateurStatus(collab)
+    setUpdatingStatus({ 
+      id: collab.id, 
+      nom: `${collab.prenom} ${collab.nom}`,
+      currentStatus 
+    })
+    setNewStatus("")
+    setNewDate("")
+  }
+
+  const handleCloseStatusUpdate = () => {
+    setUpdatingStatus(undefined)
+    setNewStatus("")
+    setNewDate("")
+  }
+
+  const handleStatusUpdate = async () => {
+    if (!updatingStatus || !newStatus) return
+
+    setIsUpdating(true)
+    try {
+      const supabase = createClient()
+      
+      let updateData: any = {}
+      
+      if (newStatus === 'Inactif') {
+        updateData = { actif: false }
+      } else if (newStatus === 'Prolonger' && newDate) {
+        updateData = { date_sortie: newDate }
+      }
+      
+      const { error } = await supabase
+        .from('ressources')
+        .update(updateData)
+        .eq('id', updatingStatus.id)
+
+      if (error) throw error
+
+      const message = newStatus === 'Inactif' 
+        ? `Collaborateur ${updatingStatus.nom} désactivé avec succès`
+        : `Contrat de ${updatingStatus.nom} prolongé jusqu'au ${newDate}`
+        
+      if (onSuccess) onSuccess(message)
+      loadCollaborateurs()
+      handleCloseStatusUpdate()
+    } catch (error) {
+      console.error('Erreur mise à jour statut:', error)
+      if (onError) onError('Erreur lors de la mise à jour du statut')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   // Fonction pour exporter en CSV
   const handleExport = () => {
     const filteredData = getFilteredCollaborateurs()
     
     // En-têtes CSV
-    const headers = ['Nom', 'Prénom', 'Site', 'Type contrat', 'Email pro', 'Email perso', 'Téléphone', 'Compétences', 'Statut', 'Date entrée', 'Date sortie']
+    const headers = ['Nom', 'Prénom', 'Site', 'Type contrat', 'Email pro', 'Email perso', 'Téléphone', 'Fonction', 'Statut', 'Date entrée', 'Date sortie']
     
     // Données CSV
     const csvData = filteredData.map(collab => [
@@ -182,7 +281,7 @@ export function CollaborateursTable({
       collab.email_pro || '-',
       collab.email_perso || '-',
       collab.telephone || '-',
-      collab.competences?.join(', ') || '-',
+      collab.role_principal || '-',
       collab.actif ? 'Actif' : 'Inactif',
       collab.date_entree || '-',
       collab.date_sortie || '-'
@@ -271,7 +370,7 @@ export function CollaborateursTable({
           collab.email_perso?.toLowerCase().includes(searchLower) ||
           collab.telephone?.includes(searchTerm) ||
           collab.site?.toLowerCase().includes(searchLower) ||
-          collab.competences?.some(comp => comp.toLowerCase().includes(searchLower))
+          collab.role_principal?.toLowerCase().includes(searchLower)
         
         if (!matchesSearch) return false
       }
@@ -417,14 +516,17 @@ export function CollaborateursTable({
             <TableHead className="font-semibold text-slate-700">Type contrat</TableHead>
             <TableHead className="font-semibold text-slate-700">Email</TableHead>
             <TableHead className="font-semibold text-slate-700">Téléphone</TableHead>
-            <TableHead className="font-semibold text-slate-700">Compétences</TableHead>
+            <TableHead className="font-semibold text-slate-700">Fonction</TableHead>
             <TableHead className="font-semibold text-slate-700">Statut</TableHead>
-            <TableHead className="font-semibold text-slate-700 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {getFilteredCollaborateurs().map((collab) => (
-            <TableRow key={collab.id} className="hover:bg-slate-50/50">
+            <TableRow 
+              key={collab.id} 
+              className="hover:bg-slate-50/50 cursor-pointer"
+              onClick={() => handleEditCollaborateur(collab.id)}
+            >
               <TableCell className="font-medium">
                 {collab.prenom} {collab.nom}
               </TableCell>
@@ -439,63 +541,125 @@ export function CollaborateursTable({
                 {collab.telephone || "-"}
               </TableCell>
               <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {collab.competences?.slice(0, 2).map((comp, idx) => (
-                    <Badge key={idx} variant="outline" className="text-xs">
-                      {comp}
-                    </Badge>
-                  ))}
-                  {collab.competences && collab.competences.length > 2 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{collab.competences.length - 2}
-                    </Badge>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                {collab.actif ? (
-                  <Badge className="bg-green-500 hover:bg-green-600">Actif</Badge>
-                ) : (
-                  <Badge className="bg-slate-500 hover:bg-slate-600">Inactif</Badge>
+                {collab.role_principal && collab.role_principal !== '-' && (
+                  <Badge variant="outline" className="text-xs">
+                    {collab.role_principal}
+                  </Badge>
                 )}
               </TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem 
-                      className="gap-2 cursor-pointer"
-                      onClick={() => handleEditCollaborateur(collab.id)}
-                    >
-                      <Edit className="h-4 w-4" />
-                      Modifier
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="gap-2 cursor-pointer"
-                      onClick={() => handleViewProfile(collab.id)}
-                    >
-                      <User className="h-4 w-4" />
-                      Voir le profil
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="gap-2 text-red-600 cursor-pointer"
-                      onClick={() => handleDesactiver(collab.id, `${collab.prenom} ${collab.nom}`)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Désactiver
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <TableCell>
+                <Badge 
+                  className={`cursor-pointer transition-all ${
+                    getCollaborateurStatus(collab) === 'Actif' 
+                      ? 'bg-green-500 hover:bg-green-600' 
+                      : getCollaborateurStatus(collab) === 'À renouveler'
+                      ? 'bg-orange-500 hover:bg-orange-600'
+                      : 'bg-slate-500 hover:bg-slate-600'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleStatusClick(collab)
+                  }}
+                >
+                  {getCollaborateurStatus(collab)}
+                </Badge>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </div>
+
+    {/* Modal de mise à jour du statut */}
+    <Dialog open={!!updatingStatus} onOpenChange={handleCloseStatusUpdate}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit className="h-5 w-5 text-blue-600" />
+            Modifier le statut
+          </DialogTitle>
+          <DialogDescription>
+            Modifier le statut de <strong>{updatingStatus?.nom}</strong>.
+            <br />
+            <span className="text-blue-600 text-sm">
+              Statut actuel : {updatingStatus?.currentStatus}
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="new-status" className="text-sm font-medium">
+              Nouveau statut <span className="text-red-500">*</span>
+            </Label>
+            <select
+              id="new-status"
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value)}
+              className="w-full p-2 border border-slate-300 rounded-md"
+            >
+              <option value="">Sélectionner un statut</option>
+              {updatingStatus?.currentStatus === 'Actif' && (
+                <option value="Inactif">Inactif</option>
+              )}
+              {updatingStatus?.currentStatus === 'À renouveler' && (
+                <>
+                  <option value="Inactif">Inactif</option>
+                  <option value="Prolonger">Prolonger</option>
+                </>
+              )}
+              {updatingStatus?.currentStatus === 'Inactif' && (
+                <option value="Actif">Actif</option>
+              )}
+            </select>
+          </div>
+
+          {newStatus === 'Prolonger' && (
+            <div className="grid gap-2">
+              <Label htmlFor="new-date" className="text-sm font-medium">
+                Nouvelle date de fin <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="new-date"
+                type="date"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                className="w-full"
+                required
+              />
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={handleCloseStatusUpdate}
+            className="flex-1"
+            disabled={isUpdating}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleStatusUpdate}
+            disabled={!newStatus || (newStatus === 'Prolonger' && !newDate) || isUpdating}
+            className="flex-1 bg-blue-600 hover:bg-blue-700"
+          >
+            {isUpdating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Mise à jour...
+              </>
+            ) : (
+              <>
+                <Edit className="h-4 w-4 mr-2" />
+                Mettre à jour
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </>
   )
 }
