@@ -47,17 +47,19 @@ export default function TaskActionButtons({
   const [isDeleting, setIsDeleting] = useState(false)
   const [showSubTaskModal, setShowSubTaskModal] = useState(false)
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [subTaskName, setSubTaskName] = useState("")
 
-  const handleDelete = async () => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer la tâche "${task.libelle_tache}" ?`)) {
-      return
-    }
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true)
+  }
 
+  const handleDeleteConfirm = async () => {
     try {
       setIsDeleting(true)
       await deleteTask(task.id)
       onDelete?.(task.id)
+      setShowDeleteModal(false)
     } catch (error) {
       console.error('Erreur lors de la suppression:', error)
     } finally {
@@ -154,7 +156,7 @@ export default function TaskActionButtons({
       <Button
         size="sm"
         variant="outline"
-        onClick={handleDelete}
+        onClick={handleDeleteClick}
         disabled={isDeleting}
         className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
         title="Supprimer la tâche"
@@ -226,6 +228,42 @@ export default function TaskActionButtons({
           onAssignResource?.(task.id)
         }}
       />
+
+      {/* Modal de confirmation de suppression */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Confirmer la suppression
+            </DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer la tâche <strong>"{task.libelle_tache}"</strong> ?
+              <br />
+              <span className="text-red-600 text-sm mt-2 block">
+                Cette action est irréversible.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteModal(false)}
+              className="flex-1"
+            >
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="flex-1"
+            >
+              {isDeleting ? "Suppression..." : "Supprimer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
