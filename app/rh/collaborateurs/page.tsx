@@ -78,8 +78,8 @@ export default function CollaborateursPage() {
       if (error) throw error
 
       // Filtrer les collaborateurs non-admin
-      // Exclure les comptes qui semblent être des comptes admin (email admin, nom admin, etc.)
-      const nonAdminData = data?.filter((c: any) => {
+      // Exclure le premier collaborateur créé (compte admin initial)
+      const nonAdminData = data?.filter((c: any, index: number) => {
         const email = c.email_pro?.toLowerCase() || ''
         const prenom = c.prenom?.toLowerCase() || ''
         const nom = c.nom?.toLowerCase() || ''
@@ -89,10 +89,13 @@ export default function CollaborateursPage() {
         const isAdminName = prenom.includes('admin') || nom.includes('admin') || 
                            prenom.includes('administrateur') || nom.includes('administrateur')
         
-        const isAdmin = isAdminEmail || isAdminName
+        // Exclure aussi le premier collaborateur créé (compte admin initial)
+        const isFirstUser = index === 0 && data.length === 1
+        
+        const isAdmin = isAdminEmail || isAdminName || isFirstUser
         
         // Debug log
-        console.log(`Collaborateur: ${prenom} ${nom} (${email}) - Admin: ${isAdmin}`)
+        console.log(`Collaborateur: ${prenom} ${nom} (${email}) - Admin: ${isAdmin} (Pattern: ${isAdminEmail || isAdminName}, First: ${isFirstUser})`)
         
         return !isAdmin
       }) || []
