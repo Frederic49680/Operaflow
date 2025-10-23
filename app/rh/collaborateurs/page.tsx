@@ -73,29 +73,23 @@ export default function CollaborateursPage() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from('ressources')
-        .select(`
-          actif, 
-          type_contrat, 
-          date_sortie,
-          resource_roles!inner(
-            role:roles!inner(
-              code
-            )
-          )
-        `)
+        .select('actif, type_contrat, date_sortie, email_pro, prenom, nom')
 
       if (error) throw error
 
       // Filtrer les collaborateurs non-admin
+      // Exclure les comptes qui semblent être des comptes admin (email admin, nom admin, etc.)
       const nonAdminData = data?.filter((c: any) => {
-        // Si pas de rôles, inclure (cas normal)
-        if (!c.resource_roles || c.resource_roles.length === 0) return true
+        const email = c.email_pro?.toLowerCase() || ''
+        const prenom = c.prenom?.toLowerCase() || ''
+        const nom = c.nom?.toLowerCase() || ''
         
-        // Exclure si a un rôle admin
-        const hasAdminRole = c.resource_roles.some((rr: any) => 
-          rr.role?.code === 'admin' || rr.role?.code === 'Admin'
-        )
-        return !hasAdminRole
+        // Exclure les comptes admin basés sur des patterns communs
+        const isAdminEmail = email.includes('admin') || email.includes('administrateur')
+        const isAdminName = prenom.includes('admin') || nom.includes('admin') || 
+                           prenom.includes('administrateur') || nom.includes('administrateur')
+        
+        return !isAdminEmail && !isAdminName
       }) || []
 
       // Calculer les statistiques
