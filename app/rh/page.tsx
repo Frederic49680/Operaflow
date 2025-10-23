@@ -181,21 +181,39 @@ export default function RHPage() {
             <CardContent className="space-y-3">
               <div className="space-y-2">
                 <Button variant="ghost" className="w-full justify-start hover:bg-purple-50 hover:text-purple-700" asChild>
+                  <Link href="/rh/formations">
+                    <GraduationCap className="h-4 w-4 mr-2" />
+                    Module Formations
+                  </Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start hover:bg-violet-50 hover:text-violet-700" asChild>
                   <Link href="/rh/catalogue-formations">
                     <GraduationCap className="h-4 w-4 mr-2" />
                     Catalogue formations
                   </Link>
                 </Button>
-                <Button variant="ghost" className="w-full justify-start hover:bg-violet-50 hover:text-violet-700" asChild>
+                <Button variant="ghost" className="w-full justify-start hover:bg-indigo-50 hover:text-indigo-700" asChild>
                   <Link href="/rh/plan-formation">
                     <Calendar className="h-4 w-4 mr-2" />
                     Plan de formation
                   </Link>
                 </Button>
-                <Button variant="ghost" className="w-full justify-start hover:bg-indigo-50 hover:text-indigo-700" asChild>
+                <Button variant="ghost" className="w-full justify-start hover:bg-cyan-50 hover:text-cyan-700" asChild>
                   <Link href="/rh/sessions-formation">
                     <GraduationCap className="h-4 w-4 mr-2" />
                     Sessions de formation
+                  </Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start hover:bg-pink-50 hover:text-pink-700" asChild>
+                  <Link href="/rh/organismes-formation">
+                    <Building className="h-4 w-4 mr-2" />
+                    Organismes de formation
+                  </Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start hover:bg-amber-50 hover:text-amber-700" asChild>
+                  <Link href="/rh/guide-formations">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Guide d'utilisation
                   </Link>
                 </Button>
               </div>
