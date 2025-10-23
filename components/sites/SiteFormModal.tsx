@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
 import { SuccessToast } from "@/components/ui/success-toast"
 import { ErrorToast } from "@/components/ui/error-toast"
+import { Trash2, Loader2 } from "lucide-react"
 
 interface SiteFormModalProps {
   children: React.ReactNode
@@ -46,6 +47,8 @@ export function SiteFormModal({ children, siteId, onClose }: SiteFormModalProps)
   const [toast, setToast] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [selectedResponsable, setSelectedResponsable] = useState<string>("")
   const [selectedRemplaçant, setSelectedRemplaçant] = useState<string>("")
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // Charger les ressources
   useEffect(() => {
@@ -145,6 +148,48 @@ export function SiteFormModal({ children, siteId, onClose }: SiteFormModalProps)
       setToast({ type: 'error', message: "Erreur lors de la création du site" })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteSite = async () => {
+    if (!siteId) return
+
+    try {
+      setDeleting(true)
+      const supabase = createClient()
+      
+      // Supprimer le site directement
+      const { error } = await supabase
+        .from('sites')
+        .delete()
+        .eq('id', siteId)
+      
+      if (error) throw error
+      
+      setToast({ 
+        type: 'success', 
+        message: `Site "${siteData?.nom || 'sélectionné'}" supprimé avec succès !` 
+      })
+      
+      // Fermer le modal et recharger
+      setOpen(false)
+      setSiteData(null)
+      setSelectedResponsable("")
+      setSelectedRemplaçant("")
+      setShowDeleteModal(false)
+      
+      if (onClose) {
+        onClose()
+      }
+      window.dispatchEvent(new Event('site-created'))
+    } catch (err) {
+      console.error('Erreur suppression site:', err)
+      setToast({ 
+        type: 'error', 
+        message: `Erreur lors de la suppression du site. Vérifiez qu'aucune donnée n'est liée à ce site.` 
+      })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -292,26 +337,44 @@ export function SiteFormModal({ children, siteId, onClose }: SiteFormModalProps)
             </div>
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setOpen(false)
-                setSiteData(null)
-                setSelectedResponsable("")
-                setSelectedRemplaçant("")
-              }}
-              disabled={loading}
-            >
-              Annuler
-            </Button>
-            <Button
-              type="submit"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
-              disabled={loading}
-            >
-              {loading ? "Enregistrement..." : siteId ? "Modifier" : "Créer"}
-            </Button>
+            <div className="flex justify-between w-full">
+              <div>
+                {siteId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowDeleteModal(true)}
+                    disabled={loading || deleting}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Supprimer
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setOpen(false)
+                    setSiteData(null)
+                    setSelectedResponsable("")
+                    setSelectedRemplaçant("")
+                  }}
+                  disabled={loading}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
+                  disabled={loading}
+                >
+                  {loading ? "Enregistrement..." : siteId ? "Modifier" : "Créer"}
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -329,6 +392,68 @@ export function SiteFormModal({ children, siteId, onClose }: SiteFormModalProps)
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Modal de confirmation de suppression */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-slate-900">
+              Confirmer la suppression du site
+            </DialogTitle>
+            <DialogDescription>
+              Cette action est irréversible et supprimera définitivement le site.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="font-medium text-red-900">
+                  Site : <span className="font-bold">{siteData?.nom || 'sélectionné'}</span>
+                </p>
+                <p className="text-sm text-red-700 mt-1">
+                  Êtes-vous sûr de vouloir supprimer définitivement ce site ?
+                </p>
+                <p className="text-xs text-red-600 mt-2">
+                  ⚠️ Cette action supprimera toutes les données associées à ce site.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={deleting}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDeleteSite}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Suppression...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer définitivement
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
