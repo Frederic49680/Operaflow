@@ -34,6 +34,7 @@ export default function CatalogueFormationsManager() {
   const [showForm, setShowForm] = useState(false);
   const [editingFormation, setEditingFormation] = useState<CatalogueFormation | null>(null);
   const [formData, setFormData] = useState<Partial<CatalogueFormation>>({});
+  const [showGroupPricing, setShowGroupPricing] = useState(false);
 
   const supabase = createClient();
 
@@ -287,10 +288,26 @@ export default function CatalogueFormationsManager() {
       {/* Tableau */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <BookOpen className="h-5 w-5 mr-2" />
-            Formations disponibles ({formations.length})
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center">
+              <BookOpen className="h-5 w-5 mr-2" />
+              Formations disponibles ({formations.length})
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="toggle-group-pricing" className="text-sm font-medium">
+                Tarifs de groupe
+              </Label>
+              <Button
+                id="toggle-group-pricing"
+                variant={showGroupPricing ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowGroupPricing(!showGroupPricing)}
+                className="h-8"
+              >
+                {showGroupPricing ? "Masquer" : "Afficher"}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -300,8 +317,9 @@ export default function CatalogueFormationsManager() {
                 <TableHead>Catégorie</TableHead>
                 <TableHead>Durée</TableHead>
                 <TableHead>Validité</TableHead>
-                <TableHead>Participants</TableHead>
+                {showGroupPricing && <TableHead>Participants</TableHead>}
                 <TableHead>Tarifs</TableHead>
+                {showGroupPricing && <TableHead>Tarif groupe</TableHead>}
                 <TableHead>Statut</TableHead>
               </TableRow>
             </TableHeader>
@@ -320,15 +338,26 @@ export default function CatalogueFormationsManager() {
                   </TableCell>
                   <TableCell>{formation.duree_jours} jour(s)</TableCell>
                   <TableCell>{formation.validite_mois} mois</TableCell>
-                  <TableCell>
-                    {formation.min_participants}-{formation.max_participants}
-                  </TableCell>
+                  {showGroupPricing && (
+                    <TableCell>
+                      {formation.min_participants}-{formation.max_participants}
+                    </TableCell>
+                  )}
                   <TableCell>
                     <div className="text-sm">
                       <div>Unité: {formation.tarif_unitaire}€</div>
-                      <div>Groupe: {formation.tarif_groupe}€</div>
+                      {!showGroupPricing && (
+                        <div className="text-gray-500">Groupe: {formation.tarif_groupe}€</div>
+                      )}
                     </div>
                   </TableCell>
+                  {showGroupPricing && (
+                    <TableCell>
+                      <div className="text-sm font-medium">
+                        {formation.tarif_groupe}€
+                      </div>
+                    </TableCell>
+                  )}
                   <TableCell>
                     <div onClick={(e) => e.stopPropagation()}>
                       <Button
