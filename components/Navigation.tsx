@@ -10,7 +10,8 @@ import {
   Users, 
   Settings,
   Calendar,
-  FileText
+  FileText,
+  GraduationCap
 } from "lucide-react"
 
 const navigationItems = [
@@ -48,6 +49,11 @@ const navigationItems = [
     name: "Claims",
     href: "/claims",
     icon: FileText
+  },
+  {
+    name: "Formations",
+    href: "/rh/formations",
+    icon: GraduationCap
   }
 ]
 
