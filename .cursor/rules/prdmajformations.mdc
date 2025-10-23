@@ -1,3 +1,337 @@
 ---
 alwaysApply: true
 ---
+🧩 PRD — Module “Plan de Formation”
+
+(ancien Plan Prévisionnel)
+
+1️⃣ Objectif général
+
+Centraliser et automatiser la gestion annuelle du plan de formation :
+
+Détecter les formations arrivant à échéance (certifications, habilitations, recyclages).
+
+Générer un plan prévisionnel Y+1 regroupant toutes les ressources concernées.
+
+Permettre la validation unitaire ou globale, transformant le plan prévisionnel en Plan de Formation officiel.
+
+Figer le plan (snapshot) pour suivre l’avancement et le budget au cours de l’année.
+
+Autoriser l’ajout de formations hors plan avec suivi par avenant.
+
+2️⃣ Périmètre fonctionnel
+Inclus :
+
+Génération automatique Y+1 depuis les dates d’expiration des formations.
+
+Page de préparation (“Plan Prévisionnel”).
+
+Validation unitaire et globale (“Plan prévisionnel validé”).
+
+Page du plan officiel (“Plan de Formation”).
+
+Gel (snapshot) des volumes et coûts à la validation globale.
+
+Suivi des formations planifiées, réalisées, annulées.
+
+Statistiques globales, par catégorie et par trimestre.
+
+Gestion financière (prévu / engagé / réalisé / écart).
+
+Intégration des formations “hors plan” (en cours d’année).
+
+Exclus :
+
+Gestion RH complète (hors périmètre : contrats, carrières).
+
+Gestion de contenu e-learning (non prévue ici).
+
+Génération automatique de convocations (v2).
+
+3️⃣ Terminologie
+Terme	Définition
+Plan Prévisionnel	Page de préparation Y+1 : génération, validation.
+Plan de Formation	Plan officiel validé, gelé pour suivi annuel.
+Hors plan	Formation ajoutée après validation du plan (non incluse dans la baseline).
+Baseline (Snapshot)	Version figée du plan validé, servant de référence budgétaire et statistique.
+Avenant	Ajout officiel d’éléments hors plan au plan existant (création d’une nouvelle version).
+4️⃣ Modèle de données
+4.1 Catalogue des formations
+CatalogueFormations(
+  formation_id uuid primary key,
+  intitule text,
+  validite_mois int,
+  duree_jours int,
+  category text,           -- SECURITE, QUALITE, AUTO, etc.
+  organisme_id uuid,       -- ref Organismes
+  tarif_unitaire numeric,
+  tarif_groupe numeric,
+  min_participants int,
+  max_participants int
+)
+
+4.2 Historique des formations par ressource
+RessourceFormations(
+  id uuid primary key,
+  resource_id uuid,
+  formation_id uuid,
+  date_obtention date,
+  date_expiration date,
+  mode text check (mode in ('INTERNE','EXTERNE')),
+  preuve_url text
+)
+
+4.3 Plan de Formation (table principale)
+PlanFormations(
+  id uuid primary key,
+  annee int,
+  resource_id uuid,
+  formation_id uuid,
+  mois_cible int,
+  trimestre_cible int,
+  category text,
+  source text check (source in ('ECHEANCE','MANUEL_HORS_PLAN')),
+  phase text check (phase in ('PREVISIONNEL','PLAN')) default 'PREVISIONNEL',
+  statut text check (statut in ('EN_ATTENTE_VALIDATION','VALIDE','REJETE','PLANIFIE','REALISE','ANNULE')),
+  session_id uuid null,
+  cost_planned numeric,
+  cout_estime numeric,
+  baseline_version int default 0,
+  validated_at timestamptz null,
+  created_by uuid,
+  created_at timestamptz default now(),
+  updated_at timestamptz
+);
+
+
+🔒 Contraintes
+
+Unique (annee, resource_id, formation_id)
+
+Si phase='PLAN' ⇒ statut ∉ ('EN_ATTENTE_VALIDATION','REJETE')
+
+4.4 Snapshots (baselines gelées)
+PlanSnapshots(
+  id uuid primary key,
+  annee int,
+  version int,
+  committed_at timestamptz,
+  committed_by uuid,
+  tot_count int,
+  tot_cost numeric,
+  by_category jsonb,   -- ex: {"SECURITE": {"count":45,"cost":24000}, ...}
+  by_quarter jsonb,
+  by_month jsonb,
+  note text
+);
+
+4.5 Journal financier (ledger)
+TrainingFinanceLedger(
+  id uuid primary key,
+  plan_item_id uuid references PlanFormations(id),
+  annee int,
+  type text check (type in ('PLANNED','COMMITTED','ACTUAL','ADJUSTMENT')),
+  amount numeric,
+  currency text default 'EUR',
+  date date,
+  source text,
+  meta jsonb
+);
+
+4.6 Avenants (intégration de hors plan)
+PlanChangeOrders(
+  id uuid primary key,
+  annee int,
+  version_from int,
+  version_to int,
+  created_at timestamptz default now(),
+  created_by uuid,
+  reason text,
+  delta_count int,
+  delta_cost numeric,
+  breakdown jsonb
+);
+
+5️⃣ Processus & règles de gestion
+Étape 1 — Génération du Plan Prévisionnel
+
+L’utilisateur clique sur “Générer le prévisionnel Y+1”.
+
+L’outil détecte :
+
+toutes les formations à expiration sur [01/01/Y+1 ; 31/12/Y+1];
+
+les formations obligatoires jamais réalisées.
+
+Crée des lignes phase='PREVISIONNEL', statut='EN_ATTENTE_VALIDATION'.
+
+Calcule mois_cible à J-60 avant expiration.
+
+Classe les lignes par mois et trimestre.
+
+Étape 2 — Validation unitaire
+
+Dans la page “Plan Prévisionnel”, l’utilisateur peut :
+
+Valider une ligne (statut = VALIDE, validated_at=now()),
+
+Rejeter une ligne (statut = REJETE),
+
+Ajouter une ligne Hors Plan (source=MANUEL_HORS_PLAN, statut=EN_ATTENTE_VALIDATION).
+
+Étape 3 — Validation globale (“Plan prévisionnel validé”)
+
+Action principale :
+
+Sélectionne toutes les lignes phase='PREVISIONNEL' AND statut='VALIDE'.
+
+Les bascule en phase='PLAN'.
+
+Calcule totaux global / par catégorie / trimestre.
+
+Crée un PlanSnapshots(version=n+1).
+
+Copie cost_planned sur chaque ligne (tarif actuel).
+
+Enregistre baseline_version=version.
+
+🔒 À partir de là :
+
+Le volume total et les coûts sont figés.
+
+Seules les formations Hors plan restent modifiables.
+
+Étape 4 — Suivi d’avancement
+
+Statuts évolutifs :
+
+PLANIFIE → formation rattachée à une session,
+
+REALISE → session terminée (maj historique RessourceFormations),
+
+ANNULE → annulée (option replanifier).
+
+Calculs :
+
+Couverture = REALISE / total_baseline
+
+Avancement = (PLANIFIE + REALISE) / total_baseline
+
+Consommation budget = Σ(ledger.ACTUAL) / tot_cost_baseline
+
+Écart budget = (ACTUAL – PLANNED)
+
+Vue par mois/trimestre : avancement & dérives.
+
+Étape 5 — Avenants
+
+En cours d’année :
+
+Les Hors plan restent phase='PREVISIONNEL'.
+
+Pour les intégrer, on crée un avenant :
+
+Nouvelle version de snapshot.
+
+Recalcul des totaux.
+
+Mise à jour baseline_version des lignes incorporées.
+
+Les versions s’enchaînent : v1 (plan initial), v2 (après avenant), etc.
+
+6️⃣ KPIs & Reporting
+Indicateur	Définition	Fréquence
+Taux d’avancement	(Planifié + Réalisé) / Baseline	Temps réel
+Taux de couverture	Réalisé / Baseline	Temps réel
+Budget engagé (€)	Σ(COMMITTED)	Temps réel
+Budget consommé (€)	Σ(ACTUAL)	Temps réel
+Écart (€)	ACTUAL – PLANNED	Temps réel
+Hors plan (%)	Nb hors baseline / Total lignes	Mensuel
+Dérive planifiée	Nb lignes en retard (J-30)	Hebdomadaire
+7️⃣ Interfaces & UX
+Page Plan Prévisionnel
+
+Actions :
+
+“Générer prévisionnel Y+1”
+
+“Valider sélection”
+
+“Rejeter sélection”
+
+“Ajouter Hors plan”
+
+“Plan prévisionnel validé” (gros bouton principal)
+
+Vues :
+
+Liste filtrable (Site, Catégorie, Statut, Source)
+
+Groupements : par mois / trimestre
+
+Badge “Hors plan”
+
+À la validation globale :
+
+Pop-up résumé : “312 formations validées, 145 500 € — Plan de Formation Y+1 créé (v1)”
+
+Page Plan de Formation
+
+Bandeau entête : “Plan de Formation Y (v1 – validé le 15/11/2025)”.
+
+KPI cards :
+
+Couverture (%)
+
+Avancement (%)
+
+Budget engagé (€)
+
+Budget consommé (€)
+
+Graphiques :
+
+Barres empilées par catégorie
+
+Burndown mensuel
+
+Courbe budget (prévu / engagé / réalisé)
+
+Actions :
+
+Générer sessions automatiques
+
+Créer avenant
+
+Export PDF/CSV (plan complet ou baseline)
+
+8️⃣ API principales
+Endpoint	Méthode	Description
+/training/previsionnel/generate?annee=YYYY	POST	Détection échéances + création lignes
+/training/previsionnel/validate	POST	Validation unitaire (ids[])
+/training/previsionnel/reject	POST	Rejet (ids[], reason)
+/training/previsionnel/commit-plan	POST	Création baseline, passage à phase='PLAN'
+/training/plan/kpis?annee=&version=	GET	Retourne indicateurs & ratios
+/training/ledger	POST	Ajout écriture (ACTUAL, COMMITTED, etc.)
+/training/plan/change-order	POST	Création avenant
+9️⃣ Règles d’accès
+Rôle	Droits
+RH / Administratif	Génération, validation, commit, avenant
+Manager (N6+)	Validation unitaire sur son périmètre
+Responsable de site (N4/N5)	Lecture et ajout Hors plan
+Utilisateur	Consultation de ses formations et échéances
+🔟 Critères d’acceptation
+
+✅ Le plan se génère sans doublons et inclut 100 % des formations échéant Y+1.
+
+✅ Le bouton “Plan prévisionnel validé” fige les volumes et crée le snapshot.
+
+✅ Les Hors plan n’affectent pas les totaux figés (baseline) tant qu’aucun avenant n’est créé.
+
+✅ Les KPIs se recalculent en temps réel via les statuts et le ledger.
+
+✅ Le coût total figé reste identique sur toute l’année (sauf avenant).
+
+✅ Export CSV et PDF opérationnels pour Plan Prévisionnel et Plan de Formation.
+
+✅ Historique des versions (v1, v2…) consultable depuis Plan de Formation.
