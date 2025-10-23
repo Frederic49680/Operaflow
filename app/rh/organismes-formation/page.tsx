@@ -89,6 +89,22 @@ export default function OrganismesFormationPage() {
   const [organismeToDelete, setOrganismeToDelete] = useState<Organisme | null>(null)
   const [formData, setFormData] = useState<Partial<Organisme>>({})
 
+  // Liste des spécialités disponibles
+  const specialitesDisponibles = [
+    'Qualité',
+    'Sécurité',
+    'Environnement',
+    'Technique',
+    'Management',
+    'Digital',
+    'Langues',
+    'Soft Skills',
+    'Formation',
+    'Certification',
+    'Audit',
+    'Conformité'
+  ]
+
   const filteredOrganismes = organismes.filter(org =>
     org.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
     org.specialites.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -165,6 +181,23 @@ export default function OrganismesFormationPage() {
 
     setOrganismes(updatedOrganismes)
     toast.success(`Organisme ${organisme.statut === 'actif' ? 'désactivé' : 'activé'}`)
+  }
+
+  const handleSpecialiteToggle = (specialite: string) => {
+    const currentSpecialites = formData.specialites || []
+    const isSelected = currentSpecialites.includes(specialite)
+    
+    if (isSelected) {
+      setFormData({
+        ...formData,
+        specialites: currentSpecialites.filter(s => s !== specialite)
+      })
+    } else {
+      setFormData({
+        ...formData,
+        specialites: [...currentSpecialites, specialite]
+      })
+    }
   }
 
   return (
@@ -258,14 +291,22 @@ export default function OrganismesFormationPage() {
                       onChange={(e) => setFormData({...formData, contact_principal: e.target.value})}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="specialites">Spécialités</Label>
-                    <Input 
-                      id="specialites" 
-                      placeholder="Qualité, Sécurité, Environnement" 
-                      value={formData.specialites?.join(", ") || ""}
-                      onChange={(e) => setFormData({...formData, specialites: e.target.value.split(",").map(s => s.trim()).filter(s => s)})}
-                    />
+                  <div className="space-y-2 col-span-2">
+                    <Label>Spécialités</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {specialitesDisponibles.map((specialite) => (
+                        <Button
+                          key={specialite}
+                          type="button"
+                          variant={formData.specialites?.includes(specialite) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleSpecialiteToggle(specialite)}
+                          className="text-xs"
+                        >
+                          {specialite}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
@@ -473,14 +514,22 @@ export default function OrganismesFormationPage() {
                   onChange={(e) => setFormData({...formData, contact_principal: e.target.value})}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-specialites">Spécialités</Label>
-                <Input 
-                  id="edit-specialites" 
-                  placeholder="Qualité, Sécurité, Environnement" 
-                  value={formData.specialites?.join(", ") || ""}
-                  onChange={(e) => setFormData({...formData, specialites: e.target.value.split(",").map(s => s.trim()).filter(s => s)})}
-                />
+              <div className="space-y-2 col-span-2">
+                <Label>Spécialités</Label>
+                <div className="flex flex-wrap gap-2">
+                  {specialitesDisponibles.map((specialite) => (
+                    <Button
+                      key={specialite}
+                      type="button"
+                      variant={formData.specialites?.includes(specialite) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleSpecialiteToggle(specialite)}
+                      className="text-xs"
+                    >
+                      {specialite}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
             <DialogFooter>
