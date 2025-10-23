@@ -142,6 +142,10 @@ export default function OrganismesFormationPage() {
     setShowEditModal(true)
   }
 
+  const handleRowClick = (organisme: Organisme) => {
+    handleEditOrganisme(organisme)
+  }
+
   const handleUpdateOrganisme = () => {
     if (!editingOrganisme) return
 
@@ -354,12 +358,15 @@ export default function OrganismesFormationPage() {
                   <TableHead>Contact</TableHead>
                   <TableHead>Spécialités</TableHead>
                   <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredOrganismes.map((organisme) => (
-                  <TableRow key={organisme.id}>
+                  <TableRow 
+                    key={organisme.id} 
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleRowClick(organisme)}
+                  >
                     <TableCell>
                       <div>
                         <div className="font-medium">{organisme.nom}</div>
@@ -386,6 +393,7 @@ export default function OrganismesFormationPage() {
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLink className="h-3 w-3" />
                             Site web
@@ -403,34 +411,17 @@ export default function OrganismesFormationPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={organisme.statut === 'actif' ? 'default' : 'secondary'}
-                        className="cursor-pointer hover:opacity-80"
-                        onClick={() => handleToggleStatut(organisme)}
-                        title={`Cliquer pour ${organisme.statut === 'actif' ? 'désactiver' : 'activer'}`}
+                      <div 
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        {organisme.statut === 'actif' ? 'Actif' : 'Inactif'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditOrganisme(organisme)}
-                          title="Modifier"
+                        <Badge 
+                          variant={organisme.statut === 'actif' ? 'default' : 'secondary'}
+                          className="cursor-pointer hover:opacity-80"
+                          onClick={() => handleToggleStatut(organisme)}
+                          title={`Cliquer pour ${organisme.statut === 'actif' ? 'désactiver' : 'activer'}`}
                         >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-800"
-                          onClick={() => handleDeleteOrganisme(organisme)}
-                          title="Supprimer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          {organisme.statut === 'actif' ? 'Actif' : 'Inactif'}
+                        </Badge>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -532,17 +523,31 @@ export default function OrganismesFormationPage() {
                 </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setShowEditModal(false)
-                setEditingOrganisme(null)
-                setFormData({})
-              }}>
-                Annuler
+            <DialogFooter className="flex justify-between">
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  if (editingOrganisme) {
+                    handleDeleteOrganisme(editingOrganisme)
+                    setShowEditModal(false)
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer
               </Button>
-              <Button onClick={handleUpdateOrganisme}>
-                Mettre à jour
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => {
+                  setShowEditModal(false)
+                  setEditingOrganisme(null)
+                  setFormData({})
+                }}>
+                  Annuler
+                </Button>
+                <Button onClick={handleUpdateOrganisme}>
+                  Mettre à jour
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
