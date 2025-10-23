@@ -159,7 +159,7 @@ export default function OrganismesFormationPage() {
   const handleToggleStatut = (organisme: Organisme) => {
     const updatedOrganismes = organismes.map(org =>
       org.id === organisme.id
-        ? { ...org, statut: org.statut === 'actif' ? 'inactif' : 'actif' }
+        ? { ...org, statut: org.statut === 'actif' ? 'inactif' as const : 'actif' as const }
         : org
     )
 
