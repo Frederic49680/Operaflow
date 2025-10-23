@@ -100,6 +100,18 @@ export default function CatalogueFormationsManager() {
     handleEdit(formation);
   };
 
+  const handleNewFormation = () => {
+    setEditingFormation(null);
+    setFormData({});
+    setShowForm(true);
+  };
+
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingFormation(null);
+    setFormData({});
+  };
+
   const handleDelete = async (formationId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette formation ?')) return;
 
@@ -152,7 +164,7 @@ export default function CatalogueFormationsManager() {
       <div className="flex justify-end">
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={handleNewFormation}>
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle formation
             </Button>
@@ -264,7 +276,7 @@ export default function CatalogueFormationsManager() {
                     variant="destructive" 
                     onClick={() => {
                       handleDelete(editingFormation.formation_id);
-                      setShowForm(false);
+                      handleCloseForm();
                     }}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -272,7 +284,7 @@ export default function CatalogueFormationsManager() {
                   </Button>
                 )}
                 <div className="flex space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                  <Button type="button" variant="outline" onClick={handleCloseForm}>
                     Annuler
                   </Button>
                   <Button type="submit">
