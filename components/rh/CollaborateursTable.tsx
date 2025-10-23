@@ -91,18 +91,10 @@ export function CollaborateursTable({
       setError(null)
       const supabase = createClient()
 
-      // Charger les collaborateurs avec leur rôle principal (exclure les admins)
+      // Charger les collaborateurs non-admin
       const { data: collabsData, error: collabsError } = await supabase
         .from('ressources')
-        .select(`
-          *,
-          resource_roles!inner(
-            role_code,
-            is_primary,
-            roles!inner(label)
-          )
-        `)
-        .eq('resource_roles.is_primary', true)
+        .select('*')
         .eq('is_admin', false)
         .order('nom')
 
@@ -126,8 +118,8 @@ export function CollaborateursTable({
         const site = siteData ? siteData.nom : '-'
         const site_code = siteData ? siteData.code_site : ''
         
-        // Récupérer le rôle principal
-        const rolePrincipal = collab.resource_roles?.[0]?.roles?.label || '-'
+        // Rôle principal par défaut (sera géré séparément si nécessaire)
+        const rolePrincipal = '-'
         
         return {
           id: collab.id,
