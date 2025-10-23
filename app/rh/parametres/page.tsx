@@ -144,17 +144,6 @@ export default function ParametresPage() {
     }
   }, [supabase])
 
-  // Chargement des paramètres au montage du composant
-  useEffect(() => {
-    loadSettings()
-    checkCollaborateursCount()
-  }, [loadSettings, checkCollaborateursCount])
-
-  const getSettingValue = (data: any[], category: string, key: string, defaultValue: string) => {
-    const setting = data?.find(s => s.category === category && s.setting_key === key)
-    return setting?.setting_value || defaultValue
-  }
-
   // Fonction pour vérifier le nombre de collaborateurs
   const checkCollaborateursCount = useCallback(async () => {
     try {
@@ -168,6 +157,17 @@ export default function ParametresPage() {
       console.error('Erreur lors de la vérification des collaborateurs:', error)
     }
   }, [supabase])
+
+  // Chargement des paramètres au montage du composant
+  useEffect(() => {
+    loadSettings()
+    checkCollaborateursCount()
+  }, [loadSettings, checkCollaborateursCount])
+
+  const getSettingValue = (data: any[], category: string, key: string, defaultValue: string) => {
+    const setting = data?.find(s => s.category === category && s.setting_key === key)
+    return setting?.setting_value || defaultValue
+  }
 
   // Fonction pour créer le premier utilisateur
   const createFirstUser = async () => {
