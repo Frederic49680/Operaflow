@@ -95,6 +95,10 @@ export default function CatalogueFormationsManager() {
     setShowForm(true);
   };
 
+  const handleRowClick = (formation: CatalogueFormation) => {
+    handleEdit(formation);
+  };
+
   const handleDelete = async (formationId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette formation ?')) return;
 
@@ -252,13 +256,28 @@ export default function CatalogueFormationsManager() {
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Annuler
-                </Button>
-                <Button type="submit">
-                  {editingFormation ? 'Mettre à jour' : 'Créer'}
-                </Button>
+              <div className="flex justify-between">
+                {editingFormation && (
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    onClick={() => {
+                      handleDelete(editingFormation.formation_id);
+                      setShowForm(false);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Supprimer
+                  </Button>
+                )}
+                <div className="flex space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                    Annuler
+                  </Button>
+                  <Button type="submit">
+                    {editingFormation ? 'Mettre à jour' : 'Créer'}
+                  </Button>
+                </div>
               </div>
             </form>
           </DialogContent>
@@ -284,12 +303,15 @@ export default function CatalogueFormationsManager() {
                 <TableHead>Participants</TableHead>
                 <TableHead>Tarifs</TableHead>
                 <TableHead>Statut</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {formations.map((formation) => (
-                <TableRow key={formation.formation_id}>
+                <TableRow 
+                  key={formation.formation_id}
+                  className="cursor-pointer hover:bg-gray-50"
+                  onClick={() => handleRowClick(formation)}
+                >
                   <TableCell className="font-medium">{formation.intitule}</TableCell>
                   <TableCell>
                     <Badge className={getCategoryColor(formation.category)}>
@@ -308,29 +330,13 @@ export default function CatalogueFormationsManager() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant={formation.actif ? "default" : "outline"}
-                      onClick={() => handleToggleStatus(formation.formation_id, formation.actif)}
-                    >
-                      {formation.actif ? 'Actif' : 'Inactif'}
-                    </Button>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-1">
+                    <div onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => handleEdit(formation)}
+                        variant={formation.actif ? "default" : "outline"}
+                        onClick={() => handleToggleStatus(formation.formation_id, formation.actif)}
                       >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(formation.formation_id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
+                        {formation.actif ? 'Actif' : 'Inactif'}
                       </Button>
                     </div>
                   </TableCell>

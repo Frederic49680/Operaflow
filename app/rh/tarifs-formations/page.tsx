@@ -110,12 +110,49 @@ export default function TarifsFormationsPage() {
 
   const [searchTerm, setSearchTerm] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [editingTarif, setEditingTarif] = useState<Tarif | null>(null)
+  const [tarifToDelete, setTarifToDelete] = useState<Tarif | null>(null)
+  const [formData, setFormData] = useState<Partial<Tarif>>({})
 
   const filteredTarifs = tarifs.filter(tarif =>
     tarif.formation.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tarif.organisme.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const handleEditTarif = (tarif: Tarif) => {
+    setEditingTarif(tarif)
+    setFormData(tarif)
+    setShowEditModal(true)
+  }
+
+  const handleRowClick = (tarif: Tarif) => {
+    handleEditTarif(tarif)
+  }
+
+  const handleDeleteTarif = (tarif: Tarif) => {
+    setTarifToDelete(tarif)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDeleteTarif = () => {
+    if (!tarifToDelete) return
+
+    setTarifs(tarifs.filter(t => t.id !== tarifToDelete.id))
+    setTarifToDelete(null)
+    setShowDeleteModal(false)
+  }
+
+  const handleToggleStatut = (tarif: Tarif) => {
+    const updatedTarifs = tarifs.map(t =>
+      t.id === tarif.id
+        ? { ...t, statut: t.statut === 'actif' ? 'inactif' as const : 'actif' as const }
+        : t
+    )
+
+    setTarifs(updatedTarifs)
+  }
 
   const getModaliteIcon = (modalite: string) => {
     switch (modalite) {
@@ -265,12 +302,16 @@ export default function TarifsFormationsPage() {
                   <TableHead>Participants</TableHead>
                   <TableHead>Durée</TableHead>
                   <TableHead>Validité</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Statut</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTarifs.map((tarif) => (
-                  <TableRow key={tarif.id}>
+                  <TableRow 
+                    key={tarif.id}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleRowClick(tarif)}
+                  >
                     <TableCell>
                       <div className="font-medium">{tarif.formation}</div>
                     </TableCell>
@@ -314,21 +355,15 @@ export default function TarifsFormationsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingTarif(tarif)}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Badge 
+                          variant={tarif.statut === 'actif' ? 'default' : 'secondary'}
+                          className="cursor-pointer hover:opacity-80"
+                          onClick={() => handleToggleStatut(tarif)}
+                          title={`Cliquer pour ${tarif.statut === 'actif' ? 'désactiver' : 'activer'}`}
                         >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          {tarif.statut === 'actif' ? 'Actif' : 'Inactif'}
+                        </Badge>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -337,6 +372,180 @@ export default function TarifsFormationsPage() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Modal d'édition */}
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Modifier le tarif de formation</DialogTitle>
+              <DialogDescription>
+                Modifiez les informations du tarif
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-formation">Formation</Label>
+                <Input 
+                  id="edit-formation" 
+                  placeholder="Nom de la formation" 
+                  value={formData.formation || ""}
+                  onChange={(e) => setFormData({...formData, formation: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-organisme">Organisme</Label>
+                <Input 
+                  id="edit-organisme" 
+                  placeholder="Nom de l'organisme" 
+                  value={formData.organisme || ""}
+                  onChange={(e) => setFormData({...formData, organisme: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-modalite">Modalité</Label>
+                <Select 
+                  value={formData.modalite || ""}
+                  onValueChange={(value) => setFormData({...formData, modalite: value as 'presentiel' | 'distanciel' | 'mixte'})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="presentiel">Présentiel</SelectItem>
+                    <SelectItem value="distanciel">Distanciel</SelectItem>
+                    <SelectItem value="mixte">Mixte</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-duree">Durée (jours)</Label>
+                <Input 
+                  id="edit-duree" 
+                  type="number" 
+                  placeholder="2" 
+                  value={formData.duree_jours || ""}
+                  onChange={(e) => setFormData({...formData, duree_jours: parseInt(e.target.value) || 0})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-tarif_unitaire">Tarif unitaire (€)</Label>
+                <Input 
+                  id="edit-tarif_unitaire" 
+                  type="number" 
+                  placeholder="250" 
+                  value={formData.tarif_unitaire || ""}
+                  onChange={(e) => setFormData({...formData, tarif_unitaire: parseFloat(e.target.value) || 0})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-tarif_groupe">Tarif groupe (€)</Label>
+                <Input 
+                  id="edit-tarif_groupe" 
+                  type="number" 
+                  placeholder="2000" 
+                  value={formData.tarif_groupe || ""}
+                  onChange={(e) => setFormData({...formData, tarif_groupe: parseFloat(e.target.value) || 0})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-participants_min">Participants min</Label>
+                <Input 
+                  id="edit-participants_min" 
+                  type="number" 
+                  placeholder="8" 
+                  value={formData.nb_participants_min || ""}
+                  onChange={(e) => setFormData({...formData, nb_participants_min: parseInt(e.target.value) || 0})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-participants_max">Participants max</Label>
+                <Input 
+                  id="edit-participants_max" 
+                  type="number" 
+                  placeholder="12" 
+                  value={formData.nb_participants_max || ""}
+                  onChange={(e) => setFormData({...formData, nb_participants_max: parseInt(e.target.value) || 0})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-validite_debut">Validité début</Label>
+                <Input 
+                  id="edit-validite_debut" 
+                  type="date" 
+                  value={formData.validite_debut || ""}
+                  onChange={(e) => setFormData({...formData, validite_debut: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-validite_fin">Validité fin</Label>
+                <Input 
+                  id="edit-validite_fin" 
+                  type="date" 
+                  value={formData.validite_fin || ""}
+                  onChange={(e) => setFormData({...formData, validite_fin: e.target.value})}
+                />
+              </div>
+            </div>
+            <DialogFooter className="flex justify-between">
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  if (editingTarif) {
+                    handleDeleteTarif(editingTarif)
+                    setShowEditModal(false)
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => {
+                  setShowEditModal(false)
+                  setEditingTarif(null)
+                  setFormData({})
+                }}>
+                  Annuler
+                </Button>
+                <Button onClick={() => {
+                  // Logique de mise à jour
+                  setShowEditModal(false)
+                  setEditingTarif(null)
+                  setFormData({})
+                }}>
+                  Mettre à jour
+                </Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de suppression */}
+        <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Supprimer le tarif</DialogTitle>
+              <DialogDescription>
+                Êtes-vous sûr de vouloir supprimer le tarif "{tarifToDelete?.formation}" ? 
+                Cette action est irréversible.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowDeleteModal(false)
+                setTarifToDelete(null)
+              }}>
+                Annuler
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmDeleteTarif}
+              >
+                Supprimer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
