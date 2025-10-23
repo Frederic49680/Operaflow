@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test de connexion Supabase</h1>
+    <div id="results"></div>
+
+    <script>
+        console.log('🔍 Test de connexion Supabase...');
+        
+        // Configuration Supabase
+        const supabaseUrl = 'https://rrmvejpwbkwlmyjhnxaz.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJybXZlanB3Ymt3bG15amhueGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3OTM1NDEsImV4cCI6MjA3NjM2OTU0MX0.8TVMKeCBR3yg2iKlqypOD7zPqIPYYMi2xwHubNPF_Ow';
+        
+        // Initialiser Supabase
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+        
+        console.log('✅ Supabase initialisé');
+        
+        // Test de connexion
+        async function testConnection() {
+            try {
+                console.log('🔍 Test de lecture des sites...');
+                
+                const { data: sites, error } = await supabaseClient
+                    .from('sites')
+                    .select('id, nom, code_site')
+                    .limit(5);
+                
+                if (error) {
+                    console.error('❌ Erreur de lecture:', error);
+                    document.getElementById('results').innerHTML = 
+                        '<p style="color: red;">❌ Erreur: ' + error.message + '</p>';
+                    return false;
+                }
+                
+                console.log('✅ Lecture réussie:', sites);
+                document.getElementById('results').innerHTML = 
+                    '<p style="color: green;">✅ Connexion réussie ! ' + sites.length + ' sites trouvés.</p>' +
+                    '<pre>' + JSON.stringify(sites, null, 2) + '</pre>';
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Erreur générale:', error);
+                document.getElementById('results').innerHTML = 
+                    '<p style="color: red;">❌ Erreur: ' + error.message + '</p>';
+                return false;
+            }
+        }
+        
+        // Exécuter le test
+        testConnection();
+    </script>
+</body>
+</html>

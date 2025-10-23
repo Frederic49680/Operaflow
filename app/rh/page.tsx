@@ -181,7 +181,7 @@ export default function RHPage() {
             <CardContent className="space-y-3">
               <div className="space-y-2">
                 <Button variant="ghost" className="w-full justify-start hover:bg-purple-50 hover:text-purple-700" asChild>
-                  <Link href="/rh/formations">
+                  <Link href="/rh/catalogue-formations">
                     <GraduationCap className="h-4 w-4 mr-2" />
                     Catalogue formations
                   </Link>
@@ -190,6 +190,12 @@ export default function RHPage() {
                   <Link href="/rh/plan-formation">
                     <Calendar className="h-4 w-4 mr-2" />
                     Plan de formation
+                  </Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start hover:bg-indigo-50 hover:text-indigo-700" asChild>
+                  <Link href="/rh/sessions-formation">
+                    <GraduationCap className="h-4 w-4 mr-2" />
+                    Sessions de formation
                   </Link>
                 </Button>
               </div>
