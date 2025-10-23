@@ -70,11 +70,6 @@ export default function ParametresPage() {
   const [originalSettings, setOriginalSettings] = useState({})
   const supabase = createClient()
 
-  // Chargement des paramètres au montage du composant
-  useEffect(() => {
-    loadSettings()
-  }, [loadSettings])
-
   const loadSettings = useCallback(async () => {
     try {
       setLoading(true)
@@ -127,7 +122,12 @@ export default function ParametresPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [supabase])
+
+  // Chargement des paramètres au montage du composant
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
 
   const getSettingValue = (data: any[], category: string, key: string, defaultValue: string) => {
     const setting = data?.find(s => s.category === category && s.setting_key === key)
