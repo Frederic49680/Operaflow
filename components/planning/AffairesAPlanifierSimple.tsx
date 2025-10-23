@@ -24,6 +24,7 @@ interface Affaire {
   site_nom: string
   responsable_nom: string
   type_contrat: string
+  type_affaire?: string
   montant_total_ht: number
   statut: string
   date_debut?: string
