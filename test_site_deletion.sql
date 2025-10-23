@@ -28,4 +28,4 @@ SELECT
     'ressources' as table_name, 
     COUNT(*) as count 
 FROM ressources 
-WHERE site = (SELECT code_site FROM sites WHERE id = 'ce082e2c-5484-45ca-a682-7d350badc08d');
+WHERE site_id = 'ce082e2c-5484-45ca-a682-7d350badc08d';

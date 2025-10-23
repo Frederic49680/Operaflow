@@ -25,22 +25,16 @@ BEGIN
     
     -- 5. Supprimer les absences liees aux ressources du site
     DELETE FROM absences WHERE ressource_id IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     );
     
     -- 6. Supprimer les affectations de ressources
     DELETE FROM taches_ressources WHERE ressource_id IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     );
     
     -- 7. Supprimer les ressources du site
-    DELETE FROM ressources WHERE site = (
-        SELECT code_site FROM sites WHERE id = site_id_to_delete
-    );
+    DELETE FROM ressources WHERE site_id = site_id_to_delete;
     
     -- 8. Supprimer les interlocuteurs lies aux affaires du site
     DELETE FROM affaires_interlocuteurs WHERE affaire_id IN (
@@ -74,9 +68,7 @@ BEGIN
     
     -- 16. Supprimer les formations liees aux ressources
     DELETE FROM plan_formation_ressource WHERE collaborateur_id IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     );
     
     -- 17. Supprimer les sessions de formation
@@ -84,55 +76,39 @@ BEGIN
     
     -- 18. Supprimer les affectations de roles
     DELETE FROM resource_roles WHERE resource_id IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     );
     
     -- 19. Supprimer les affectations de competences
     DELETE FROM resource_competencies WHERE resource_id IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     );
     
     -- 20. Supprimer les affectations confirmees
     DELETE FROM assignments WHERE resource_id IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     );
     
     -- 21. Supprimer les affectations provisoires
     DELETE FROM provisional_assignments WHERE resource_id IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     );
     
     -- 22. Supprimer les logs d'affectation
     DELETE FROM assignment_logs WHERE resource_id IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     );
     
     -- 23. Supprimer les regles de substitution
     DELETE FROM substitution_rules WHERE can_play_role IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     ) OR when_missing_role IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     );
     
     -- 24. Supprimer les relations competence-role
     DELETE FROM resource_competency_roles WHERE resource_id IN (
-        SELECT id FROM ressources WHERE site = (
-            SELECT code_site FROM sites WHERE id = site_id_to_delete
-        )
+        SELECT id FROM ressources WHERE site_id = site_id_to_delete
     );
     
     -- 25. Supprimer les alertes liees au site
