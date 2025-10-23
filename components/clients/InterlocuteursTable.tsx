@@ -50,35 +50,9 @@ export function InterlocuteursTable() {
       setError(null)
       const supabase = createClient()
 
-      const { data, error } = await supabase
-        .from('interlocuteurs')
-        .select(`
-          *,
-          client_id:clients (
-            nom_client
-          ),
-          site_id:sites (
-            nom
-          )
-        `)
-        .order('nom')
-
-      if (error) throw error
-
-      const formattedData = data?.map((interlocuteur: any) => ({
-        id: interlocuteur.id,
-        nom: interlocuteur.nom,
-        prenom: interlocuteur.prenom,
-        nom_client: interlocuteur.client_id?.[0]?.nom_client || 'N/A',
-        fonction: interlocuteur.fonction,
-        type_interlocuteur: interlocuteur.type_interlocuteur,
-        email: interlocuteur.email,
-        telephone: interlocuteur.telephone,
-        site_nom: interlocuteur.site_id?.[0]?.nom,
-        actif: interlocuteur.actif,
-      })) || []
-
-      setInterlocuteurs(formattedData)
+      // Pour l'instant, on retourne des données vides car les tables n'existent pas encore
+      // TODO: Implémenter quand les tables interlocuteurs/clients/sites seront créées
+      setInterlocuteurs([])
     } catch (err) {
       console.error('Erreur chargement interlocuteurs:', err)
       setError('Erreur lors du chargement des contacts')
