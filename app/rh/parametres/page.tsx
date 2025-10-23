@@ -24,9 +24,12 @@ import {
   Shield,
   Database,
   Save,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
 
 export default function ParametresPage() {
   const [settings, setSettings] = useState({
@@ -62,14 +65,159 @@ export default function ParametresPage() {
     maintenanceMode: false
   })
 
-  const handleSave = () => {
-    // Logique de sauvegarde
-    console.log("Sauvegarde des paramètres:", settings)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [originalSettings, setOriginalSettings] = useState({})
+  const supabase = createClient()
+
+  // Chargement des paramètres au montage du composant
+  useEffect(() => {
+    loadSettings()
+  }, [])
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('*')
+        .order('category, setting_key')
+
+      if (error) throw error
+
+      // Conversion des données de la DB vers le format du state
+      const loadedSettings = {
+        // Paramètres généraux
+        nomEntreprise: getSettingValue(data, 'general', 'nom_entreprise', 'OperaFlow'),
+        adresse: getSettingValue(data, 'general', 'adresse', '123 Rue de l\'Innovation, 75001 Paris'),
+        telephone: getSettingValue(data, 'general', 'telephone', '01 23 45 67 89'),
+        email: getSettingValue(data, 'general', 'email', 'contact@operaflow.fr'),
+        siteWeb: getSettingValue(data, 'general', 'site_web', 'https://www.operaflow.fr'),
+        
+        // Paramètres RH
+        dureeContratEssai: parseInt(getSettingValue(data, 'rh', 'duree_contrat_essai', '3')),
+        delaiPreavis: parseInt(getSettingValue(data, 'rh', 'delai_preavis', '1')),
+        tauxAbsenteismeMax: parseInt(getSettingValue(data, 'rh', 'taux_absenteisme_max', '5')),
+        dureeFormationMax: parseInt(getSettingValue(data, 'rh', 'duree_formation_max', '40')),
+        
+        // Paramètres notifications
+        notificationsEmail: getSettingValue(data, 'notifications', 'notifications_email', 'true') === 'true',
+        notificationsPush: getSettingValue(data, 'notifications', 'notifications_push', 'true') === 'true',
+        rappelFormation: parseInt(getSettingValue(data, 'notifications', 'rappel_formation', '7')),
+        alerteFinContrat: parseInt(getSettingValue(data, 'notifications', 'alerte_fin_contrat', '30')),
+        
+        // Paramètres sécurité
+        dureeSession: parseInt(getSettingValue(data, 'security', 'duree_session', '8')),
+        tentativesConnexion: parseInt(getSettingValue(data, 'security', 'tentatives_connexion', '3')),
+        motDePasseComplexe: getSettingValue(data, 'security', 'mot_de_passe_complexe', 'true') === 'true',
+        doubleAuthentification: getSettingValue(data, 'security', 'double_authentification', 'false') === 'true',
+        
+        // Paramètres système
+        sauvegardeAuto: getSettingValue(data, 'system', 'sauvegarde_auto', 'true') === 'true',
+        frequenceSauvegarde: getSettingValue(data, 'system', 'frequence_sauvegarde', 'quotidienne'),
+        retentionDonnees: parseInt(getSettingValue(data, 'system', 'retention_donnees', '5')),
+        maintenanceMode: getSettingValue(data, 'system', 'maintenance_mode', 'false') === 'true'
+      }
+
+      setSettings(loadedSettings)
+      setOriginalSettings(loadedSettings)
+    } catch (error) {
+      console.error('Erreur lors du chargement des paramètres:', error)
+      toast.error('Erreur lors du chargement des paramètres')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getSettingValue = (data: any[], category: string, key: string, defaultValue: string) => {
+    const setting = data?.find(s => s.category === category && s.setting_key === key)
+    return setting?.setting_value || defaultValue
+  }
+
+  const handleSave = async () => {
+    try {
+      setSaving(true)
+      
+      // Validation des champs
+      if (!settings.nomEntreprise.trim()) {
+        toast.error('Le nom de l\'entreprise est obligatoire')
+        return
+      }
+      
+      if (!settings.email.trim() || !settings.email.includes('@')) {
+        toast.error('L\'email doit être valide')
+        return
+      }
+
+      // Préparation des données à sauvegarder
+      const settingsToSave = [
+        // Paramètres généraux
+        { category: 'general', key: 'nom_entreprise', value: settings.nomEntreprise },
+        { category: 'general', key: 'adresse', value: settings.adresse },
+        { category: 'general', key: 'telephone', value: settings.telephone },
+        { category: 'general', key: 'email', value: settings.email },
+        { category: 'general', key: 'site_web', value: settings.siteWeb },
+        
+        // Paramètres RH
+        { category: 'rh', key: 'duree_contrat_essai', value: settings.dureeContratEssai.toString() },
+        { category: 'rh', key: 'delai_preavis', value: settings.delaiPreavis.toString() },
+        { category: 'rh', key: 'taux_absenteisme_max', value: settings.tauxAbsenteismeMax.toString() },
+        { category: 'rh', key: 'duree_formation_max', value: settings.dureeFormationMax.toString() },
+        
+        // Paramètres notifications
+        { category: 'notifications', key: 'notifications_email', value: settings.notificationsEmail.toString() },
+        { category: 'notifications', key: 'notifications_push', value: settings.notificationsPush.toString() },
+        { category: 'notifications', key: 'rappel_formation', value: settings.rappelFormation.toString() },
+        { category: 'notifications', key: 'alerte_fin_contrat', value: settings.alerteFinContrat.toString() },
+        
+        // Paramètres sécurité
+        { category: 'security', key: 'duree_session', value: settings.dureeSession.toString() },
+        { category: 'security', key: 'tentatives_connexion', value: settings.tentativesConnexion.toString() },
+        { category: 'security', key: 'mot_de_passe_complexe', value: settings.motDePasseComplexe.toString() },
+        { category: 'security', key: 'double_authentification', value: settings.doubleAuthentification.toString() },
+        
+        // Paramètres système
+        { category: 'system', key: 'sauvegarde_auto', value: settings.sauvegardeAuto.toString() },
+        { category: 'system', key: 'frequence_sauvegarde', value: settings.frequenceSauvegarde },
+        { category: 'system', key: 'retention_donnees', value: settings.retentionDonnees.toString() },
+        { category: 'system', key: 'maintenance_mode', value: settings.maintenanceMode.toString() }
+      ]
+
+      // Sauvegarde via la fonction RPC
+      for (const setting of settingsToSave) {
+        const { error } = await supabase.rpc('set_setting', {
+          category_name: setting.category,
+          key_name: setting.key,
+          value: setting.value
+        })
+        
+        if (error) throw error
+      }
+
+      setOriginalSettings({ ...settings })
+      toast.success('Paramètres sauvegardés avec succès')
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error)
+      toast.error('Erreur lors de la sauvegarde des paramètres')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleReset = () => {
-    // Logique de réinitialisation
-    console.log("Réinitialisation des paramètres")
+    setSettings({ ...originalSettings })
+    toast.info('Paramètres réinitialisés')
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Chargement des paramètres...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -85,13 +233,17 @@ export default function ParametresPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleReset}>
+              <Button variant="outline" onClick={handleReset} disabled={loading || saving}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Réinitialiser
               </Button>
-              <Button onClick={handleSave}>
-                <Save className="h-4 w-4 mr-2" />
-                Enregistrer
+              <Button onClick={handleSave} disabled={loading || saving}>
+                {saving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {saving ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
             </div>
           </div>
