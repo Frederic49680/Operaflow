@@ -35,6 +35,7 @@ import {
   XCircle
 } from "lucide-react"
 import { useState } from "react"
+import { toast } from "sonner"
 
 interface Competence {
   id: string
@@ -143,7 +144,17 @@ export default function CompetencesPage() {
 
   const [searchTerm, setSearchTerm] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [editingCompetence, setEditingCompetence] = useState<Competence | null>(null)
+  const [competenceToDelete, setCompetenceToDelete] = useState<Competence | null>(null)
+  const [formData, setFormData] = useState({
+    code: "",
+    label: "",
+    description: "",
+    category: "",
+    niveau_requis: 1
+  })
 
   const filteredCompetences = competences.filter(comp =>
     comp.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -167,6 +178,93 @@ export default function CompetencesPage() {
     if (niveau <= 2) return 'bg-green-100 text-green-800'
     if (niveau <= 4) return 'bg-yellow-100 text-yellow-800'
     return 'bg-red-100 text-red-800'
+  }
+
+  // Fonctions de gestion
+  const handleAddCompetence = () => {
+    if (!formData.code || !formData.label || !formData.category) {
+      toast.error("Veuillez remplir tous les champs obligatoires")
+      return
+    }
+
+    const newCompetence: Competence = {
+      id: Date.now().toString(),
+      code: formData.code.toUpperCase(),
+      label: formData.label,
+      description: formData.description,
+      category: formData.category.toUpperCase(),
+      niveau_requis: formData.niveau_requis,
+      actif: true,
+      created_at: new Date().toISOString().split('T')[0]
+    }
+
+    setCompetences([...competences, newCompetence])
+    setFormData({ code: "", label: "", description: "", category: "", niveau_requis: 1 })
+    setShowAddModal(false)
+    toast.success("Compétence ajoutée avec succès")
+  }
+
+  const handleEditCompetence = (competence: Competence) => {
+    setEditingCompetence(competence)
+    setFormData({
+      code: competence.code,
+      label: competence.label,
+      description: competence.description,
+      category: competence.category,
+      niveau_requis: competence.niveau_requis
+    })
+    setShowEditModal(true)
+  }
+
+  const handleUpdateCompetence = () => {
+    if (!formData.code || !formData.label || !formData.category) {
+      toast.error("Veuillez remplir tous les champs obligatoires")
+      return
+    }
+
+    setCompetences(competences.map(comp => 
+      comp.id === editingCompetence?.id 
+        ? {
+            ...comp,
+            code: formData.code.toUpperCase(),
+            label: formData.label,
+            description: formData.description,
+            category: formData.category.toUpperCase(),
+            niveau_requis: formData.niveau_requis
+          }
+        : comp
+    ))
+    setShowEditModal(false)
+    setEditingCompetence(null)
+    setFormData({ code: "", label: "", description: "", category: "", niveau_requis: 1 })
+    toast.success("Compétence modifiée avec succès")
+  }
+
+  const handleDeleteCompetence = (competence: Competence) => {
+    setCompetenceToDelete(competence)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDeleteCompetence = () => {
+    if (competenceToDelete) {
+      setCompetences(competences.filter(comp => comp.id !== competenceToDelete.id))
+      setShowDeleteModal(false)
+      setCompetenceToDelete(null)
+      toast.success("Compétence supprimée avec succès")
+    }
+  }
+
+  const handleToggleStatus = (competence: Competence) => {
+    setCompetences(competences.map(comp => 
+      comp.id === competence.id 
+        ? { ...comp, actif: !comp.actif }
+        : comp
+    ))
+    toast.success(`Compétence ${competence.actif ? 'désactivée' : 'activée'}`)
+  }
+
+  const handleRowClick = (competence: Competence) => {
+    handleEditCompetence(competence)
   }
 
   return (
@@ -197,31 +295,62 @@ export default function CompetencesPage() {
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="code">Code</Label>
-                    <Input id="code" placeholder="Ex: AUTO" />
+                    <Label htmlFor="code">Code *</Label>
+                    <Input 
+                      id="code" 
+                      placeholder="Ex: AUTO" 
+                      value={formData.code}
+                      onChange={(e) => setFormData({...formData, code: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="label">Libellé</Label>
-                    <Input id="label" placeholder="Ex: Automatisme" />
+                    <Label htmlFor="label">Libellé *</Label>
+                    <Input 
+                      id="label" 
+                      placeholder="Ex: Automatisme" 
+                      value={formData.label}
+                      onChange={(e) => setFormData({...formData, label: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label htmlFor="description">Description</Label>
-                    <Textarea id="description" placeholder="Description de la compétence" />
+                    <Textarea 
+                      id="description" 
+                      placeholder="Description de la compétence"
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="category">Catégorie</Label>
-                    <Input id="category" placeholder="Ex: TECHNIQUE" />
+                    <Label htmlFor="category">Catégorie *</Label>
+                    <Input 
+                      id="category" 
+                      placeholder="Ex: TECHNIQUE" 
+                      value={formData.category}
+                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="niveau">Niveau requis (1-8)</Label>
-                    <Input id="niveau" type="number" min="1" max="8" placeholder="3" />
+                    <Label htmlFor="niveau">Niveau requis (1-8) *</Label>
+                    <Input 
+                      id="niveau" 
+                      type="number" 
+                      min="1" 
+                      max="8" 
+                      placeholder="3"
+                      value={formData.niveau_requis}
+                      onChange={(e) => setFormData({...formData, niveau_requis: parseInt(e.target.value) || 1})}
+                    />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                  <Button variant="outline" onClick={() => {
+                    setShowAddModal(false)
+                    setFormData({ code: "", label: "", description: "", category: "", niveau_requis: 1 })
+                  }}>
                     Annuler
                   </Button>
-                  <Button onClick={() => setShowAddModal(false)}>
+                  <Button onClick={handleAddCompetence}>
                     Enregistrer
                   </Button>
                 </DialogFooter>
@@ -326,7 +455,11 @@ export default function CompetencesPage() {
               </TableHeader>
               <TableBody>
                 {filteredCompetences.map((competence) => (
-                  <TableRow key={competence.id}>
+                  <TableRow 
+                    key={competence.id}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleRowClick(competence)}
+                  >
                     <TableCell>
                       <div className="font-mono font-medium">{competence.code}</div>
                     </TableCell>
@@ -347,16 +480,23 @@ export default function CompetencesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={competence.actif ? 'default' : 'secondary'}>
+                      <Badge 
+                        variant={competence.actif ? 'default' : 'secondary'}
+                        className="cursor-pointer hover:opacity-80"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleToggleStatus(competence)
+                        }}
+                      >
                         {competence.actif ? 'Actif' : 'Inactif'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setEditingCompetence(competence)}
+                          onClick={() => handleEditCompetence(competence)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -364,6 +504,7 @@ export default function CompetencesPage() {
                           variant="ghost"
                           size="sm"
                           className="text-red-600 hover:text-red-800"
+                          onClick={() => handleDeleteCompetence(competence)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -375,6 +516,107 @@ export default function CompetencesPage() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Modal d'édition */}
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Modifier la compétence</DialogTitle>
+              <DialogDescription>
+                Modifiez les informations de la compétence
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-code">Code *</Label>
+                <Input 
+                  id="edit-code" 
+                  placeholder="Ex: AUTO" 
+                  value={formData.code}
+                  onChange={(e) => setFormData({...formData, code: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-label">Libellé *</Label>
+                <Input 
+                  id="edit-label" 
+                  placeholder="Ex: Automatisme" 
+                  value={formData.label}
+                  onChange={(e) => setFormData({...formData, label: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea 
+                  id="edit-description" 
+                  placeholder="Description de la compétence"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Catégorie *</Label>
+                <Input 
+                  id="edit-category" 
+                  placeholder="Ex: TECHNIQUE" 
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-niveau">Niveau requis (1-8) *</Label>
+                <Input 
+                  id="edit-niveau" 
+                  type="number" 
+                  min="1" 
+                  max="8" 
+                  placeholder="3"
+                  value={formData.niveau_requis}
+                  onChange={(e) => setFormData({...formData, niveau_requis: parseInt(e.target.value) || 1})}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowEditModal(false)
+                setEditingCompetence(null)
+                setFormData({ code: "", label: "", description: "", category: "", niveau_requis: 1 })
+              }}>
+                Annuler
+              </Button>
+              <Button onClick={handleUpdateCompetence}>
+                Enregistrer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de suppression */}
+        <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Supprimer la compétence</DialogTitle>
+              <DialogDescription>
+                Êtes-vous sûr de vouloir supprimer la compétence "{competenceToDelete?.label}" ?
+                Cette action est irréversible.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowDeleteModal(false)
+                setCompetenceToDelete(null)
+              }}>
+                Annuler
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmDeleteCompetence}
+              >
+                Supprimer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
