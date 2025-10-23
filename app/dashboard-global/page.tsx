@@ -100,8 +100,8 @@ export default function DashboardGlobalPage() {
               </Card>
             </Link>
 
-            {/* Module Tuiles Tâches */}
-            <Link href="/tuiles-taches">
+            {/* Module Planning */}
+            <Link href="/planning">
               <Card className="hover:shadow-lg transition-all cursor-pointer border-slate-200 hover:border-blue-300">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
