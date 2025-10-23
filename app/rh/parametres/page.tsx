@@ -27,7 +27,7 @@ import {
   RefreshCw,
   Loader2
 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 
@@ -73,9 +73,9 @@ export default function ParametresPage() {
   // Chargement des paramètres au montage du composant
   useEffect(() => {
     loadSettings()
-  }, [])
+  }, [loadSettings])
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error } = await supabase
@@ -127,7 +127,7 @@ export default function ParametresPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   const getSettingValue = (data: any[], category: string, key: string, defaultValue: string) => {
     const setting = data?.find(s => s.category === category && s.setting_key === key)
@@ -205,8 +205,10 @@ export default function ParametresPage() {
   }
 
   const handleReset = () => {
-    setSettings({ ...originalSettings })
-    toast.info('Paramètres réinitialisés')
+    if (originalSettings) {
+      setSettings(originalSettings)
+      toast.info('Paramètres réinitialisés')
+    }
   }
 
   if (loading) {
