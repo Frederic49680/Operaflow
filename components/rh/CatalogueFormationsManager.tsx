@@ -35,6 +35,7 @@ export default function CatalogueFormationsManager() {
   const [editingFormation, setEditingFormation] = useState<CatalogueFormation | null>(null);
   const [formData, setFormData] = useState<Partial<CatalogueFormation>>({});
   const [showGroupPricing, setShowGroupPricing] = useState(false);
+  const [showGroupPricingInForm, setShowGroupPricingInForm] = useState(false);
 
   const supabase = createClient();
 
@@ -207,7 +208,29 @@ export default function CatalogueFormationsManager() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              {/* Toggle pour afficher les champs de groupe */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="toggle-group-form" className="text-sm font-medium">
+                    Tarifs de groupe
+                  </Label>
+                  <Button
+                    id="toggle-group-form"
+                    type="button"
+                    variant={showGroupPricingInForm ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowGroupPricingInForm(!showGroupPricingInForm)}
+                    className="h-8"
+                  >
+                    {showGroupPricingInForm ? "Masquer" : "Afficher"}
+                  </Button>
+                </div>
+                <span className="text-xs text-gray-500">
+                  {showGroupPricingInForm ? "Champs de groupe visibles" : "Champs de groupe masqués"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="validite_mois">Validité (mois)</Label>
                   <Input
@@ -226,27 +249,9 @@ export default function CatalogueFormationsManager() {
                     onChange={(e) => setFormData({ ...formData, duree_jours: parseInt(e.target.value) || 0 })}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="min_participants">Min participants</Label>
-                  <Input
-                    id="min_participants"
-                    type="number"
-                    value={formData.min_participants || 1}
-                    onChange={(e) => setFormData({ ...formData, min_participants: parseInt(e.target.value) || 1 })}
-                  />
-                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="max_participants">Max participants</Label>
-                  <Input
-                    id="max_participants"
-                    type="number"
-                    value={formData.max_participants || 20}
-                    onChange={(e) => setFormData({ ...formData, max_participants: parseInt(e.target.value) || 20 })}
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="tarif_unitaire">Tarif unitaire (€)</Label>
                   <Input
@@ -257,17 +262,42 @@ export default function CatalogueFormationsManager() {
                     onChange={(e) => setFormData({ ...formData, tarif_unitaire: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="tarif_groupe">Tarif groupe (€)</Label>
-                  <Input
-                    id="tarif_groupe"
-                    type="number"
-                    step="0.01"
-                    value={formData.tarif_groupe || ''}
-                    onChange={(e) => setFormData({ ...formData, tarif_groupe: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
+                {showGroupPricingInForm && (
+                  <div>
+                    <Label htmlFor="tarif_groupe">Tarif groupe (€)</Label>
+                    <Input
+                      id="tarif_groupe"
+                      type="number"
+                      step="0.01"
+                      value={formData.tarif_groupe || ''}
+                      onChange={(e) => setFormData({ ...formData, tarif_groupe: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                )}
               </div>
+
+              {showGroupPricingInForm && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="min_participants">Min participants</Label>
+                    <Input
+                      id="min_participants"
+                      type="number"
+                      value={formData.min_participants || 1}
+                      onChange={(e) => setFormData({ ...formData, min_participants: parseInt(e.target.value) || 1 })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="max_participants">Max participants</Label>
+                    <Input
+                      id="max_participants"
+                      type="number"
+                      value={formData.max_participants || 20}
+                      onChange={(e) => setFormData({ ...formData, max_participants: parseInt(e.target.value) || 20 })}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-between">
                 {editingFormation && (
