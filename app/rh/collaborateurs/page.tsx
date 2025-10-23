@@ -73,25 +73,46 @@ export default function CollaborateursPage() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from('ressources')
-        .select('actif, type_contrat, date_sortie')
+        .select(`
+          actif, 
+          type_contrat, 
+          date_sortie,
+          resource_roles!inner(
+            role:roles!inner(
+              code
+            )
+          )
+        `)
 
       if (error) throw error
 
+      // Filtrer les collaborateurs non-admin
+      const nonAdminData = data?.filter((c: any) => {
+        // Si pas de rôles, inclure (cas normal)
+        if (!c.resource_roles || c.resource_roles.length === 0) return true
+        
+        // Exclure si a un rôle admin
+        const hasAdminRole = c.resource_roles.some((rr: any) => 
+          rr.role?.code === 'admin' || rr.role?.code === 'Admin'
+        )
+        return !hasAdminRole
+      }) || []
+
       // Calculer les statistiques
-      const total = data?.length || 0
-      const cdiActif = data?.filter((c: any) => c.type_contrat === 'CDI' && c.actif).length || 0
-      const interimActif = data?.filter((c: any) => c.type_contrat === 'Intérim' && c.actif).length || 0
+      const total = nonAdminData.length
+      const cdiActif = nonAdminData.filter((c: any) => c.type_contrat === 'CDI' && c.actif).length
+      const interimActif = nonAdminData.filter((c: any) => c.type_contrat === 'Intérim' && c.actif).length
       
       // À renouveler : collaborateurs actifs avec date de sortie dans les 30 prochains jours
       const aujourdHui = new Date()
       const dans30Jours = new Date()
       dans30Jours.setDate(aujourdHui.getDate() + 30)
       
-      const aRenouveler = data?.filter((c: any) => {
+      const aRenouveler = nonAdminData.filter((c: any) => {
         if (!c.actif || !c.date_sortie) return false
         const dateSortie = new Date(c.date_sortie)
         return dateSortie >= aujourdHui && dateSortie <= dans30Jours
-      }).length || 0
+      }).length
 
       setStats({ total, cdiActif, interimActif, aRenouveler })
     } catch (error) {
