@@ -81,25 +81,13 @@ export function DashboardKPICards() {
     try {
       const supabase = createClient()
       
-      // Charger les collaborateurs avec filtrage admin
-      const { data: collaborateurs, error: collabError } = await supabase
+      // Charger les collaborateurs non-admin
+      const { data: nonAdminData, error: collabError } = await supabase
         .from('ressources')
-        .select('actif, type_contrat, email_pro, prenom, nom')
+        .select('actif, type_contrat')
+        .eq('is_admin', false)
 
       if (collabError) throw collabError
-
-      // Filtrer les collaborateurs non-admin (même logique que la page collaborateurs)
-      const nonAdminData = collaborateurs?.filter((c: any) => {
-        const email = c.email_pro?.toLowerCase() || ''
-        const prenom = c.prenom?.toLowerCase() || ''
-        const nom = c.nom?.toLowerCase() || ''
-        
-        const isAdminEmail = email.includes('admin') || email.includes('administrateur')
-        const isAdminName = prenom.includes('admin') || nom.includes('admin') || 
-                           prenom.includes('administrateur') || nom.includes('administrateur')
-        
-        return !isAdminEmail && !isAdminName
-      }) || []
 
       // Charger les affaires
       const { data: affaires, error: affairesError } = await supabase

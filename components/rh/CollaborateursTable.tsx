@@ -91,7 +91,7 @@ export function CollaborateursTable({
       setError(null)
       const supabase = createClient()
 
-      // Charger les collaborateurs avec leur rôle principal
+      // Charger les collaborateurs avec leur rôle principal (exclure les admins)
       const { data: collabsData, error: collabsError } = await supabase
         .from('ressources')
         .select(`
@@ -103,6 +103,7 @@ export function CollaborateursTable({
           )
         `)
         .eq('resource_roles.is_primary', true)
+        .eq('is_admin', false)
         .order('nom')
 
       if (collabsError) throw collabsError

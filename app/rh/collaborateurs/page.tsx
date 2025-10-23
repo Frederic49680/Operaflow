@@ -73,31 +73,14 @@ export default function CollaborateursPage() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from('ressources')
-        .select('actif, type_contrat, date_sortie, email_pro, prenom, nom')
+        .select('actif, type_contrat, date_sortie, email_pro, prenom, nom, is_admin')
 
       if (error) throw error
 
       // Filtrer les collaborateurs non-admin
-      // Exclure le premier collaborateur créé (compte admin initial)
-      const nonAdminData = data?.filter((c: any, index: number) => {
-        const email = c.email_pro?.toLowerCase() || ''
-        const prenom = c.prenom?.toLowerCase() || ''
-        const nom = c.nom?.toLowerCase() || ''
-        
-        // Exclure les comptes admin basés sur des patterns communs
-        const isAdminEmail = email.includes('admin') || email.includes('administrateur')
-        const isAdminName = prenom.includes('admin') || nom.includes('admin') || 
-                           prenom.includes('administrateur') || nom.includes('administrateur')
-        
-        // Exclure aussi le premier collaborateur créé (compte admin initial)
-        const isFirstUser = index === 0 && data.length === 1
-        
-        const isAdmin = isAdminEmail || isAdminName || isFirstUser
-        
-        // Debug log
-        console.log(`Collaborateur: ${prenom} ${nom} (${email}) - Admin: ${isAdmin} (Pattern: ${isAdminEmail || isAdminName}, First: ${isFirstUser})`)
-        
-        return !isAdmin
+      const nonAdminData = data?.filter((c: any) => {
+        // Exclure les comptes marqués comme admin
+        return !c.is_admin
       }) || []
 
       // Debug logs
