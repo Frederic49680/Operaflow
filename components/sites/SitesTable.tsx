@@ -166,17 +166,48 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
       setDeletingSite(true)
       const supabase = createClient()
       
-      // Utiliser la fonction RPC de suppression en cascade
-      const { data, error } = await supabase
-        .rpc('delete_site_cascade', { site_id_to_delete: siteToDelete.id })
-      
-      if (error) throw error
-      
-      // Vérifier le résultat de la fonction
-      if (data && data.success) {
+      // Essayer d'abord la fonction RPC de suppression en cascade
+      try {
+        const { data, error } = await supabase
+          .rpc('delete_site_cascade', { site_id_to_delete: siteToDelete.id })
+        
+        if (error) throw error
+        
+        // Vérifier le résultat de la fonction
+        if (data && data.success) {
+          setToast({ 
+            type: 'success', 
+            message: data.message || `Site "${siteToDelete.nom}" supprimé avec succès !` 
+          })
+          
+          // Recharger la liste des sites
+          await loadSites()
+          
+          // Fermer le modal
+          setSiteToDelete(null)
+          return
+        } else {
+          throw new Error(data?.message || 'Erreur lors de la suppression')
+        }
+      } catch (rpcError) {
+        // Si la fonction RPC n'existe pas ou échoue, essayer la suppression directe
+        console.warn('Fonction RPC non disponible, tentative de suppression directe:', rpcError)
+        
+        const { error } = await supabase
+          .from('sites')
+          .delete()
+          .eq('id', siteToDelete.id)
+        
+        if (error) {
+          if (error.code === '23503') {
+            throw new Error('Impossible de supprimer ce site car il contient des données liées. Veuillez d\'abord supprimer toutes les tâches, affaires et ressources associées.')
+          }
+          throw error
+        }
+        
         setToast({ 
           type: 'success', 
-          message: data.message || `Site "${siteToDelete.nom}" supprimé avec succès !` 
+          message: `Site "${siteToDelete.nom}" supprimé avec succès !` 
         })
         
         // Recharger la liste des sites
@@ -184,8 +215,6 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
         
         // Fermer le modal
         setSiteToDelete(null)
-      } else {
-        throw new Error(data?.message || 'Erreur lors de la suppression')
       }
     } catch (err) {
       console.error('Erreur suppression site:', err)
