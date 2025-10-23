@@ -89,8 +89,17 @@ export default function CollaborateursPage() {
         const isAdminName = prenom.includes('admin') || nom.includes('admin') || 
                            prenom.includes('administrateur') || nom.includes('administrateur')
         
-        return !isAdminEmail && !isAdminName
+        const isAdmin = isAdminEmail || isAdminName
+        
+        // Debug log
+        console.log(`Collaborateur: ${prenom} ${nom} (${email}) - Admin: ${isAdmin}`)
+        
+        return !isAdmin
       }) || []
+
+      // Debug logs
+      console.log(`Total collaborateurs: ${data?.length || 0}`)
+      console.log(`Collaborateurs non-admin: ${nonAdminData.length}`)
 
       // Calculer les statistiques
       const total = nonAdminData.length
