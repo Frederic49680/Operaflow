@@ -236,7 +236,7 @@ export default function ParametresPage() {
                   <Checkbox 
                     id="notificationsEmail"
                     checked={settings.notificationsEmail}
-                    onCheckedChange={(checked) => setSettings({...settings, notificationsEmail: checked})}
+                    onCheckedChange={(checked) => setSettings({...settings, notificationsEmail: !!checked})}
                   />
                 </div>
                 
@@ -248,7 +248,7 @@ export default function ParametresPage() {
                   <Checkbox 
                     id="notificationsPush"
                     checked={settings.notificationsPush}
-                    onCheckedChange={(checked) => setSettings({...settings, notificationsPush: checked})}
+                    onCheckedChange={(checked) => setSettings({...settings, notificationsPush: !!checked})}
                   />
                 </div>
                 
@@ -299,7 +299,7 @@ export default function ParametresPage() {
                   <Checkbox 
                     id="motDePasseComplexe"
                     checked={settings.motDePasseComplexe}
-                    onCheckedChange={(checked) => setSettings({...settings, motDePasseComplexe: checked})}
+                    onCheckedChange={(checked) => setSettings({...settings, motDePasseComplexe: !!checked})}
                   />
                 </div>
                 
@@ -311,7 +311,7 @@ export default function ParametresPage() {
                   <Checkbox 
                     id="doubleAuthentification"
                     checked={settings.doubleAuthentification}
-                    onCheckedChange={(checked) => setSettings({...settings, doubleAuthentification: checked})}
+                    onCheckedChange={(checked) => setSettings({...settings, doubleAuthentification: !!checked})}
                   />
                 </div>
                 
@@ -362,7 +362,7 @@ export default function ParametresPage() {
                   <Checkbox 
                     id="sauvegardeAuto"
                     checked={settings.sauvegardeAuto}
-                    onCheckedChange={(checked) => setSettings({...settings, sauvegardeAuto: checked})}
+                    onCheckedChange={(checked) => setSettings({...settings, sauvegardeAuto: !!checked})}
                   />
                 </div>
                 
@@ -374,7 +374,7 @@ export default function ParametresPage() {
                   <Checkbox 
                     id="maintenanceMode"
                     checked={settings.maintenanceMode}
-                    onCheckedChange={(checked) => setSettings({...settings, maintenanceMode: checked})}
+                    onCheckedChange={(checked) => setSettings({...settings, maintenanceMode: !!checked})}
                   />
                 </div>
                 
