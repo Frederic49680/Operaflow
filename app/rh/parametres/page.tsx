@@ -82,8 +82,7 @@ export default function ParametresPage() {
   const [firstUserData, setFirstUserData] = useState({
     email: "",
     prenom: "",
-    nom: "",
-    motDePasse: ""
+    nom: ""
   })
   const [creatingFirstUser, setCreatingFirstUser] = useState(false)
   const [collaborateursCount, setCollaborateursCount] = useState(0)
@@ -187,7 +186,7 @@ export default function ParametresPage() {
 
   // Fonction pour créer le premier utilisateur
   const createFirstUser = async () => {
-    if (!firstUserData.email || !firstUserData.prenom || !firstUserData.nom || !firstUserData.motDePasse) {
+    if (!firstUserData.email || !firstUserData.prenom || !firstUserData.nom) {
       toast.error('Tous les champs sont obligatoires')
       return
     }
@@ -210,23 +209,12 @@ export default function ParametresPage() {
 
       if (collaborateurError) throw collaborateurError
 
-      // Créer l'utilisateur dans auth.users via Supabase Auth
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email: firstUserData.email,
-        password: firstUserData.motDePasse,
-        email_confirm: true,
-        user_metadata: {
-          prenom: firstUserData.prenom,
-          nom: firstUserData.nom,
-          role: 'admin'
-        }
-      })
+      // Note: L'utilisateur devra se connecter via l'interface normale
+      // L'API admin n'est pas accessible depuis le client
 
-      if (authError) throw authError
-
-      toast.success('Premier utilisateur créé avec succès !')
+      toast.success('Premier collaborateur créé ! Vous pouvez maintenant vous connecter avec cet email.')
       setShowFirstUserModal(false)
-      setFirstUserData({ email: "", prenom: "", nom: "", motDePasse: "" })
+      setFirstUserData({ email: "", prenom: "", nom: "" })
       checkCollaborateursCount()
       checkSitesCount()
     } catch (error) {
@@ -729,9 +717,9 @@ export default function ParametresPage() {
       <Dialog open={showFirstUserModal} onOpenChange={setShowFirstUserModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Créer le premier utilisateur</DialogTitle>
+            <DialogTitle>Créer le premier collaborateur</DialogTitle>
             <DialogDescription>
-              Créez le compte administrateur principal pour commencer à utiliser l'application.
+              Créez le premier collaborateur dans la base de données. Vous pourrez ensuite vous connecter avec cet email.
             </DialogDescription>
           </DialogHeader>
           
@@ -758,9 +746,9 @@ export default function ParametresPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="firstUserEmail">Email *</Label>
               <Input
-                id="email"
+                id="firstUserEmail"
                 type="email"
                 value={firstUserData.email}
                 onChange={(e) => setFirstUserData({...firstUserData, email: e.target.value})}
@@ -768,16 +756,6 @@ export default function ParametresPage() {
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="motDePasse">Mot de passe *</Label>
-              <Input
-                id="motDePasse"
-                type="password"
-                value={firstUserData.motDePasse}
-                onChange={(e) => setFirstUserData({...firstUserData, motDePasse: e.target.value})}
-                placeholder="Mot de passe sécurisé"
-              />
-            </div>
           </div>
           
           <DialogFooter>
