@@ -35,6 +35,7 @@ import {
   ExternalLink
 } from "lucide-react"
 import { useState } from "react"
+import { toast } from "sonner"
 
 interface Organisme {
   id: string
@@ -82,12 +83,89 @@ export default function OrganismesFormationPage() {
 
   const [searchTerm, setSearchTerm] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [editingOrganisme, setEditingOrganisme] = useState<Organisme | null>(null)
+  const [organismeToDelete, setOrganismeToDelete] = useState<Organisme | null>(null)
+  const [formData, setFormData] = useState<Partial<Organisme>>({})
 
   const filteredOrganismes = organismes.filter(org =>
     org.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
     org.specialites.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
   )
+
+  const handleAddOrganisme = () => {
+    if (!formData.nom || !formData.siret) {
+      toast.error("Le nom et le SIRET sont obligatoires")
+      return
+    }
+
+    const newOrganisme: Organisme = {
+      id: String(organismes.length + 1),
+      nom: formData.nom || "",
+      siret: formData.siret || "",
+      adresse: formData.adresse || "",
+      telephone: formData.telephone || "",
+      email: formData.email || "",
+      site_web: formData.site_web || "",
+      contact_principal: formData.contact_principal || "",
+      statut: 'actif',
+      specialites: formData.specialites || [],
+      created_at: new Date().toISOString().split('T')[0]
+    }
+
+    setOrganismes([...organismes, newOrganisme])
+    setFormData({})
+    setShowAddModal(false)
+    toast.success("Organisme ajouté avec succès")
+  }
+
+  const handleEditOrganisme = (organisme: Organisme) => {
+    setEditingOrganisme(organisme)
+    setFormData(organisme)
+    setShowEditModal(true)
+  }
+
+  const handleUpdateOrganisme = () => {
+    if (!editingOrganisme) return
+
+    const updatedOrganismes = organismes.map(org =>
+      org.id === editingOrganisme.id
+        ? { ...org, ...formData }
+        : org
+    )
+
+    setOrganismes(updatedOrganismes)
+    setEditingOrganisme(null)
+    setFormData({})
+    setShowEditModal(false)
+    toast.success("Organisme modifié avec succès")
+  }
+
+  const handleDeleteOrganisme = (organisme: Organisme) => {
+    setOrganismeToDelete(organisme)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDeleteOrganisme = () => {
+    if (!organismeToDelete) return
+
+    setOrganismes(organismes.filter(org => org.id !== organismeToDelete.id))
+    setOrganismeToDelete(null)
+    setShowDeleteModal(false)
+    toast.success("Organisme supprimé avec succès")
+  }
+
+  const handleToggleStatut = (organisme: Organisme) => {
+    const updatedOrganismes = organismes.map(org =>
+      org.id === organisme.id
+        ? { ...org, statut: org.statut === 'actif' ? 'inactif' : 'actif' }
+        : org
+    )
+
+    setOrganismes(updatedOrganismes)
+    toast.success(`Organisme ${organisme.statut === 'actif' ? 'désactivé' : 'activé'}`)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -117,43 +195,87 @@ export default function OrganismesFormationPage() {
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nom">Nom de l'organisme</Label>
-                    <Input id="nom" placeholder="Ex: AFNOR Formation" />
+                    <Label htmlFor="nom">Nom de l'organisme *</Label>
+                    <Input 
+                      id="nom" 
+                      placeholder="Ex: AFNOR Formation" 
+                      value={formData.nom || ""}
+                      onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="siret">SIRET</Label>
-                    <Input id="siret" placeholder="12345678901234" />
+                    <Label htmlFor="siret">SIRET *</Label>
+                    <Input 
+                      id="siret" 
+                      placeholder="12345678901234" 
+                      value={formData.siret || ""}
+                      onChange={(e) => setFormData({...formData, siret: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="adresse">Adresse</Label>
-                    <Textarea id="adresse" placeholder="Adresse complète" />
+                    <Textarea 
+                      id="adresse" 
+                      placeholder="Adresse complète" 
+                      value={formData.adresse || ""}
+                      onChange={(e) => setFormData({...formData, adresse: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="telephone">Téléphone</Label>
-                    <Input id="telephone" placeholder="01 23 45 67 89" />
+                    <Input 
+                      id="telephone" 
+                      placeholder="01 23 45 67 89" 
+                      value={formData.telephone || ""}
+                      onChange={(e) => setFormData({...formData, telephone: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="contact@organisme.fr" />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="contact@organisme.fr" 
+                      value={formData.email || ""}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="site_web">Site web</Label>
-                    <Input id="site_web" placeholder="https://www.organisme.fr" />
+                    <Input 
+                      id="site_web" 
+                      placeholder="https://www.organisme.fr" 
+                      value={formData.site_web || ""}
+                      onChange={(e) => setFormData({...formData, site_web: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="contact">Contact principal</Label>
-                    <Input id="contact" placeholder="Nom du contact" />
+                    <Input 
+                      id="contact" 
+                      placeholder="Nom du contact" 
+                      value={formData.contact_principal || ""}
+                      onChange={(e) => setFormData({...formData, contact_principal: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="specialites">Spécialités</Label>
-                    <Input id="specialites" placeholder="Qualité, Sécurité, Environnement" />
+                    <Input 
+                      id="specialites" 
+                      placeholder="Qualité, Sécurité, Environnement" 
+                      value={formData.specialites?.join(", ") || ""}
+                      onChange={(e) => setFormData({...formData, specialites: e.target.value.split(",").map(s => s.trim()).filter(s => s)})}
+                    />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                  <Button variant="outline" onClick={() => {
+                    setShowAddModal(false)
+                    setFormData({})
+                  }}>
                     Annuler
                   </Button>
-                  <Button onClick={() => setShowAddModal(false)}>
+                  <Button onClick={handleAddOrganisme}>
                     Enregistrer
                   </Button>
                 </DialogFooter>
@@ -240,7 +362,12 @@ export default function OrganismesFormationPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={organisme.statut === 'actif' ? 'default' : 'secondary'}>
+                      <Badge 
+                        variant={organisme.statut === 'actif' ? 'default' : 'secondary'}
+                        className="cursor-pointer hover:opacity-80"
+                        onClick={() => handleToggleStatut(organisme)}
+                        title={`Cliquer pour ${organisme.statut === 'actif' ? 'désactiver' : 'activer'}`}
+                      >
                         {organisme.statut === 'actif' ? 'Actif' : 'Inactif'}
                       </Badge>
                     </TableCell>
@@ -249,7 +376,8 @@ export default function OrganismesFormationPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setEditingOrganisme(organisme)}
+                          onClick={() => handleEditOrganisme(organisme)}
+                          title="Modifier"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -257,6 +385,8 @@ export default function OrganismesFormationPage() {
                           variant="ghost"
                           size="sm"
                           className="text-red-600 hover:text-red-800"
+                          onClick={() => handleDeleteOrganisme(organisme)}
+                          title="Supprimer"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -268,6 +398,132 @@ export default function OrganismesFormationPage() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Modal d'édition */}
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Modifier l'organisme de formation</DialogTitle>
+              <DialogDescription>
+                Modifiez les informations de l'organisme partenaire
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nom">Nom de l'organisme *</Label>
+                <Input 
+                  id="edit-nom" 
+                  placeholder="Ex: AFNOR Formation" 
+                  value={formData.nom || ""}
+                  onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-siret">SIRET *</Label>
+                <Input 
+                  id="edit-siret" 
+                  placeholder="12345678901234" 
+                  value={formData.siret || ""}
+                  onChange={(e) => setFormData({...formData, siret: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-adresse">Adresse</Label>
+                <Textarea 
+                  id="edit-adresse" 
+                  placeholder="Adresse complète" 
+                  value={formData.adresse || ""}
+                  onChange={(e) => setFormData({...formData, adresse: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-telephone">Téléphone</Label>
+                <Input 
+                  id="edit-telephone" 
+                  placeholder="01 23 45 67 89" 
+                  value={formData.telephone || ""}
+                  onChange={(e) => setFormData({...formData, telephone: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input 
+                  id="edit-email" 
+                  type="email" 
+                  placeholder="contact@organisme.fr" 
+                  value={formData.email || ""}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-site_web">Site web</Label>
+                <Input 
+                  id="edit-site_web" 
+                  placeholder="https://www.organisme.fr" 
+                  value={formData.site_web || ""}
+                  onChange={(e) => setFormData({...formData, site_web: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-contact">Contact principal</Label>
+                <Input 
+                  id="edit-contact" 
+                  placeholder="Nom du contact" 
+                  value={formData.contact_principal || ""}
+                  onChange={(e) => setFormData({...formData, contact_principal: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-specialites">Spécialités</Label>
+                <Input 
+                  id="edit-specialites" 
+                  placeholder="Qualité, Sécurité, Environnement" 
+                  value={formData.specialites?.join(", ") || ""}
+                  onChange={(e) => setFormData({...formData, specialites: e.target.value.split(",").map(s => s.trim()).filter(s => s)})}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowEditModal(false)
+                setEditingOrganisme(null)
+                setFormData({})
+              }}>
+                Annuler
+              </Button>
+              <Button onClick={handleUpdateOrganisme}>
+                Mettre à jour
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de suppression */}
+        <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Supprimer l'organisme</DialogTitle>
+              <DialogDescription>
+                Êtes-vous sûr de vouloir supprimer l'organisme "{organismeToDelete?.nom}" ? 
+                Cette action est irréversible.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowDeleteModal(false)
+                setOrganismeToDelete(null)
+              }}>
+                Annuler
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmDeleteOrganisme}
+              >
+                Supprimer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
