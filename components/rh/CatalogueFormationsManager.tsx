@@ -143,14 +143,8 @@ export default function CatalogueFormationsManager() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Catalogue des Formations</h2>
-          <p className="text-muted-foreground">
-            Gestion du catalogue des formations disponibles
-          </p>
-        </div>
+      {/* Actions */}
+      <div className="flex justify-end">
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogTrigger asChild>
             <Button>
