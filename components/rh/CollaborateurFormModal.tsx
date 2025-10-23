@@ -245,7 +245,12 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
         return
       }
 
-      // Le site est maintenant optionnel
+      // Vérification: le site est obligatoire
+      if (!formData.site) {
+        if (onError) onError('Le site est obligatoire')
+        setLoading(false)
+        return
+      }
 
       // Vérification: pour les contrats intérim, les dates de mission sont obligatoires
       if (formData.type_contrat === 'Intérim') {
@@ -468,9 +473,9 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="site" className="text-slate-700 font-medium">
-                    Site
+                    Site <span className="text-red-500">*</span>
                   </Label>
-                  <Select value={formData.site} onValueChange={(value) => handleChange("site", value)} disabled={loadingSites}>
+                  <Select value={formData.site} onValueChange={(value) => handleChange("site", value)} required disabled={loadingSites}>
                     <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                       <SelectValue placeholder={loadingSites ? "Chargement..." : "Sélectionner un site"} />
                     </SelectTrigger>
