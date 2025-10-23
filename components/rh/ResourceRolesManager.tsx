@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Plus, Edit, Trash2, Star, Users, Shield } from "lucide-react"
-import { createClient } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 
 interface Role {
