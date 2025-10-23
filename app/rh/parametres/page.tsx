@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -233,7 +233,7 @@ export default function ParametresPage() {
                     <Label htmlFor="notificationsEmail">Notifications par email</Label>
                     <p className="text-sm text-gray-500">Recevoir les alertes par email</p>
                   </div>
-                  <Switch 
+                  <Checkbox 
                     id="notificationsEmail"
                     checked={settings.notificationsEmail}
                     onCheckedChange={(checked) => setSettings({...settings, notificationsEmail: checked})}
@@ -245,7 +245,7 @@ export default function ParametresPage() {
                     <Label htmlFor="notificationsPush">Notifications push</Label>
                     <p className="text-sm text-gray-500">Alertes en temps réel</p>
                   </div>
-                  <Switch 
+                  <Checkbox 
                     id="notificationsPush"
                     checked={settings.notificationsPush}
                     onCheckedChange={(checked) => setSettings({...settings, notificationsPush: checked})}
@@ -296,7 +296,7 @@ export default function ParametresPage() {
                     <Label htmlFor="motDePasseComplexe">Mot de passe complexe</Label>
                     <p className="text-sm text-gray-500">Exiger des mots de passe complexes</p>
                   </div>
-                  <Switch 
+                  <Checkbox 
                     id="motDePasseComplexe"
                     checked={settings.motDePasseComplexe}
                     onCheckedChange={(checked) => setSettings({...settings, motDePasseComplexe: checked})}
@@ -308,7 +308,7 @@ export default function ParametresPage() {
                     <Label htmlFor="doubleAuthentification">Double authentification</Label>
                     <p className="text-sm text-gray-500">Activer la 2FA</p>
                   </div>
-                  <Switch 
+                  <Checkbox 
                     id="doubleAuthentification"
                     checked={settings.doubleAuthentification}
                     onCheckedChange={(checked) => setSettings({...settings, doubleAuthentification: checked})}
@@ -359,7 +359,7 @@ export default function ParametresPage() {
                     <Label htmlFor="sauvegardeAuto">Sauvegarde automatique</Label>
                     <p className="text-sm text-gray-500">Sauvegardes automatiques des données</p>
                   </div>
-                  <Switch 
+                  <Checkbox 
                     id="sauvegardeAuto"
                     checked={settings.sauvegardeAuto}
                     onCheckedChange={(checked) => setSettings({...settings, sauvegardeAuto: checked})}
@@ -371,7 +371,7 @@ export default function ParametresPage() {
                     <Label htmlFor="maintenanceMode">Mode maintenance</Label>
                     <p className="text-sm text-gray-500">Désactiver l'accès utilisateur</p>
                   </div>
-                  <Switch 
+                  <Checkbox 
                     id="maintenanceMode"
                     checked={settings.maintenanceMode}
                     onCheckedChange={(checked) => setSettings({...settings, maintenanceMode: checked})}
