@@ -362,9 +362,9 @@ export default function CompetencesPage() {
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label>Catégorie *</Label>
-                    <div className="flex flex-wrap gap-2 mb-2">
+                    <div className="flex flex-wrap gap-2 mb-3">
                       {categoriesDisponibles.map((cat) => (
                         <Button
                           key={cat}
@@ -372,7 +372,7 @@ export default function CompetencesPage() {
                           variant={formData.category === cat ? "default" : "outline"}
                           size="sm"
                           onClick={() => handleCategorySelect(cat)}
-                          className="text-xs"
+                          className="text-xs px-3 py-1"
                         >
                           {cat}
                         </Button>
@@ -384,23 +384,24 @@ export default function CompetencesPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowNewCategory(true)}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-blue-600 hover:text-blue-800 text-xs"
                       >
                         + Ajouter une catégorie
                       </Button>
                     ) : (
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
                         <Input
                           placeholder="Nouvelle catégorie"
                           value={newCategory}
                           onChange={(e) => setNewCategory(e.target.value)}
-                          className="flex-1"
+                          className="flex-1 h-8"
                         />
                         <Button
                           type="button"
                           size="sm"
                           onClick={handleNewCategory}
                           disabled={!newCategory.trim()}
+                          className="h-8 px-3"
                         >
                           Ajouter
                         </Button>
@@ -412,15 +413,16 @@ export default function CompetencesPage() {
                             setShowNewCategory(false)
                             setNewCategory("")
                           }}
+                          className="h-8 px-3"
                         >
                           Annuler
                         </Button>
                       </div>
                     )}
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label>Niveau requis *</Label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
                       {niveauxDisponibles.map((niveau) => (
                         <Button
                           key={niveau.niveau}
@@ -428,12 +430,10 @@ export default function CompetencesPage() {
                           variant={formData.niveau_requis === niveau.niveau ? "default" : "outline"}
                           size="sm"
                           onClick={() => handleNiveauSelect(niveau.niveau)}
-                          className="justify-start text-left h-auto p-3"
+                          className="justify-start text-left h-auto p-2 flex-col items-start"
                         >
-                          <div>
-                            <div className="font-medium">{niveau.label}</div>
-                            <div className="text-xs text-gray-500">{niveau.description}</div>
-                          </div>
+                          <div className="font-medium text-xs">{niveau.label}</div>
+                          <div className="text-xs text-gray-500 text-center leading-tight">{niveau.description}</div>
                         </Button>
                       ))}
                     </div>
@@ -630,9 +630,9 @@ export default function CompetencesPage() {
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Catégorie *</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
+                <div className="flex flex-wrap gap-2 mb-3">
                   {categoriesDisponibles.map((cat) => (
                     <Button
                       key={cat}
@@ -640,7 +640,7 @@ export default function CompetencesPage() {
                       variant={formData.category === cat ? "default" : "outline"}
                       size="sm"
                       onClick={() => handleCategorySelect(cat)}
-                      className="text-xs"
+                      className="text-xs px-3 py-1"
                     >
                       {cat}
                     </Button>
@@ -652,23 +652,24 @@ export default function CompetencesPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowNewCategory(true)}
-                    className="text-blue-600 hover:text-blue-800"
+                    className="text-blue-600 hover:text-blue-800 text-xs"
                   >
                     + Ajouter une catégorie
                   </Button>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
                     <Input
                       placeholder="Nouvelle catégorie"
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
-                      className="flex-1"
+                      className="flex-1 h-8"
                     />
                     <Button
                       type="button"
                       size="sm"
                       onClick={handleNewCategory}
                       disabled={!newCategory.trim()}
+                      className="h-8 px-3"
                     >
                       Ajouter
                     </Button>
@@ -680,15 +681,16 @@ export default function CompetencesPage() {
                         setShowNewCategory(false)
                         setNewCategory("")
                       }}
+                      className="h-8 px-3"
                     >
                       Annuler
                     </Button>
                   </div>
                 )}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Niveau requis *</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
                   {niveauxDisponibles.map((niveau) => (
                     <Button
                       key={niveau.niveau}
@@ -696,12 +698,10 @@ export default function CompetencesPage() {
                       variant={formData.niveau_requis === niveau.niveau ? "default" : "outline"}
                       size="sm"
                       onClick={() => handleNiveauSelect(niveau.niveau)}
-                      className="justify-start text-left h-auto p-3"
+                      className="justify-start text-left h-auto p-2 flex-col items-start"
                     >
-                      <div>
-                        <div className="font-medium">{niveau.label}</div>
-                        <div className="text-xs text-gray-500">{niveau.description}</div>
-                      </div>
+                      <div className="font-medium text-xs">{niveau.label}</div>
+                      <div className="text-xs text-gray-500 text-center leading-tight">{niveau.description}</div>
                     </Button>
                   ))}
                 </div>
