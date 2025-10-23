@@ -168,17 +168,6 @@ export default function CompetencesPage() {
     "COMMERCIAL"
   ]
 
-  // Niveaux disponibles
-  const niveauxDisponibles = [
-    { niveau: 1, label: "N1 - Débutant", description: "Connaissances de base" },
-    { niveau: 2, label: "N2 - Intermédiaire", description: "Compétences développées" },
-    { niveau: 3, label: "N3 - Avancé", description: "Expertise confirmée" },
-    { niveau: 4, label: "N4 - Expert", description: "Maîtrise complète" },
-    { niveau: 5, label: "N5 - Senior", description: "Expertise approfondie" },
-    { niveau: 6, label: "N6 - Lead", description: "Encadrement technique" },
-    { niveau: 7, label: "N7 - Manager", description: "Gestion d'équipe" },
-    { niveau: 8, label: "N8 - Directeur", description: "Direction stratégique" }
-  ]
 
   const filteredCompetences = competences.filter(comp =>
     comp.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -198,11 +187,6 @@ export default function CompetencesPage() {
     return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   }
 
-  const getNiveauColor = (niveau: number) => {
-    if (niveau <= 2) return 'bg-green-100 text-green-800'
-    if (niveau <= 4) return 'bg-yellow-100 text-yellow-800'
-    return 'bg-red-100 text-red-800'
-  }
 
   // Fonctions de gestion
   const handleAddCompetence = () => {
@@ -304,9 +288,6 @@ export default function CompetencesPage() {
     }
   }
 
-  const handleNiveauSelect = (niveau: number) => {
-    setFormData({...formData, niveau_requis: niveau})
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -420,24 +401,6 @@ export default function CompetencesPage() {
                       </div>
                     )}
                   </div>
-                  <div className="space-y-3">
-                    <Label>Niveau requis *</Label>
-                    <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-                      {niveauxDisponibles.map((niveau) => (
-                        <Button
-                          key={niveau.niveau}
-                          type="button"
-                          variant={formData.niveau_requis === niveau.niveau ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleNiveauSelect(niveau.niveau)}
-                          className="justify-start text-left h-auto p-2 flex-col items-start"
-                        >
-                          <div className="font-medium text-xs">{niveau.label}</div>
-                          <div className="text-xs text-gray-500 text-center leading-tight">{niveau.description}</div>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => {
@@ -544,7 +507,6 @@ export default function CompetencesPage() {
                   <TableHead>Code</TableHead>
                   <TableHead>Compétence</TableHead>
                   <TableHead>Catégorie</TableHead>
-                  <TableHead>Niveau requis</TableHead>
                   <TableHead>Statut</TableHead>
                 </TableRow>
               </TableHeader>
@@ -567,11 +529,6 @@ export default function CompetencesPage() {
                     <TableCell>
                       <Badge className={getCategoryColor(competence.category)}>
                         {competence.category}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getNiveauColor(competence.niveau_requis)}>
-                        N{competence.niveau_requis}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -687,24 +644,6 @@ export default function CompetencesPage() {
                     </Button>
                   </div>
                 )}
-              </div>
-              <div className="space-y-3">
-                <Label>Niveau requis *</Label>
-                <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-                  {niveauxDisponibles.map((niveau) => (
-                    <Button
-                      key={niveau.niveau}
-                      type="button"
-                      variant={formData.niveau_requis === niveau.niveau ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleNiveauSelect(niveau.niveau)}
-                      className="justify-start text-left h-auto p-2 flex-col items-start"
-                    >
-                      <div className="font-medium text-xs">{niveau.label}</div>
-                      <div className="text-xs text-gray-500 text-center leading-tight">{niveau.description}</div>
-                    </Button>
-                  ))}
-                </div>
               </div>
             </div>
             <DialogFooter className="flex justify-between">
