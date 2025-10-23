@@ -87,6 +87,7 @@ export default function ParametresPage() {
   })
   const [creatingFirstUser, setCreatingFirstUser] = useState(false)
   const [collaborateursCount, setCollaborateursCount] = useState(0)
+  const [sitesCount, setSitesCount] = useState(0)
   
   const supabase = createClient()
 
@@ -158,11 +159,26 @@ export default function ParametresPage() {
     }
   }, [supabase])
 
+  // Fonction pour vérifier le nombre de sites
+  const checkSitesCount = useCallback(async () => {
+    try {
+      const { count, error } = await supabase
+        .from('sites')
+        .select('*', { count: 'exact', head: true })
+      
+      if (error) throw error
+      setSitesCount(count || 0)
+    } catch (error) {
+      console.error('Erreur lors de la vérification des sites:', error)
+    }
+  }, [supabase])
+
   // Chargement des paramètres au montage du composant
   useEffect(() => {
     loadSettings()
     checkCollaborateursCount()
-  }, [loadSettings, checkCollaborateursCount])
+    checkSitesCount()
+  }, [loadSettings, checkCollaborateursCount, checkSitesCount])
 
   const getSettingValue = (data: any[], category: string, key: string, defaultValue: string) => {
     const setting = data?.find(s => s.category === category && s.setting_key === key)
@@ -212,6 +228,7 @@ export default function ParametresPage() {
       setShowFirstUserModal(false)
       setFirstUserData({ email: "", prenom: "", nom: "", motDePasse: "" })
       checkCollaborateursCount()
+      checkSitesCount()
     } catch (error) {
       console.error('Erreur lors de la création du premier utilisateur:', error)
       toast.error('Erreur lors de la création du premier utilisateur')
@@ -339,7 +356,7 @@ export default function ParametresPage() {
 
         <div className="space-y-6">
           {/* Section Premier utilisateur */}
-          {collaborateursCount === 0 && (
+          {(collaborateursCount === 0 || sitesCount === 0) && (
             <Card className="border-orange-200 bg-orange-50">
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -349,7 +366,10 @@ export default function ParametresPage() {
                   <div>
                     <CardTitle className="text-orange-800">Configuration initiale</CardTitle>
                     <CardDescription className="text-orange-600">
-                      Aucun collaborateur trouvé. Créez le premier utilisateur administrateur.
+                      {collaborateursCount === 0 
+                        ? "Aucun collaborateur trouvé. Créez le premier utilisateur administrateur."
+                        : "Aucun site trouvé. Créez le premier site pour continuer."
+                      }
                     </CardDescription>
                   </div>
                 </div>
@@ -358,19 +378,35 @@ export default function ParametresPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-orange-700 mb-2">
-                      Pour commencer à utiliser l'application, vous devez créer le premier utilisateur administrateur.
+                      {collaborateursCount === 0 
+                        ? "Pour commencer à utiliser l'application, vous devez créer le premier utilisateur administrateur."
+                        : "Pour continuer la configuration, vous devez créer le premier site."
+                      }
                     </p>
                     <p className="text-xs text-orange-600">
-                      Cet utilisateur aura tous les droits d'administration.
+                      {collaborateursCount === 0 
+                        ? "Cet utilisateur aura tous les droits d'administration."
+                        : "Le site permettra d'organiser vos collaborateurs et projets."
+                      }
                     </p>
                   </div>
-                  <Button 
-                    onClick={() => setShowFirstUserModal(true)}
-                    className="bg-orange-600 hover:bg-orange-700"
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Créer le premier utilisateur
-                  </Button>
+                  {collaborateursCount === 0 ? (
+                    <Button 
+                      onClick={() => setShowFirstUserModal(true)}
+                      className="bg-orange-600 hover:bg-orange-700"
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      Créer le premier utilisateur
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={() => window.location.href = '/sites'}
+                      className="bg-orange-600 hover:bg-orange-700"
+                    >
+                      <Building className="h-4 w-4 mr-2" />
+                      Créer le premier site
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
