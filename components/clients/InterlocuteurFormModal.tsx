@@ -47,6 +47,20 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
   const [loadingSites, setLoadingSites] = useState(false)
   const [loadingClients, setLoadingClients] = useState(false)
   
+  // États pour la création de nouveau client
+  const [showNewClientForm, setShowNewClientForm] = useState(false)
+  const [newClientData, setNewClientData] = useState({
+    nom_client: "",
+    siret: "",
+    adresse: "",
+    code_postal: "",
+    ville: "",
+    telephone: "",
+    email: "",
+    categorie: "MOA"
+  })
+  const [creatingClient, setCreatingClient] = useState(false)
+  
   // États du formulaire
   const [formData, setFormData] = useState({
     nom: "",
@@ -104,6 +118,50 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
       loadClients()
     }
   }, [open, loadSites, loadClients])
+
+  // Créer un nouveau client
+  const createNewClient = async () => {
+    setCreatingClient(true)
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([{
+          ...newClientData,
+          actif: true
+        }])
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      // Recharger la liste des clients
+      await loadClients()
+      
+      // Sélectionner automatiquement le nouveau client
+      setFormData(prev => ({ ...prev, client_id: data.id }))
+      
+      // Fermer le formulaire de nouveau client
+      setShowNewClientForm(false)
+      
+      // Réinitialiser les données du nouveau client
+      setNewClientData({
+        nom_client: "",
+        siret: "",
+        adresse: "",
+        code_postal: "",
+        ville: "",
+        telephone: "",
+        email: "",
+        categorie: "MOA"
+      })
+      
+    } catch (error) {
+      console.error('Erreur création client:', error)
+    } finally {
+      setCreatingClient(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -199,9 +257,20 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
             {/* Client et Fonction */}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="client" className="text-slate-700 font-medium">
-                  Client <span className="text-red-500">*</span>
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="client" className="text-slate-700 font-medium">
+                    Client <span className="text-red-500">*</span>
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowNewClientForm(true)}
+                    className="text-xs"
+                  >
+                    + Nouveau client
+                  </Button>
+                </div>
                 <Select 
                   required 
                   value={formData.client_id}
@@ -355,6 +424,162 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
           </DialogFooter>
         </form>
       </DialogContent>
+      
+      {/* Modal pour créer un nouveau client */}
+      <Dialog open={showNewClientForm} onOpenChange={setShowNewClientForm}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+              Nouveau client
+            </DialogTitle>
+            <DialogDescription>
+              Créez un nouveau client pour l'ajouter à la liste
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            {/* Nom du client */}
+            <div className="grid gap-2">
+              <Label htmlFor="nom_client" className="text-slate-700 font-medium">
+                Nom du client <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="nom_client"
+                placeholder="Ex: TotalEnergies"
+                value={newClientData.nom_client}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, nom_client: e.target.value }))}
+                className="border-slate-300 focus:border-green-500 focus:ring-green-500/20"
+              />
+            </div>
+
+            {/* SIRET et Catégorie */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="siret" className="text-slate-700 font-medium">
+                  SIRET
+                </Label>
+                <Input
+                  id="siret"
+                  placeholder="12345678901234"
+                  value={newClientData.siret}
+                  onChange={(e) => setNewClientData(prev => ({ ...prev, siret: e.target.value }))}
+                  className="border-slate-300 focus:border-green-500 focus:ring-green-500/20"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="categorie" className="text-slate-700 font-medium">
+                  Catégorie
+                </Label>
+                <Select 
+                  value={newClientData.categorie}
+                  onValueChange={(value) => setNewClientData(prev => ({ ...prev, categorie: value }))}
+                >
+                  <SelectTrigger className="border-slate-300 focus:border-green-500 focus:ring-green-500/20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MOA">MOA</SelectItem>
+                    <SelectItem value="MOE">MOE</SelectItem>
+                    <SelectItem value="Exploitant">Exploitant</SelectItem>
+                    <SelectItem value="Maintenance">Maintenance</SelectItem>
+                    <SelectItem value="Autre">Autre</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Adresse */}
+            <div className="grid gap-2">
+              <Label htmlFor="adresse" className="text-slate-700 font-medium">
+                Adresse
+              </Label>
+              <Input
+                id="adresse"
+                placeholder="123 rue de la Paix"
+                value={newClientData.adresse}
+                onChange={(e) => setNewClientData(prev => ({ ...prev, adresse: e.target.value }))}
+                className="border-slate-300 focus:border-green-500 focus:ring-green-500/20"
+              />
+            </div>
+
+            {/* Code postal et Ville */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="code_postal" className="text-slate-700 font-medium">
+                  Code postal
+                </Label>
+                <Input
+                  id="code_postal"
+                  placeholder="75001"
+                  value={newClientData.code_postal}
+                  onChange={(e) => setNewClientData(prev => ({ ...prev, code_postal: e.target.value }))}
+                  className="border-slate-300 focus:border-green-500 focus:ring-green-500/20"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="ville" className="text-slate-700 font-medium">
+                  Ville
+                </Label>
+                <Input
+                  id="ville"
+                  placeholder="Paris"
+                  value={newClientData.ville}
+                  onChange={(e) => setNewClientData(prev => ({ ...prev, ville: e.target.value }))}
+                  className="border-slate-300 focus:border-green-500 focus:ring-green-500/20"
+                />
+              </div>
+            </div>
+
+            {/* Téléphone et Email */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="telephone_client" className="text-slate-700 font-medium">
+                  Téléphone
+                </Label>
+                <Input
+                  id="telephone_client"
+                  placeholder="01 23 45 67 89"
+                  value={newClientData.telephone}
+                  onChange={(e) => setNewClientData(prev => ({ ...prev, telephone: e.target.value }))}
+                  className="border-slate-300 focus:border-green-500 focus:ring-green-500/20"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email_client" className="text-slate-700 font-medium">
+                  Email
+                </Label>
+                <Input
+                  id="email_client"
+                  type="email"
+                  placeholder="contact@client.com"
+                  value={newClientData.email}
+                  onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
+                  className="border-slate-300 focus:border-green-500 focus:ring-green-500/20"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowNewClientForm(false)}
+              disabled={creatingClient}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={createNewClient}
+              disabled={creatingClient || !newClientData.nom_client}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            >
+              {creatingClient ? "Création..." : "Créer le client"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
