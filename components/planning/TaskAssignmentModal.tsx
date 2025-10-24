@@ -132,6 +132,18 @@ export default function TaskAssignmentModal({
     try {
       const supabase = createClient()
 
+      // Vérifier d'abord si la table existe
+      const { data: tableCheck, error: tableError } = await supabase
+        .from('taches_ressources')
+        .select('id')
+        .limit(1)
+
+      if (tableError && tableError.code === 'PGRST205') {
+        toast.error("Table 'taches_ressources' non trouvée. Veuillez contacter l'administrateur.")
+        console.error('Table manquante:', tableError)
+        return
+      }
+
       // Insérer les affectations dans taches_ressources
       const assignmentsData = assignments.map(assignment => ({
         tache_id: task.id,
@@ -152,7 +164,7 @@ export default function TaskAssignmentModal({
       onClose()
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
-      toast.error("Erreur lors de la sauvegarde des affectations")
+      toast.error(`Erreur lors de la sauvegarde: ${error.message}`)
     }
   }
 
