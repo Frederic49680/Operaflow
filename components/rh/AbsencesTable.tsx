@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import {
   Table,
   TableBody,
@@ -64,9 +64,9 @@ export function AbsencesTable({
 
   useEffect(() => {
     loadAbsences()
-  }, [])
+  }, [loadAbsences])
 
-  const loadAbsences = async () => {
+  const loadAbsences = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -104,7 +104,7 @@ export function AbsencesTable({
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Rafraîchir la liste après création/modification/suppression
   useEffect(() => {
@@ -154,7 +154,7 @@ export function AbsencesTable({
   }
 
   // Fonction pour filtrer les absences
-  const getFilteredAbsences = () => {
+  const getFilteredAbsences = useMemo(() => {
     return absences.filter(absence => {
       // Filtre par recherche
       if (searchTerm) {
@@ -182,7 +182,7 @@ export function AbsencesTable({
       
       return true
     })
-  }
+  }, [absences, searchTerm, filterSite, filterMotif, filterStatut, showPastAbsences])
 
   const getStatutBadge = (statut: string) => {
     switch (statut) {
@@ -293,7 +293,7 @@ export function AbsencesTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {getFilteredAbsences().map((absence) => (
+          {getFilteredAbsences.map((absence) => (
             <TableRow key={absence.id} className="hover:bg-slate-50/50">
               <TableCell className="font-medium">
                 {absence.ressource_prenom} {absence.ressource_nom}
