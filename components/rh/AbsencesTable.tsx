@@ -62,10 +62,6 @@ export function AbsencesTable({
   const [editingAbsenceId, setEditingAbsenceId] = useState<string | null>(null)
   const [deletingAbsenceId, setDeletingAbsenceId] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadAbsences()
-  }, [loadAbsences])
-
   const loadAbsences = useCallback(async () => {
     try {
       setLoading(true)
@@ -105,6 +101,10 @@ export function AbsencesTable({
       setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    loadAbsences()
+  }, [loadAbsences])
 
   // Rafraîchir la liste après création/modification/suppression
   useEffect(() => {
