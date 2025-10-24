@@ -593,15 +593,15 @@ export function CollaborateursTable({
                     variant="outline"
                     className={`h-6 px-2 text-xs transition-all ${
                       collab.actif 
-                        ? 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200' 
-                        : 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200'
+                        ? 'bg-green-100 hover:bg-green-200 text-green-800 border-green-300' 
+                        : 'bg-red-100 hover:bg-red-200 text-red-800 border-red-300'
                     }`}
                     onClick={(e) => {
                       e.stopPropagation()
                       handleToggleActif(collab)
                     }}
                   >
-                    {collab.actif ? 'Inactif' : 'Actif'}
+                    {collab.actif ? 'Actif' : 'Inactif'}
                   </Button>
                 </div>
               </TableCell>
