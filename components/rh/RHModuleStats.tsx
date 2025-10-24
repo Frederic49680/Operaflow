@@ -34,7 +34,7 @@ export function RHModuleStats() {
         .from('ressources')
         .select('id', { count: 'exact', head: true })
         .eq('actif', true)
-        .not('is_admin', true)
+        .not('is_admin', 'eq', true)
 
       if (collabError) throw collabError
 
@@ -43,7 +43,7 @@ export function RHModuleStats() {
         .from('ressources')
         .select('role_principal')
         .eq('actif', true)
-        .not('is_admin', true)
+        .not('is_admin', 'eq', true)
         .not('role_principal', null)
 
       if (rolesError) throw rolesError

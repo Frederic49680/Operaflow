@@ -37,7 +37,7 @@ export function RHKPICards() {
         .from('ressources')
         .select('id', { count: 'exact', head: true })
         .eq('actif', true)
-        .not('is_admin', true) // Exclure l'admin
+        .not('is_admin', 'eq', true) // Exclure l'admin
 
       if (collabError) throw collabError
 
@@ -50,7 +50,7 @@ export function RHKPICards() {
         .from('ressources')
         .select('id', { count: 'exact', head: true })
         .eq('actif', true)
-        .not('is_admin', true)
+        .not('is_admin', 'eq', true)
         .gte('date_creation', debutMois.toISOString())
 
       if (ceMoisError) throw ceMoisError
@@ -60,7 +60,7 @@ export function RHKPICards() {
         .from('ressources')
         .select('role_principal')
         .eq('actif', true)
-        .not('is_admin', true)
+        .not('is_admin', 'eq', true)
         .not('role_principal', null)
 
       if (rolesError) throw rolesError
