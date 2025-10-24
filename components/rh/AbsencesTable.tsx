@@ -11,13 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Edit, Trash2, Calendar, Loader2 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Calendar, Loader2 } from "lucide-react"
 import { AbsenceFormModal } from "./AbsenceFormModal"
 import { Plus } from "lucide-react"
 import { formatDate } from "@/lib/utils"
@@ -60,7 +54,6 @@ export function AbsencesTable({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editingAbsenceId, setEditingAbsenceId] = useState<string | null>(null)
-  const [deletingAbsenceId, setDeletingAbsenceId] = useState<string | null>(null)
 
   const loadAbsences = useCallback(async () => {
     try {
@@ -129,29 +122,6 @@ export function AbsencesTable({
     setEditingAbsenceId(null)
   }
 
-  const handleDeleteAbsence = async (absenceId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette absence ?')) {
-      return
-    }
-
-    try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from('absences')
-        .delete()
-        .eq('id', absenceId)
-
-      if (error) throw error
-
-      if (onSuccess) onSuccess('Absence supprimée avec succès !')
-      
-      // Déclencher l'événement de rafraîchissement
-      window.dispatchEvent(new Event('absence-deleted'))
-    } catch (err: any) {
-      console.error('Erreur suppression absence:', err)
-      if (onError) onError(err.message || 'Erreur lors de la suppression de l\'absence')
-    }
-  }
 
   // Fonction pour filtrer les absences
   const getFilteredAbsences = useMemo(() => {
@@ -288,12 +258,15 @@ export function AbsencesTable({
             <TableHead className="font-semibold text-slate-700">Date fin</TableHead>
             <TableHead className="font-semibold text-slate-700">Motif</TableHead>
             <TableHead className="font-semibold text-slate-700">Statut</TableHead>
-            <TableHead className="font-semibold text-slate-700 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {getFilteredAbsences.map((absence) => (
-            <TableRow key={absence.id} className="hover:bg-slate-50/50">
+            <TableRow 
+              key={absence.id} 
+              className="hover:bg-slate-50/50 cursor-pointer"
+              onClick={() => handleEditAbsence(absence.id)}
+            >
               <TableCell className="font-medium">
                 {absence.ressource_prenom} {absence.ressource_nom}
               </TableCell>
@@ -310,31 +283,6 @@ export function AbsencesTable({
                 {absence.motif || "-"}
               </TableCell>
               <TableCell>{getStatutBadge(absence.statut)}</TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem 
-                      className="gap-2 cursor-pointer"
-                      onClick={() => handleEditAbsence(absence.id)}
-                    >
-                      <Edit className="h-4 w-4" />
-                      Modifier
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="gap-2 text-red-600 cursor-pointer"
-                      onClick={() => handleDeleteAbsence(absence.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Supprimer
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
             </TableRow>
           ))}
         </TableBody>

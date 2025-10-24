@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Trash2 } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -200,6 +201,39 @@ export function AbsenceFormModal({
   const handleMotifPersonnaliseChange = (value: string) => {
     setMotifPersonnalise(value)
     setFormData({ ...formData, motif: value })
+  }
+
+  const handleDeleteAbsence = async () => {
+    if (!absenceId) return
+    
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette absence ?')) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      const supabase = createClient()
+      
+      const { error } = await supabase
+        .from('absences')
+        .delete()
+        .eq('id', absenceId)
+
+      if (error) throw error
+
+      if (onSuccess) onSuccess('Absence supprimée avec succès !')
+      
+      // Déclencher l'événement de rafraîchissement
+      window.dispatchEvent(new Event('absence-deleted'))
+      
+      setOpen(false)
+      if (onClose) onClose()
+    } catch (err: any) {
+      console.error('Erreur suppression absence:', err)
+      if (onError) onError(err.message || 'Erreur lors de la suppression de l\'absence')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -439,21 +473,39 @@ export function AbsenceFormModal({
             </div>
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
-            >
-              Annuler
-            </Button>
-            <Button
-              type="submit"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
-              disabled={loading}
-            >
-              {loading ? "Enregistrement..." : absenceId ? "Modifier" : "Créer"}
-            </Button>
+            <div className="flex justify-between w-full">
+              <div>
+                {absenceId && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={handleDeleteAbsence}
+                    disabled={loading}
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Supprimer
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled={loading}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
+                  disabled={loading}
+                >
+                  {loading ? "Enregistrement..." : absenceId ? "Modifier" : "Créer"}
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
