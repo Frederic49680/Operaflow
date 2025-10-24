@@ -11,16 +11,18 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Edit, Trash2, Users, Mail, Phone, Loader2 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Edit, Trash2, Mail, Phone, Loader2, AlertTriangle } from "lucide-react"
 import { InterlocuteurFormModal } from "./InterlocuteurFormModal"
 import { Plus } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { toast } from "sonner"
 
 interface Interlocuteur {
   id: string
@@ -35,10 +37,23 @@ interface Interlocuteur {
   actif: boolean
 }
 
-export function InterlocuteursTable() {
+interface InterlocuteursTableProps {
+  searchTerm?: string
+  filters?: {
+    typeInterlocuteur?: string
+    clientId?: string
+    siteId?: string
+    actif?: string
+  }
+}
+
+export function InterlocuteursTable({ searchTerm = "", filters = {} }: InterlocuteursTableProps) {
   const [interlocuteurs, setInterlocuteurs] = useState<Interlocuteur[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editingInterlocuteur, setEditingInterlocuteur] = useState<string | null>(null)
+  const [deletingInterlocuteur, setDeletingInterlocuteur] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     loadInterlocuteurs()
@@ -50,7 +65,7 @@ export function InterlocuteursTable() {
       setError(null)
       const supabase = createClient()
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('interlocuteurs')
         .select(`
           id,
@@ -64,8 +79,27 @@ export function InterlocuteursTable() {
           clients!inner(nom_client),
           sites(nom)
         `)
-        .eq('actif', true)
-        .order('nom')
+
+      // Appliquer les filtres
+      if (filters.actif !== undefined && filters.actif !== "") {
+        query = query.eq('actif', filters.actif === 'true')
+      } else {
+        query = query.eq('actif', true) // Par défaut, seulement les actifs
+      }
+
+      if (filters.typeInterlocuteur) {
+        query = query.eq('type_interlocuteur', filters.typeInterlocuteur)
+      }
+
+      if (filters.clientId) {
+        query = query.eq('client_id', filters.clientId)
+      }
+
+      if (filters.siteId) {
+        query = query.eq('site_id', filters.siteId)
+      }
+
+      const { data, error } = await query.order('nom')
 
       if (error) {
         console.error('Erreur chargement interlocuteurs:', error)
@@ -96,14 +130,68 @@ export function InterlocuteursTable() {
     }
   }
 
-  // Rafraîchir la liste après création
+  // Rafraîchir la liste après création/modification
   useEffect(() => {
     const handleRefresh = () => {
       loadInterlocuteurs()
     }
     window.addEventListener('interlocuteur-created', handleRefresh)
-    return () => window.removeEventListener('interlocuteur-created', handleRefresh)
+    window.addEventListener('interlocuteur-updated', handleRefresh)
+    window.addEventListener('interlocuteur-deleted', handleRefresh)
+    return () => {
+      window.removeEventListener('interlocuteur-created', handleRefresh)
+      window.removeEventListener('interlocuteur-updated', handleRefresh)
+      window.removeEventListener('interlocuteur-deleted', handleRefresh)
+    }
   }, [])
+
+  // Recharger quand les filtres changent
+  useEffect(() => {
+    loadInterlocuteurs()
+  }, [filters])
+
+  const handleDeleteInterlocuteur = async (id: string) => {
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('interlocuteurs')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        throw error
+      }
+
+      toast.success("Interlocuteur supprimé avec succès")
+      window.dispatchEvent(new CustomEvent('interlocuteur-deleted'))
+      setShowDeleteConfirm(false)
+      setDeletingInterlocuteur(null)
+    } catch (error) {
+      console.error('Erreur suppression interlocuteur:', error)
+      toast.error("Erreur lors de la suppression")
+    }
+  }
+
+  const handleEditInterlocuteur = (id: string) => {
+    setEditingInterlocuteur(id)
+  }
+
+  const handleDeleteClick = (id: string) => {
+    setDeletingInterlocuteur(id)
+    setShowDeleteConfirm(true)
+  }
+
+  // Filtrer les interlocuteurs selon le terme de recherche
+  const getFilteredInterlocuteurs = () => {
+    if (!searchTerm) return interlocuteurs
+    
+    return interlocuteurs.filter(interlocuteur =>
+      interlocuteur.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      interlocuteur.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      interlocuteur.nom_client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      interlocuteur.email.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }
 
   const getTypeBadge = (type: string) => {
     switch (type) {
@@ -144,17 +232,19 @@ export function InterlocuteursTable() {
     )
   }
 
-  if (interlocuteurs.length === 0) {
+  const filteredInterlocuteurs = getFilteredInterlocuteurs()
+
+  if (filteredInterlocuteurs.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Users className="h-8 w-8 text-slate-400" />
         </div>
         <h3 className="text-lg font-semibold text-slate-900 mb-2">
-          Aucun contact pour le moment
+          {searchTerm ? "Aucun contact trouvé pour cette recherche" : "Aucun contact pour le moment"}
         </h3>
         <p className="text-slate-600 mb-6">
-          Commencez par ajouter vos premiers contacts clients
+          {searchTerm ? "Essayez avec d'autres termes de recherche" : "Commencez par ajouter vos premiers contacts clients"}
         </p>
         <InterlocuteurFormModal>
           <Button className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
@@ -183,8 +273,12 @@ export function InterlocuteursTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {interlocuteurs.map((interlocuteur) => (
-            <TableRow key={interlocuteur.id} className="hover:bg-slate-50/50">
+          {filteredInterlocuteurs.map((interlocuteur) => (
+            <TableRow 
+              key={interlocuteur.id} 
+              className="hover:bg-slate-50/50 cursor-pointer"
+              onClick={() => handleEditInterlocuteur(interlocuteur.id)}
+            >
               <TableCell className="font-medium">
                 {interlocuteur.prenom} {interlocuteur.nom}
               </TableCell>
@@ -193,7 +287,11 @@ export function InterlocuteursTable() {
               <TableCell>{getTypeBadge(interlocuteur.type_interlocuteur)}</TableCell>
               <TableCell className="text-slate-600">
                 {interlocuteur.email ? (
-                  <a href={`mailto:${interlocuteur.email}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                  <a 
+                    href={`mailto:${interlocuteur.email}`} 
+                    className="flex items-center gap-1 text-blue-600 hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Mail className="h-3 w-3" />
                     {interlocuteur.email}
                   </a>
@@ -201,7 +299,11 @@ export function InterlocuteursTable() {
               </TableCell>
               <TableCell className="text-slate-600">
                 {interlocuteur.telephone ? (
-                  <a href={`tel:${interlocuteur.telephone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                  <a 
+                    href={`tel:${interlocuteur.telephone}`} 
+                    className="flex items-center gap-1 text-blue-600 hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Phone className="h-3 w-3" />
                     {interlocuteur.telephone}
                   </a>
@@ -218,33 +320,94 @@ export function InterlocuteursTable() {
                 )}
               </TableCell>
               <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem className="gap-2 cursor-pointer">
-                      <Edit className="h-4 w-4" />
-                      Modifier
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="gap-2 cursor-pointer">
-                      <Mail className="h-4 w-4" />
-                      Contacter
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="gap-2 text-red-600 cursor-pointer">
-                      <Trash2 className="h-4 w-4" />
-                      Désactiver
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-2 justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (interlocuteur.email) {
+                        window.location.href = `mailto:${interlocuteur.email}`
+                      }
+                    }}
+                    disabled={!interlocuteur.email}
+                  >
+                    <Mail className="h-3 w-3" />
+                    Contacter
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteClick(interlocuteur.id)
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Supprimer
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </div>
+
+    {/* Modal de modification */}
+    {editingInterlocuteur && (
+      <InterlocuteurFormModal
+        interlocuteurId={editingInterlocuteur}
+        onClose={() => setEditingInterlocuteur(null)}
+      />
+    )}
+
+    {/* Modal de confirmation de suppression */}
+    <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg font-semibold text-slate-900">
+                Confirmer la suppression
+              </DialogTitle>
+              <DialogDescription className="text-slate-600">
+                Cette action est irréversible. L'interlocuteur sera définitivement supprimé.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+        
+        <div className="flex justify-end gap-3 pt-4">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowDeleteConfirm(false)
+              setDeletingInterlocuteur(null)
+            }}
+          >
+            Annuler
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              if (deletingInterlocuteur) {
+                handleDeleteInterlocuteur(deletingInterlocuteur)
+              }
+            }}
+            className="gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Supprimer
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

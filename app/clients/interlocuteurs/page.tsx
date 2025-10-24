@@ -1,12 +1,31 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Plus, Search, Download, Filter, Mail, Phone } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { Users, Plus } from "lucide-react"
 import { InterlocuteursTable } from "@/components/clients/InterlocuteursTable"
 import { InterlocuteurFormModal } from "@/components/clients/InterlocuteurFormModal"
+import { InterlocuteursKPICards } from "@/components/clients/InterlocuteursKPICards"
+import { InterlocuteursFilters } from "@/components/clients/InterlocuteursFilters"
+import { InterlocuteursExportImport } from "@/components/clients/InterlocuteursExportImport"
+import { useState } from "react"
 
 export default function InterlocuteursPage() {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filters, setFilters] = useState({
+    typeInterlocuteur: "",
+    clientId: "",
+    siteId: "",
+    actif: ""
+  })
+
+  const handleFiltersChange = (newFilters: any) => {
+    setFilters(newFilters)
+  }
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term)
+  }
+
   return (
     <div className="container mx-auto py-6">
         {/* Page Header */}
@@ -24,76 +43,8 @@ export default function InterlocuteursPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-slate-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-700">
-                Total contacts
-              </CardTitle>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/30">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
-              <p className="text-xs text-slate-500 mt-1">
-                Contacts actifs
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-slate-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-700">
-                Contacts techniques
-              </CardTitle>
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md shadow-green-500/30">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
-              <p className="text-xs text-slate-500 mt-1">
-                Type technique
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-slate-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-700">
-                Interactions (7j)
-              </CardTitle>
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md shadow-purple-500/30">
-                <Mail className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
-              <p className="text-xs text-slate-500 mt-1">
-                Échanges récents
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-slate-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-700">
-                Clients actifs
-              </CardTitle>
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-md shadow-teal-500/30">
-                <Phone className="h-5 w-5 text-white" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
-              <p className="text-xs text-slate-500 mt-1">
-                Avec contacts
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* KPI Cards dynamiques */}
+        <InterlocuteursKPICards />
 
         {/* Main Card */}
         <Card className="border-slate-200 shadow-md">
@@ -106,21 +57,11 @@ export default function InterlocuteursPage() {
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    placeholder="Rechercher..."
-                    className="w-64 pl-10 border-slate-300"
-                  />
-                </div>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filtres
-                </Button>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Exporter
-                </Button>
+                <InterlocuteursFilters 
+                  onFiltersChange={handleFiltersChange}
+                  onSearch={handleSearch}
+                />
+                <InterlocuteursExportImport />
                 <InterlocuteurFormModal>
                   <Button className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all">
                     <Plus className="h-4 w-4" />
@@ -131,7 +72,10 @@ export default function InterlocuteursPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <InterlocuteursTable />
+            <InterlocuteursTable 
+              searchTerm={searchTerm}
+              filters={filters}
+            />
           </CardContent>
         </Card>
     </div>

@@ -35,12 +35,13 @@ interface Client {
 }
 
 interface InterlocuteurFormModalProps {
-  children: React.ReactNode
+  children?: React.ReactNode
   interlocuteurId?: string
+  onClose?: () => void
 }
 
-export function InterlocuteurFormModal({ children, interlocuteurId }: InterlocuteurFormModalProps) {
-  const [open, setOpen] = useState(false)
+export function InterlocuteurFormModal({ children, interlocuteurId, onClose }: InterlocuteurFormModalProps) {
+  const [open, setOpen] = useState(!!interlocuteurId)
   const [loading, setLoading] = useState(false)
   const [sites, setSites] = useState<Site[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -191,6 +192,7 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
       }
 
       setOpen(false)
+      onClose?.()
       
       // Déclencher un événement pour rafraîchir le tableau
       window.dispatchEvent(new CustomEvent('interlocuteur-created'))
