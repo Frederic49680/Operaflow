@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,6 +21,18 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { createClient } from "@/lib/supabase/client"
+
+interface Site {
+  id: string
+  code_site: string
+  nom: string
+}
+
+interface Client {
+  id: string
+  nom_client: string
+}
 
 interface InterlocuteurFormModalProps {
   children: React.ReactNode
@@ -30,16 +42,112 @@ interface InterlocuteurFormModalProps {
 export function InterlocuteurFormModal({ children, interlocuteurId }: InterlocuteurFormModalProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [sites, setSites] = useState<Site[]>([])
+  const [clients, setClients] = useState<Client[]>([])
+  const [loadingSites, setLoadingSites] = useState(false)
+  const [loadingClients, setLoadingClients] = useState(false)
+  
+  // États du formulaire
+  const [formData, setFormData] = useState({
+    nom: "",
+    prenom: "",
+    client_id: "",
+    fonction: "",
+    type_interlocuteur: "",
+    site_id: "",
+    email: "",
+    telephone: "",
+    disponibilite: "",
+    notes: ""
+  })
+
+  // Charger les sites
+  const loadSites = useCallback(async () => {
+    setLoadingSites(true)
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('sites')
+      .select('id, code_site, nom')
+      .in('statut', ['Actif', 'En pause'])
+      .order('nom')
+    
+    if (error) {
+      console.error('Erreur chargement sites:', error)
+    } else {
+      setSites(data || [])
+    }
+    setLoadingSites(false)
+  }, [])
+
+  // Charger les clients
+  const loadClients = useCallback(async () => {
+    setLoadingClients(true)
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, nom_client')
+      .eq('actif', true)
+      .order('nom_client')
+    
+    if (error) {
+      console.error('Erreur chargement clients:', error)
+    } else {
+      setClients(data || [])
+    }
+    setLoadingClients(false)
+  }, [])
+
+  // Charger les données quand le modal s'ouvre
+  useEffect(() => {
+    if (open) {
+      loadSites()
+      loadClients()
+    }
+  }, [open, loadSites, loadClients])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
 
-    // TODO: Implémenter la logique de sauvegarde
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const supabase = createClient()
+      
+      if (interlocuteurId) {
+        // Mode édition
+        const { error } = await supabase
+          .from('interlocuteurs')
+          .update(formData)
+          .eq('id', interlocuteurId)
+        
+        if (error) throw error
+      } else {
+        // Mode création
+        const { error } = await supabase
+          .from('interlocuteurs')
+          .insert([formData])
+        
+        if (error) throw error
+      }
 
-    setLoading(false)
-    setOpen(false)
+      setOpen(false)
+      // Réinitialiser le formulaire
+      setFormData({
+        nom: "",
+        prenom: "",
+        client_id: "",
+        fonction: "",
+        type_interlocuteur: "",
+        site_id: "",
+        email: "",
+        telephone: "",
+        disponibilite: "",
+        notes: ""
+      })
+    } catch (error) {
+      console.error('Erreur sauvegarde interlocuteur:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -68,6 +176,8 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
                   id="nom"
                   placeholder="Dupont"
                   required
+                  value={formData.nom}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
@@ -79,6 +189,8 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
                   id="prenom"
                   placeholder="Jean"
                   required
+                  value={formData.prenom}
+                  onChange={(e) => setFormData(prev => ({ ...prev, prenom: e.target.value }))}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
@@ -90,13 +202,20 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
                 <Label htmlFor="client" className="text-slate-700 font-medium">
                   Client <span className="text-red-500">*</span>
                 </Label>
-                <Select required>
+                <Select 
+                  required 
+                  value={formData.client_id}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                >
                   <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
-                    <SelectValue placeholder="Sélectionner" />
+                    <SelectValue placeholder={loadingClients ? "Chargement..." : "Sélectionner"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">EDF Réseaux</SelectItem>
-                    <SelectItem value="2">Engie</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.nom_client}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -107,6 +226,8 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
                 <Input
                   id="fonction"
                   placeholder="Responsable Technique"
+                  value={formData.fonction}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fonction: e.target.value }))}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
@@ -118,7 +239,11 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
                 <Label htmlFor="type" className="text-slate-700 font-medium">
                   Type <span className="text-red-500">*</span>
                 </Label>
-                <Select required>
+                <Select 
+                  required 
+                  value={formData.type_interlocuteur}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, type_interlocuteur: value }))}
+                >
                   <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                     <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
@@ -134,13 +259,19 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
                 <Label htmlFor="site" className="text-slate-700 font-medium">
                   Site
                 </Label>
-                <Select>
+                <Select 
+                  value={formData.site_id}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, site_id: value }))}
+                >
                   <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
-                    <SelectValue placeholder="Sélectionner (optionnel)" />
+                    <SelectValue placeholder={loadingSites ? "Chargement..." : "Sélectionner (optionnel)"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">E-03A - Site Est</SelectItem>
-                    <SelectItem value="2">O-05B - Site Ouest</SelectItem>
+                    {sites.map((site) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.code_site} - {site.nom}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -156,6 +287,8 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
                   id="email"
                   type="email"
                   placeholder="jean.dupont@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
@@ -167,6 +300,8 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
                   id="telephone"
                   type="tel"
                   placeholder="+33 6 12 34 56 78"
+                  value={formData.telephone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, telephone: e.target.value }))}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
@@ -180,6 +315,8 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
               <Input
                 id="disponibilite"
                 placeholder="8h-17h"
+                value={formData.disponibilite}
+                onChange={(e) => setFormData(prev => ({ ...prev, disponibilite: e.target.value }))}
                 className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
@@ -193,6 +330,8 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
                 id="notes"
                 placeholder="Notes internes..."
                 rows={3}
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
