@@ -240,13 +240,15 @@ export function AbsenceFormModal({
 
       const data = {
         ressource_id: formData.ressource_id,
-        type: "Autre",  // Valeur autorisée par la contrainte CHECK
         date_debut: formData.date_debut,
         date_fin: formData.date_fin,
         motif: motifFinal,  // Le motif détaillé dans le champ motif
         statut,
         site
       }
+
+      // Ajouter le type seulement pour la création (pas pour la mise à jour)
+      const dataWithType = absenceId ? data : { ...data, type: "Autre" }
 
       if (absenceId) {
         // Mise à jour
@@ -265,7 +267,7 @@ export function AbsenceFormModal({
         // Création
         const { error } = await supabase
           .from('absences')
-          .insert(data)
+          .insert(dataWithType)
 
         if (error) throw error
         
