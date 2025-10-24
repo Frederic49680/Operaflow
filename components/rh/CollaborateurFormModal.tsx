@@ -277,18 +277,18 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
         telephone: formData.telephone || null,
         adresse_postale: formData.adresse || null,
         competences: competencesSelectionnees,
-        // role_principal: rolePrincipal || null, // Temporairement commenté
+        role_principal: rolePrincipal || null,
         date_entree: formData.date_entree || null,
         date_sortie: formData.date_sortie || null,
         actif: formData.actif === "true",
       }
 
-      // Vérification: rôle principal obligatoire (temporairement commenté)
-      // if (!rolePrincipal) {
-      //   if (onError) onError('Le rôle principal est obligatoire')
-      //   setLoading(false)
-      //   return
-      // }
+      // Vérification: rôle principal obligatoire
+      if (!rolePrincipal) {
+        if (onError) onError('La fonction est obligatoire')
+        setLoading(false)
+        return
+      }
 
       // Vérification: compétence principale obligatoire seulement pour les rôles de niveau bas
       const selectedRole = rolesDisponibles.find(role => role.code === rolePrincipal)
@@ -597,7 +597,7 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
                 
                 {/* Rôle principal */}
                 <div className="grid gap-2">
-                  <Label className="text-sm text-slate-600">Rôle principal</Label>
+                  <Label className="text-sm text-slate-600">Fonction</Label>
                   <div className="flex flex-wrap gap-2 p-3 bg-slate-50 rounded-md border border-slate-200">
                     {rolesDisponibles.map((role) => (
                       <Badge
