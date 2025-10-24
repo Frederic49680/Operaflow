@@ -138,6 +138,8 @@ export function InterlocuteurFormModal({ children, interlocuteurId, onClose }: I
           telephone: data.telephone || '',
           client_id: data.client_id || '',
           site_id: data.site_id || '',
+          disponibilite: data.disponibilite || '',
+          notes: data.notes || '',
           actif: data.actif ?? true
         })
       }
