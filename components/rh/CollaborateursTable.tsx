@@ -80,6 +80,8 @@ export function CollaborateursTable({
   const [newStatus, setNewStatus] = useState<string>("")
   const [newDate, setNewDate] = useState<string>("")
   const [isUpdating, setIsUpdating] = useState(false)
+  const [deactivatingCollaborateur, setDeactivatingCollaborateur] = useState<Collaborateur | null>(null)
+  const [dateFinContrat, setDateFinContrat] = useState("")
 
   useEffect(() => {
     loadCollaborateurs()
@@ -263,47 +265,10 @@ export function CollaborateursTable({
   }
 
   const handleToggleActif = async (collab: Collaborateur) => {
-    // Si on désactive, demander la date de fin
+    // Si on désactive, ouvrir la modal
     if (collab.actif) {
-      const dateFin = prompt(`Date de fin de contrat pour ${collab.prenom} ${collab.nom} (format: AAAA-MM-JJ):`)
-      if (!dateFin) return // Annulé par l'utilisateur
-      
-      // Valider le format de date
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-      if (!dateRegex.test(dateFin)) {
-        if (onError) onError('Format de date invalide. Utilisez AAAA-MM-JJ')
-        return
-      }
-      
-      // Vérifier que la date est dans le futur
-      const dateFinObj = new Date(dateFin)
-      const aujourdhui = new Date()
-      aujourdhui.setHours(0, 0, 0, 0)
-      
-      if (dateFinObj <= aujourdhui) {
-        if (onError) onError('La date de fin doit être dans le futur')
-        return
-      }
-      
-      setIsUpdating(true)
-      try {
-        const supabase = createClient()
-        
-        const { error } = await supabase
-          .from('ressources')
-          .update({ actif: false, date_sortie: dateFin })
-          .eq('id', collab.id)
-
-        if (error) throw error
-
-        if (onSuccess) onSuccess(`Collaborateur ${collab.prenom} ${collab.nom} désactivé avec succès (fin: ${dateFin})`)
-        loadCollaborateurs()
-      } catch (error) {
-        console.error('Erreur désactivation:', error)
-        if (onError) onError('Erreur lors de la désactivation du collaborateur')
-      } finally {
-        setIsUpdating(false)
-      }
+      setDeactivatingCollaborateur(collab)
+      setDateFinContrat("")
     } else {
       // Réactivation directe
       setIsUpdating(true)
@@ -325,6 +290,49 @@ export function CollaborateursTable({
       } finally {
         setIsUpdating(false)
       }
+    }
+  }
+
+  const handleConfirmDeactivation = async () => {
+    if (!deactivatingCollaborateur || !dateFinContrat) return
+
+    // Valider le format de date
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+    if (!dateRegex.test(dateFinContrat)) {
+      if (onError) onError('Format de date invalide. Utilisez AAAA-MM-JJ')
+      return
+    }
+    
+    // Vérifier que la date est dans le futur
+    const dateFinObj = new Date(dateFinContrat)
+    const aujourdhui = new Date()
+    aujourdhui.setHours(0, 0, 0, 0)
+    
+    if (dateFinObj <= aujourdhui) {
+      if (onError) onError('La date de fin doit être dans le futur')
+      return
+    }
+    
+    setIsUpdating(true)
+    try {
+      const supabase = createClient()
+      
+      const { error } = await supabase
+        .from('ressources')
+        .update({ actif: false, date_sortie: dateFinContrat })
+        .eq('id', deactivatingCollaborateur.id)
+
+      if (error) throw error
+
+      if (onSuccess) onSuccess(`Collaborateur ${deactivatingCollaborateur.prenom} ${deactivatingCollaborateur.nom} désactivé avec succès (fin: ${dateFinContrat})`)
+      loadCollaborateurs()
+      setDeactivatingCollaborateur(null)
+      setDateFinContrat("")
+    } catch (error) {
+      console.error('Erreur désactivation:', error)
+      if (onError) onError('Erreur lors de la désactivation du collaborateur')
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -721,6 +729,74 @@ export function CollaborateursTable({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Modal de désactivation avec date */}
+    {deactivatingCollaborateur && (
+      <Dialog open={!!deactivatingCollaborateur} onOpenChange={() => setDeactivatingCollaborateur(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-600" />
+              Désactiver le collaborateur
+            </DialogTitle>
+            <DialogDescription>
+              Définir la date de fin de contrat pour {deactivatingCollaborateur.prenom} {deactivatingCollaborateur.nom}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="date-fin" className="text-sm font-medium">
+                Date de fin de contrat <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="date-fin"
+                type="date"
+                value={dateFinContrat}
+                onChange={(e) => setDateFinContrat(e.target.value)}
+                className="w-full"
+                min={new Date().toISOString().split('T')[0]}
+                required
+              />
+              <p className="text-xs text-slate-500">
+                La date doit être dans le futur
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeactivatingCollaborateur(null)
+                setDateFinContrat("")
+              }}
+              className="flex-1"
+              disabled={isUpdating}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleConfirmDeactivation}
+              disabled={!dateFinContrat || isUpdating}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Désactivation...
+                </>
+              ) : (
+                <>
+                  <User className="h-4 w-4 mr-2" />
+                  Désactiver
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )}
     </>
   )
 }
