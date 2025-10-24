@@ -13,6 +13,7 @@ import { useState } from "react"
 
 export default function InterlocuteursPage() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [showInactifs, setShowInactifs] = useState(false)
   const [filters, setFilters] = useState({
     typeInterlocuteur: "",
     clientId: "",
@@ -26,6 +27,14 @@ export default function InterlocuteursPage() {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term)
+  }
+
+  const handleToggleInactifs = () => {
+    setShowInactifs(!showInactifs)
+    setFilters(prev => ({
+      ...prev,
+      actif: showInactifs ? "" : "true" // Si on masque les inactifs, on filtre sur actifs seulement
+    }))
   }
 
   return (
@@ -63,7 +72,10 @@ export default function InterlocuteursPage() {
                   onFiltersChange={handleFiltersChange}
                   onSearch={handleSearch}
                 />
-                <InterlocuteursExportImport />
+                <InterlocuteursExportImport 
+                  showInactifs={showInactifs}
+                  onToggleInactifs={handleToggleInactifs}
+                />
                 <InterlocuteurFormModal>
                   <Button className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all">
                     <Plus className="h-4 w-4" />

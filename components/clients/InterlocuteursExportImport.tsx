@@ -2,15 +2,17 @@
 
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Download, Upload, FileSpreadsheet } from "lucide-react"
+import { Download, Upload, Eye, EyeOff } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 
 interface InterlocuteursExportImportProps {
   onDataChange?: () => void
+  showInactifs?: boolean
+  onToggleInactifs?: () => void
 }
 
-export function InterlocuteursExportImport({ onDataChange }: InterlocuteursExportImportProps) {
+export function InterlocuteursExportImport({ onDataChange, showInactifs = false, onToggleInactifs }: InterlocuteursExportImportProps) {
   const [exporting, setExporting] = useState(false)
   const [importing, setImporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -228,27 +230,27 @@ export function InterlocuteursExportImport({ onDataChange }: InterlocuteursExpor
         </Button>
       </div>
 
-      {/* Template */}
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="gap-2"
-        onClick={() => {
-          const template = "Nom,Prénom,Fonction,Type,Email,Téléphone,Disponibilité,Notes,Client,Site,Actif\n\"Dupont\",\"Jean\",\"Responsable\",\"Technique\",\"jean.dupont@client.com\",\"+33 6 12 34 56 78\",\"9h-17h\",\"Notes\",\"SMIPE\",\"Site A\",\"Oui\""
-          const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' })
-          const link = document.createElement('a')
-          const url = URL.createObjectURL(blob)
-          link.setAttribute('href', url)
-          link.setAttribute('download', 'template_interlocuteurs.csv')
-          link.style.visibility = 'hidden'
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-        }}
-      >
-        <FileSpreadsheet className="h-4 w-4" />
-        Template
-      </Button>
+      {/* Toggle Inactifs */}
+      {onToggleInactifs && (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-2"
+          onClick={onToggleInactifs}
+        >
+          {showInactifs ? (
+            <>
+              <EyeOff className="h-4 w-4" />
+              Masquer inactifs
+            </>
+          ) : (
+            <>
+              <Eye className="h-4 w-4" />
+              Afficher inactifs
+            </>
+          )}
+        </Button>
+      )}
     </div>
   )
 }
