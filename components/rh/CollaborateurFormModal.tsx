@@ -196,6 +196,7 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
 
 
   const handleRolePrincipalChange = (roleCode: string) => {
+    console.log('🎯 Sélection rôle principal:', roleCode)
     setRolePrincipal(roleCode)
   }
 
@@ -231,6 +232,7 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    console.log('🚀 Début handleSubmit - rolePrincipal:', rolePrincipal)
     setLoading(true)
 
     try {
@@ -284,7 +286,9 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
       }
 
       // Vérification: rôle principal obligatoire
+      console.log('🔍 Vérification rolePrincipal:', rolePrincipal)
       if (!rolePrincipal) {
+        console.log('❌ rolePrincipal vide, arrêt de la validation')
         if (onError) onError('La fonction est obligatoire')
         setLoading(false)
         return
