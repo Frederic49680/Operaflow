@@ -76,7 +76,7 @@ export function AbsencesTable({
         .from('absences')
         .select(`
           *,
-          ressource_id:ressources (
+          ressource_id:ressources!absences_ressource_id_fkey (
             nom,
             prenom
           )
