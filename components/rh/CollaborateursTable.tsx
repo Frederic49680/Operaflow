@@ -93,16 +93,10 @@ export function CollaborateursTable({
       setError(null)
       const supabase = createClient()
 
-      // Charger les collaborateurs non-admin avec leurs rôles
+      // Charger les collaborateurs non-admin
       const { data: collabsData, error: collabsError } = await supabase
         .from('ressources')
-        .select(`
-          *,
-          role_principal:roles!ressources_role_principal_fkey (
-            code,
-            label
-          )
-        `)
+        .select('*')
         .eq('is_admin', false)
         .order('nom')
 
@@ -115,9 +109,22 @@ export function CollaborateursTable({
 
       if (sitesError) throw sitesError
 
+      // Charger tous les rôles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('roles')
+        .select('code, label')
+        .eq('actif', true)
+
+      if (rolesError) throw rolesError
+
       // Créer un map pour accès rapide aux sites
       const sitesMap = new Map(
         (sitesData || []).map(s => [s.id, s])
+      )
+
+      // Créer un map pour accès rapide aux rôles
+      const rolesMap = new Map(
+        (rolesData || []).map(r => [r.code, r])
       )
 
       const formattedData = (collabsData || []).map((collab: any) => {
@@ -126,8 +133,9 @@ export function CollaborateursTable({
         const site = siteData ? siteData.nom : '-'
         const site_code = siteData ? siteData.code_site : ''
         
-        // Rôle principal depuis la relation
-        const rolePrincipal = collab.role_principal?.label || '-'
+        // Rôle principal depuis le map
+        const roleData = collab.role_principal ? rolesMap.get(collab.role_principal) : null
+        const rolePrincipal = roleData ? roleData.label : '-'
         
         return {
           id: collab.id,
