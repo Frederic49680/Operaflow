@@ -167,6 +167,26 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
     }
   }
 
+  const handleToggleActif = async (id: string, currentActif: boolean) => {
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('interlocuteurs')
+        .update({ actif: !currentActif })
+        .eq('id', id)
+
+      if (error) {
+        throw error
+      }
+
+      toast.success(`Interlocuteur ${!currentActif ? 'activé' : 'désactivé'} avec succès`)
+      window.dispatchEvent(new CustomEvent('interlocuteur-updated'))
+    } catch (error) {
+      console.error('Erreur toggle statut interlocuteur:', error)
+      toast.error("Erreur lors de la modification du statut")
+    }
+  }
+
   const handleEditInterlocuteur = (id: string) => {
     setEditingInterlocuteur(id)
   }
@@ -309,11 +329,21 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
                 {interlocuteur.site_nom || "-"}
               </TableCell>
               <TableCell>
-                {interlocuteur.actif ? (
-                  <Badge className="bg-green-500 hover:bg-green-600">Actif</Badge>
-                ) : (
-                  <Badge className="bg-slate-500 hover:bg-slate-600">Inactif</Badge>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`gap-2 ${
+                    interlocuteur.actif 
+                      ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' 
+                      : 'bg-slate-500 hover:bg-slate-600 text-white border-slate-500'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleToggleActif(interlocuteur.id, interlocuteur.actif)
+                  }}
+                >
+                  {interlocuteur.actif ? 'Actif' : 'Inactif'}
+                </Button>
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center gap-2 justify-end">
