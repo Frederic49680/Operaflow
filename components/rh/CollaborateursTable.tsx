@@ -572,38 +572,21 @@ export function CollaborateursTable({
                 )}
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <Badge 
-                    className={`cursor-pointer transition-all ${
-                      getCollaborateurStatus(collab) === 'Actif' 
-                        ? 'bg-green-500 hover:bg-green-600' 
-                        : getCollaborateurStatus(collab) === 'À renouveler'
-                        ? 'bg-orange-500 hover:bg-orange-600'
-                        : 'bg-slate-500 hover:bg-slate-600'
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleStatusClick(collab)
-                    }}
-                  >
-                    {getCollaborateurStatus(collab)}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className={`h-6 px-2 text-xs transition-all ${
-                      collab.actif 
-                        ? 'bg-green-100 hover:bg-green-200 text-green-800 border-green-300' 
-                        : 'bg-red-100 hover:bg-red-200 text-red-800 border-red-300'
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleToggleActif(collab)
-                    }}
-                  >
-                    {collab.actif ? 'Actif' : 'Inactif'}
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`h-6 px-2 text-xs transition-all ${
+                    collab.actif 
+                      ? 'bg-green-100 hover:bg-green-200 text-green-800 border-green-300' 
+                      : 'bg-red-100 hover:bg-red-200 text-red-800 border-red-300'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleToggleActif(collab)
+                  }}
+                >
+                  {collab.actif ? 'Actif' : 'Inactif'}
+                </Button>
               </TableCell>
             </TableRow>
           ))}
