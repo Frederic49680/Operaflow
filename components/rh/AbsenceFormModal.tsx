@@ -104,7 +104,7 @@ export function AbsenceFormModal({
           id,
           nom,
           prenom,
-          site_id:sites!inner (
+          site_id:sites!ressources_site_id_fkey (
             code_site,
             nom
           )
