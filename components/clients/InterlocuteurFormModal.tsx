@@ -74,7 +74,8 @@ export function InterlocuteurFormModal({ children, interlocuteurId, onClose }: I
     email: "",
     telephone: "",
     disponibilite: "",
-    notes: ""
+    notes: "",
+    actif: true
   })
 
   // Charger les sites
@@ -181,7 +182,7 @@ export function InterlocuteurFormModal({ children, interlocuteurId, onClose }: I
         loadInterlocuteurData()
       }
     }
-  }, [open, loadSites, loadClients, loadInterlocuteurData])
+  }, [open, loadSites, loadClients, loadInterlocuteurData, interlocuteurId])
 
   // Créer un nouveau client
   const createNewClient = async () => {
