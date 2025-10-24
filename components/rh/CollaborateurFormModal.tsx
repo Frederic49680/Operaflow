@@ -277,18 +277,18 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
         telephone: formData.telephone || null,
         adresse_postale: formData.adresse || null,
         competences: competencesSelectionnees,
-        role_principal: rolePrincipal || null,
+        // role_principal: rolePrincipal || null, // Temporairement commenté
         date_entree: formData.date_entree || null,
         date_sortie: formData.date_sortie || null,
         actif: formData.actif === "true",
       }
 
-      // Vérification: rôle principal obligatoire
-      if (!rolePrincipal) {
-        if (onError) onError('Le rôle principal est obligatoire')
-        setLoading(false)
-        return
-      }
+      // Vérification: rôle principal obligatoire (temporairement commenté)
+      // if (!rolePrincipal) {
+      //   if (onError) onError('Le rôle principal est obligatoire')
+      //   setLoading(false)
+      //   return
+      // }
 
       // Vérification: compétence principale obligatoire seulement pour les rôles de niveau bas
       const selectedRole = rolesDisponibles.find(role => role.code === rolePrincipal)
