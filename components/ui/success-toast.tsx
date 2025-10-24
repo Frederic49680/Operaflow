@@ -24,7 +24,7 @@ export function SuccessToast({ message, onClose, duration = 3000 }: SuccessToast
     }, duration)
 
     return () => clearTimeout(timer)
-  }, [duration, onClose])
+  }, [duration]) // Retirer onClose des dépendances pour éviter les boucles infinies
 
   return (
     <div className="fixed top-4 right-4 z-[9999] animate-in slide-in-from-top-2">

@@ -17,7 +17,7 @@ export function SuccessToast({ message, onClose, duration = 5000 }: ToastProps) 
     }, duration)
 
     return () => clearTimeout(timer)
-  }, [duration, onClose])
+  }, [duration]) // Retirer onClose des dépendances pour éviter les boucles infinies
 
   return (
     <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-2 fade-in duration-300">
@@ -48,7 +48,7 @@ export function ErrorToast({ message, onClose, duration = 5000 }: ToastProps) {
     }, duration)
 
     return () => clearTimeout(timer)
-  }, [duration, onClose])
+  }, [duration]) // Retirer onClose des dépendances pour éviter les boucles infinies
 
   return (
     <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-2 fade-in duration-300">
