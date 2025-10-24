@@ -238,6 +238,13 @@ export function AbsenceFormModal({
       const ressource = ressources.find(r => r.id === formData.ressource_id)
       const site = ressource?.site_id?.code_site || ''
 
+      // Validation des champs obligatoires
+      if (!formData.ressource_id || formData.ressource_id.trim() === '') {
+        if (onError) onError('Veuillez sélectionner un collaborateur')
+        setLoading(false)
+        return
+      }
+
       const data = {
         ressource_id: formData.ressource_id,
         date_debut: formData.date_debut,
@@ -252,6 +259,7 @@ export function AbsenceFormModal({
 
       if (absenceId) {
         // Mise à jour
+        console.log('Données de mise à jour:', data)
         const { error } = await supabase
           .from('absences')
           .update(data)
