@@ -149,8 +149,8 @@ export function AbsenceFormModal({
 
       if (error) throw error
 
-      // Utiliser le champ 'type' pour le motif (ou 'motif' en fallback)
-      const motif = data.type || data.motif || ""
+      // Utiliser le champ 'motif' pour le motif
+      const motif = data.motif || ""
       const isMotifPredefini = MOTIFS_PREDEFINIS.includes(motif)
 
       setFormData({
@@ -240,10 +240,10 @@ export function AbsenceFormModal({
 
       const data = {
         ressource_id: formData.ressource_id,
-        type: motifFinal,  // Utiliser le champ 'type' pour stocker le motif
+        // type: motifFinal,  // Commenté car contrainte CHECK non respectée
         date_debut: formData.date_debut,
         date_fin: formData.date_fin,
-        motif: motifFinal,  // Garder aussi dans motif pour compatibilité
+        motif: motifFinal,  // Utiliser seulement le champ 'motif'
         statut,
         site
       }
