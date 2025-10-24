@@ -233,6 +233,13 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     console.log('🚀 Début handleSubmit - rolePrincipal:', rolePrincipal)
+    
+    // Protection contre la double soumission
+    if (loading) {
+      console.log('⚠️ Soumission déjà en cours, ignorée')
+      return
+    }
+    
     setLoading(true)
 
     try {
@@ -390,28 +397,30 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
         onSuccess(`Collaborateur ${collaborateurId ? 'modifié' : 'créé'} avec succès !`)
       }
       
-      // Réinitialiser le formulaire
-      setFormData({
-        nom: "",
-        prenom: "",
-        site: "",
-        type_contrat: "",
-        email_pro: "",
-        email_perso: "",
-        telephone: "",
-        adresse: "",
-        date_entree: "",
-        date_sortie: "",
-        actif: "true"
-      })
-      setCompetencesSelectionnees([])
-      setRolePrincipal("")
-      setCompetencePrincipale("")
-      
       // Fermer le modal et notifier
       setOpen(false)
       window.dispatchEvent(new Event('collaborateur-created'))
       if (onClose) onClose()
+      
+      // Réinitialiser le formulaire APRÈS la fermeture pour éviter les re-renders
+      setTimeout(() => {
+        setFormData({
+          nom: "",
+          prenom: "",
+          site: "",
+          type_contrat: "",
+          email_pro: "",
+          email_perso: "",
+          telephone: "",
+          adresse: "",
+          date_entree: "",
+          date_sortie: "",
+          actif: "true"
+        })
+        setCompetencesSelectionnees([])
+        setRolePrincipal("")
+        setCompetencePrincipale("")
+      }, 100)
     } catch (error) {
       console.error('Erreur création collaborateur:', error)
       if (onError) onError('Erreur lors de la création du collaborateur')
