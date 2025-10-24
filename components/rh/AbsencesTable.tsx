@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-// import { AbsenceFormModal } from "./AbsenceFormModal" // Temporairement désactivé pour déboguer
+import { AbsenceFormModal } from "./AbsenceFormModal"
 import { Plus } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -235,27 +235,30 @@ export function AbsencesTable({
         <p className="text-slate-600 mb-6">
           Commencez par déclarer une absence
         </p>
-               <Button 
-                 className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                 onClick={() => alert('Modal temporairement désactivé pour déboguer')}
-               >
-                 <Plus className="h-4 w-4" />
-                 Déclarer une absence
-               </Button>
+               <AbsenceFormModal>
+                 <Button className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                   <Plus className="h-4 w-4" />
+                   Déclarer une absence
+                 </Button>
+               </AbsenceFormModal>
       </div>
     )
   }
 
   return (
     <>
-      {/* Modal d'édition temporairement désactivé */}
+      {/* Modal d'édition */}
       {editingAbsenceId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg">
-            <p>Modal temporairement désactivé pour déboguer</p>
-            <Button onClick={handleCloseModal} className="mt-4">Fermer</Button>
-          </div>
-        </div>
+        <AbsenceFormModal
+          absenceId={editingAbsenceId}
+          open={!!editingAbsenceId}
+          onOpenChange={(open) => !open && handleCloseModal()}
+          onSuccess={(message) => {
+            if (onSuccess) onSuccess(message)
+            handleCloseModal()
+          }}
+          onError={onError}
+        />
       )}
 
       {/* Compteur de résultats */}

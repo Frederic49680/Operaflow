@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
 
 interface AbsenceFormModalProps {
@@ -43,6 +42,18 @@ interface Ressource {
     nom: string
   }
 }
+
+// Motifs prédéfinis en dehors du composant pour éviter les re-créations
+const MOTIFS_PREDEFINIS = [
+  "Vacances",
+  "Maladie", 
+  "Formation professionnelle",
+  "Congé maternité/paternité",
+  "Congé sans solde",
+  "Grève",
+  "Accident du travail",
+  "Arrêt maladie longue durée"
+]
 
 export function AbsenceFormModal({ 
   children, 
@@ -78,21 +89,10 @@ export function AbsenceFormModal({
     motif: ""
   })
   
-  // Motifs prédéfinis
-  const MOTIFS_PREDEFINIS = [
-    "Vacances",
-    "Maladie",
-    "Formation professionnelle",
-    "Congé maternité/paternité",
-    "Congé sans solde",
-    "Grève",
-    "Accident du travail",
-    "Arrêt maladie longue durée"
-  ]
-  
   const [motifPersonnalise, setMotifPersonnalise] = useState("")
   const [showMotifPersonnalise, setShowMotifPersonnalise] = useState(false)
 
+  // Stabiliser la fonction loadRessources
   const loadRessources = useCallback(async () => {
     try {
       setLoadingRessources(true)
@@ -127,7 +127,7 @@ export function AbsenceFormModal({
     } finally {
       setLoadingRessources(false)
     }
-  }, [onError])
+  }, []) // Retirer onError des dépendances
 
   // Charger les ressources actives
   useEffect(() => {
@@ -137,6 +137,8 @@ export function AbsenceFormModal({
   }, [open, loadRessources])
 
   const loadAbsenceData = useCallback(async () => {
+    if (!absenceId) return
+    
     try {
       const supabase = createClient()
       const { data, error } = await supabase
@@ -170,7 +172,7 @@ export function AbsenceFormModal({
       console.error('Erreur chargement absence:', err)
       if (onError) onError('Erreur lors du chargement de l\'absence')
     }
-  }, [absenceId, onError, MOTIFS_PREDEFINIS])
+  }, [absenceId]) // Retirer onError et MOTIFS_PREDEFINIS des dépendances
 
   // Charger les données de l'absence si édition
   useEffect(() => {
@@ -184,6 +186,8 @@ export function AbsenceFormModal({
         date_fin: "",
         motif: ""
       })
+      setShowMotifPersonnalise(false)
+      setMotifPersonnalise("")
     }
   }, [open, absenceId, loadAbsenceData])
 
@@ -200,6 +204,10 @@ export function AbsenceFormModal({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
+    // Protection contre la double soumission
+    if (loading) return
+    
     setLoading(true)
 
     try {
@@ -251,18 +259,8 @@ export function AbsenceFormModal({
         
         if (onSuccess) onSuccess('Absence modifiée avec succès !')
         
-        // Vérifier et créer une alerte visite médicale si nécessaire
-        if (onAbsenceCreated) {
-          await onAbsenceCreated(data)
-        }
-        
         // Déclencher l'événement de rafraîchissement
         window.dispatchEvent(new Event('absence-updated'))
-        
-        // Actualiser la page après un court délai (invisible pour l'utilisateur)
-        setTimeout(() => {
-          window.location.reload()
-        }, 100)
       } else {
         // Création
         const { error } = await supabase
@@ -273,18 +271,8 @@ export function AbsenceFormModal({
         
         if (onSuccess) onSuccess('Absence créée avec succès !')
         
-        // Vérifier et créer une alerte visite médicale si nécessaire
-        if (onAbsenceCreated) {
-          await onAbsenceCreated(data)
-        }
-        
         // Déclencher l'événement de rafraîchissement
         window.dispatchEvent(new Event('absence-created'))
-        
-        // Actualiser la page après un court délai (invisible pour l'utilisateur)
-        setTimeout(() => {
-          window.location.reload()
-        }, 100)
       }
 
       // Réinitialiser le formulaire
@@ -462,4 +450,3 @@ export function AbsenceFormModal({
     </Dialog>
   )
 }
-
