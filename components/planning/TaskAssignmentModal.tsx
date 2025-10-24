@@ -164,7 +164,8 @@ export default function TaskAssignmentModal({
       onClose()
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
-      toast.error(`Erreur lors de la sauvegarde: ${error.message}`)
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+      toast.error(`Erreur lors de la sauvegarde: ${errorMessage}`)
     }
   }
 
