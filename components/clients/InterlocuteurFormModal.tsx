@@ -62,6 +62,7 @@ export function InterlocuteurFormModal({ children, interlocuteurId, onClose }: I
     categorie: "MOA"
   })
   const [creatingClient, setCreatingClient] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   
   // États du formulaire
   const [formData, setFormData] = useState({
@@ -488,9 +489,7 @@ export function InterlocuteurFormModal({ children, interlocuteurId, onClose }: I
                   type="button"
                   variant="destructive"
                   onClick={() => {
-                    if (confirm('Êtes-vous sûr de vouloir supprimer cet interlocuteur ?')) {
-                      handleDeleteInterlocuteur()
-                    }
+                    setShowDeleteConfirm(true)
                   }}
                   disabled={loading}
                   className="gap-2"
@@ -672,6 +671,47 @@ export function InterlocuteurFormModal({ children, interlocuteurId, onClose }: I
               className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
             >
               {creatingClient ? "Création..." : "Créer le client"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmation de suppression */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold text-slate-900">
+                  Confirmer la suppression
+                </DialogTitle>
+                <DialogDescription className="text-slate-600">
+                  Êtes-vous sûr de vouloir supprimer cet interlocuteur ? Cette action est irréversible.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <DialogFooter className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                handleDeleteInterlocuteur()
+                setShowDeleteConfirm(false)
+              }}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Supprimer
             </Button>
           </DialogFooter>
         </DialogContent>
