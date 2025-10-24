@@ -168,6 +168,7 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
         })
         setCompetencesSelectionnees(data.competences || [])
         setRolePrincipal(data.role_principal || "")
+        setCompetencePrincipale(data.competence_principale || "")
       }
     } catch (error) {
       console.error('Erreur chargement collaborateur:', error)
@@ -202,10 +203,8 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
 
   const handleCompetencePrincipaleChange = (competenceCode: string) => {
     setCompetencePrincipale(competenceCode)
-    // Si la compétence principale n'est pas dans les compétences sélectionnées, l'ajouter
-    if (!competencesSelectionnees.includes(competenceCode)) {
-      setCompetencesSelectionnees(prev => [...prev, competenceCode])
-    }
+    // Ne pas ajouter automatiquement aux compétences secondaires
+    // L'utilisateur peut choisir de l'ajouter manuellement s'il le souhaite
   }
 
   // Fonction pour déterminer si les compétences doivent être masquées
@@ -287,6 +286,7 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
         adresse_postale: formData.adresse || null,
         competences: competencesSelectionnees,
         role_principal: rolePrincipal || null,
+        competence_principale: competencePrincipale || null,
         date_entree: formData.date_entree || null,
         date_sortie: formData.date_sortie || null,
         actif: formData.actif === "true",
