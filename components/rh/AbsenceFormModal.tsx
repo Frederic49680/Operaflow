@@ -240,7 +240,7 @@ export function AbsenceFormModal({
 
       const data = {
         ressource_id: formData.ressource_id,
-        type: "absence",  // Valeur par défaut pour respecter la contrainte NOT NULL
+        type: "Autre",  // Valeur autorisée par la contrainte CHECK
         date_debut: formData.date_debut,
         date_fin: formData.date_fin,
         motif: motifFinal,  // Le motif détaillé dans le champ motif
