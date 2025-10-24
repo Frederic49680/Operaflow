@@ -44,7 +44,7 @@ export function RHModuleStats() {
         .select('role_principal')
         .eq('actif', true)
         .not('is_admin', 'eq', true)
-        .not('role_principal', null)
+        .not('role_principal', 'is', null)
 
       if (rolesError) throw rolesError
 
