@@ -263,29 +263,68 @@ export function CollaborateursTable({
   }
 
   const handleToggleActif = async (collab: Collaborateur) => {
-    setIsUpdating(true)
-    try {
-      const supabase = createClient()
-      const newActifState = !collab.actif
+    // Si on désactive, demander la date de fin
+    if (collab.actif) {
+      const dateFin = prompt(`Date de fin de contrat pour ${collab.prenom} ${collab.nom} (format: AAAA-MM-JJ):`)
+      if (!dateFin) return // Annulé par l'utilisateur
       
-      const { error } = await supabase
-        .from('ressources')
-        .update({ actif: newActifState })
-        .eq('id', collab.id)
-
-      if (error) throw error
-
-      const message = newActifState 
-        ? `Collaborateur ${collab.prenom} ${collab.nom} activé avec succès`
-        : `Collaborateur ${collab.prenom} ${collab.nom} désactivé avec succès`
+      // Valider le format de date
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+      if (!dateRegex.test(dateFin)) {
+        if (onError) onError('Format de date invalide. Utilisez AAAA-MM-JJ')
+        return
+      }
+      
+      // Vérifier que la date est dans le futur
+      const dateFinObj = new Date(dateFin)
+      const aujourdhui = new Date()
+      aujourdhui.setHours(0, 0, 0, 0)
+      
+      if (dateFinObj <= aujourdhui) {
+        if (onError) onError('La date de fin doit être dans le futur')
+        return
+      }
+      
+      setIsUpdating(true)
+      try {
+        const supabase = createClient()
         
-      if (onSuccess) onSuccess(message)
-      loadCollaborateurs()
-    } catch (error) {
-      console.error('Erreur toggle statut:', error)
-      if (onError) onError('Erreur lors du changement de statut du collaborateur')
-    } finally {
-      setIsUpdating(false)
+        const { error } = await supabase
+          .from('ressources')
+          .update({ actif: false, date_sortie: dateFin })
+          .eq('id', collab.id)
+
+        if (error) throw error
+
+        if (onSuccess) onSuccess(`Collaborateur ${collab.prenom} ${collab.nom} désactivé avec succès (fin: ${dateFin})`)
+        loadCollaborateurs()
+      } catch (error) {
+        console.error('Erreur désactivation:', error)
+        if (onError) onError('Erreur lors de la désactivation du collaborateur')
+      } finally {
+        setIsUpdating(false)
+      }
+    } else {
+      // Réactivation directe
+      setIsUpdating(true)
+      try {
+        const supabase = createClient()
+        
+        const { error } = await supabase
+          .from('ressources')
+          .update({ actif: true, date_sortie: null })
+          .eq('id', collab.id)
+
+        if (error) throw error
+
+        if (onSuccess) onSuccess(`Collaborateur ${collab.prenom} ${collab.nom} réactivé avec succès`)
+        loadCollaborateurs()
+      } catch (error) {
+        console.error('Erreur réactivation:', error)
+        if (onError) onError('Erreur lors de la réactivation du collaborateur')
+      } finally {
+        setIsUpdating(false)
+      }
     }
   }
 
