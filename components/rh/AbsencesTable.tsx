@@ -265,7 +265,7 @@ export function AbsencesTable({
       {/* Compteur de résultats */}
       <div className="mb-4 flex items-center justify-between">
       <p className="text-sm text-slate-600">
-        {getFilteredAbsences().length} absence(s) trouvée(s)
+        {getFilteredAbsences.length} absence(s) trouvée(s)
         {(searchTerm || filterSite || filterMotif || filterStatut) && (
           <span className="text-blue-600 ml-2">
             (sur {absences.length} au total)
