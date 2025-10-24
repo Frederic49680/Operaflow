@@ -15,8 +15,12 @@ import {
   BarChart3
 } from "lucide-react"
 import Link from "next/link"
+import { RHKPICards } from "@/components/rh/RHKPICards"
+import { RHModuleStats } from "@/components/rh/RHModuleStats"
 
 export default function RHPage() {
+  const moduleStats = RHModuleStats()
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -29,67 +33,7 @@ export default function RHPage() {
         </div>
 
         {/* Statistiques rapides */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Collaborateurs</p>
-                  <p className="text-2xl font-bold">24</p>
-                  <p className="text-xs text-green-600">+2 ce mois</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
-                  <Shield className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Rôles actifs</p>
-                  <p className="text-2xl font-bold">8</p>
-                  <p className="text-xs text-blue-600">N1 à N8</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
-                  <Star className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Compétences</p>
-                  <p className="text-2xl font-bold">12</p>
-                  <p className="text-xs text-purple-600">AUTO, IEG, IES...</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
-                  <GraduationCap className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Formations</p>
-                  <p className="text-2xl font-bold">6</p>
-                  <p className="text-xs text-orange-600">En cours</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <RHKPICards />
 
         {/* Modules RH */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -123,7 +67,7 @@ export default function RHPage() {
               </div>
               <div className="pt-2 border-t">
                 <Badge variant="outline" className="text-xs">
-                  24 collaborateurs actifs
+                  {moduleStats.collaborateursActifs}
                 </Badge>
               </div>
             </CardContent>
@@ -159,7 +103,7 @@ export default function RHPage() {
               </div>
               <div className="pt-2 border-t">
                 <Badge variant="outline" className="text-xs">
-                  8 rôles hiérarchiques
+                  {moduleStats.rolesHierarchiques}
                 </Badge>
               </div>
             </CardContent>
@@ -219,7 +163,7 @@ export default function RHPage() {
               </div>
               <div className="pt-2 border-t">
                 <Badge variant="outline" className="text-xs">
-                  6 formations en cours
+                  {moduleStats.formationsEnCours}
                 </Badge>
               </div>
             </CardContent>
@@ -249,7 +193,7 @@ export default function RHPage() {
               </div>
               <div className="pt-2 border-t">
                 <Badge variant="outline" className="text-xs">
-                  3 sites actifs
+                  {moduleStats.sitesActifs}
                 </Badge>
               </div>
             </CardContent>
@@ -291,7 +235,7 @@ export default function RHPage() {
               </div>
               <div className="pt-2 border-t">
                 <Badge variant="outline" className="text-xs">
-                  15 affectations actives
+                  {moduleStats.affectationsActives}
                 </Badge>
               </div>
             </CardContent>
@@ -321,7 +265,7 @@ export default function RHPage() {
               </div>
               <div className="pt-2 border-t">
                 <Badge variant="outline" className="text-xs">
-                  Système configuré
+                  {moduleStats.systemeConfigure}
                 </Badge>
               </div>
             </CardContent>
