@@ -262,23 +262,28 @@ export function CollaborateursTable({
     }
   }
 
-  const handleQuickActivate = async (collab: Collaborateur) => {
+  const handleToggleActif = async (collab: Collaborateur) => {
     setIsUpdating(true)
     try {
       const supabase = createClient()
+      const newActifState = !collab.actif
       
       const { error } = await supabase
         .from('ressources')
-        .update({ actif: true })
+        .update({ actif: newActifState })
         .eq('id', collab.id)
 
       if (error) throw error
 
-      if (onSuccess) onSuccess(`Collaborateur ${collab.prenom} ${collab.nom} réactivé avec succès`)
+      const message = newActifState 
+        ? `Collaborateur ${collab.prenom} ${collab.nom} activé avec succès`
+        : `Collaborateur ${collab.prenom} ${collab.nom} désactivé avec succès`
+        
+      if (onSuccess) onSuccess(message)
       loadCollaborateurs()
     } catch (error) {
-      console.error('Erreur réactivation:', error)
-      if (onError) onError('Erreur lors de la réactivation du collaborateur')
+      console.error('Erreur toggle statut:', error)
+      if (onError) onError('Erreur lors du changement de statut du collaborateur')
     } finally {
       setIsUpdating(false)
     }
@@ -583,19 +588,21 @@ export function CollaborateursTable({
                   >
                     {getCollaborateurStatus(collab)}
                   </Badge>
-                  {!collab.actif && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 px-2 text-xs bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleQuickActivate(collab)
-                      }}
-                    >
-                      Actif
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={`h-6 px-2 text-xs transition-all ${
+                      collab.actif 
+                        ? 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200' 
+                        : 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleToggleActif(collab)
+                    }}
+                  >
+                    {collab.actif ? 'Inactif' : 'Actif'}
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
