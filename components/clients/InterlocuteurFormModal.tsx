@@ -274,7 +274,8 @@ export function InterlocuteurFormModal({ children, interlocuteurId, onClose }: I
         email: "",
         telephone: "",
         disponibilite: "",
-        notes: ""
+        notes: "",
+        actif: true
       })
     } catch (error) {
       console.error('Erreur sauvegarde interlocuteur:', error)
