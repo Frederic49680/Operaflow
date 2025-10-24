@@ -572,13 +572,11 @@ export function CollaborateursTable({
                 )}
               </TableCell>
               <TableCell>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className={`h-6 px-2 text-xs transition-all ${
+                <Badge
+                  className={`cursor-pointer transition-all ${
                     collab.actif 
-                      ? 'bg-green-100 hover:bg-green-200 text-green-800 border-green-300' 
-                      : 'bg-red-100 hover:bg-red-200 text-red-800 border-red-300'
+                      ? 'bg-green-500 hover:bg-green-600 text-white' 
+                      : 'bg-red-500 hover:bg-red-600 text-white'
                   }`}
                   onClick={(e) => {
                     e.stopPropagation()
@@ -586,7 +584,7 @@ export function CollaborateursTable({
                   }}
                 >
                   {collab.actif ? 'Actif' : 'Inactif'}
-                </Button>
+                </Badge>
               </TableCell>
             </TableRow>
           ))}
