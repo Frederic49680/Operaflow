@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, Mail, Phone, Loader2, AlertTriangle } from "lucide-react"
+import { Edit, Trash2, Mail, Phone, Loader2, AlertTriangle, Users } from "lucide-react"
 import { InterlocuteurFormModal } from "./InterlocuteurFormModal"
 import { Plus } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -57,9 +57,9 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
 
   useEffect(() => {
     loadInterlocuteurs()
-  }, [])
+  }, [loadInterlocuteurs])
 
-  const loadInterlocuteurs = async () => {
+  const loadInterlocuteurs = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -128,7 +128,7 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
   // Rafraîchir la liste après création/modification
   useEffect(() => {
@@ -143,12 +143,7 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
       window.removeEventListener('interlocuteur-updated', handleRefresh)
       window.removeEventListener('interlocuteur-deleted', handleRefresh)
     }
-  }, [])
-
-  // Recharger quand les filtres changent
-  useEffect(() => {
-    loadInterlocuteurs()
-  }, [filters])
+  }, [loadInterlocuteurs])
 
   const handleDeleteInterlocuteur = async (id: string) => {
     try {
