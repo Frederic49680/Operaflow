@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
+import { Trash2 } from "lucide-react"
 
 interface Site {
   id: string
@@ -112,13 +113,75 @@ export function InterlocuteurFormModal({ children, interlocuteurId, onClose }: I
     setLoadingClients(false)
   }, [])
 
+  // Charger les données de l'interlocuteur existant
+  const loadInterlocuteurData = useCallback(async () => {
+    if (!interlocuteurId) return
+    
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('interlocuteurs')
+        .select('*')
+        .eq('id', interlocuteurId)
+        .single()
+      
+      if (error) throw error
+      
+      if (data) {
+        setFormData({
+          nom: data.nom || '',
+          prenom: data.prenom || '',
+          fonction: data.fonction || '',
+          type_interlocuteur: data.type_interlocuteur || 'Autre',
+          email: data.email || '',
+          telephone: data.telephone || '',
+          client_id: data.client_id || '',
+          site_id: data.site_id || '',
+          actif: data.actif ?? true
+        })
+      }
+    } catch (error) {
+      console.error('Erreur chargement interlocuteur:', error)
+    }
+  }, [interlocuteurId])
+
+  // Supprimer l'interlocuteur
+  const handleDeleteInterlocuteur = async () => {
+    if (!interlocuteurId) return
+    
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('interlocuteurs')
+        .delete()
+        .eq('id', interlocuteurId)
+      
+      if (error) throw error
+      
+      setOpen(false)
+      onClose?.()
+      
+      // Déclencher un événement pour rafraîchir le tableau
+      window.dispatchEvent(new CustomEvent('interlocuteur-deleted'))
+      
+    } catch (error) {
+      console.error('Erreur suppression interlocuteur:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Charger les données quand le modal s'ouvre
   useEffect(() => {
     if (open) {
       loadSites()
       loadClients()
+      if (interlocuteurId) {
+        loadInterlocuteurData()
+      }
     }
-  }, [open, loadSites, loadClients])
+  }, [open, loadSites, loadClients, loadInterlocuteurData])
 
   // Créer un nouveau client
   const createNewClient = async () => {
@@ -414,22 +477,42 @@ export function InterlocuteurFormModal({ children, interlocuteurId, onClose }: I
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
-            >
-              Annuler
-            </Button>
-            <Button
-              type="submit"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
-              disabled={loading}
-            >
-              {loading ? "Enregistrement..." : interlocuteurId ? "Modifier" : "Créer"}
-            </Button>
+          <DialogFooter className="flex justify-between">
+            <div>
+              {interlocuteurId && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    if (confirm('Êtes-vous sûr de vouloir supprimer cet interlocuteur ?')) {
+                      handleDeleteInterlocuteur()
+                    }
+                  }}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={loading}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
+                disabled={loading}
+              >
+                {loading ? "Enregistrement..." : interlocuteurId ? "Modifier" : "Créer"}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

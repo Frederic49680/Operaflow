@@ -332,18 +332,6 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
                     <Mail className="h-3 w-3" />
                     Contacter
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteClick(interlocuteur.id)
-                    }}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    Supprimer
-                  </Button>
                 </div>
               </TableCell>
             </TableRow>
