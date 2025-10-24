@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       montant_total_ht: montant_total_ht || null,
       date_debut: date_debut || null,
       date_fin_prevue: date_fin_prevue || null,
-      statut: statut || "A_planifier",
+      statut: statut || "Soumise",
       // Champs BPU
       nb_ressources_ref: type_affaire === "BPU" ? nb_ressources_ref : null,
       heures_semaine_ref: type_affaire === "BPU" ? heures_semaine_ref : null,
