@@ -184,7 +184,7 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
       interlocuteur.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
       interlocuteur.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
       interlocuteur.nom_client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      interlocuteur.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (interlocuteur.email && interlocuteur.email.toLowerCase().includes(searchTerm.toLowerCase()))
     )
   }
 
