@@ -141,6 +141,9 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
       // Sélectionner automatiquement le nouveau client
       setFormData(prev => ({ ...prev, client_id: data.id }))
       
+      // Déclencher un événement pour rafraîchir le tableau
+      window.dispatchEvent(new CustomEvent('client-created'))
+      
       // Fermer le formulaire de nouveau client
       setShowNewClientForm(false)
       
@@ -188,6 +191,10 @@ export function InterlocuteurFormModal({ children, interlocuteurId }: Interlocut
       }
 
       setOpen(false)
+      
+      // Déclencher un événement pour rafraîchir le tableau
+      window.dispatchEvent(new CustomEvent('interlocuteur-created'))
+      
       // Réinitialiser le formulaire
       setFormData({
         nom: "",
