@@ -257,6 +257,7 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
   }
 
   return (
+    <>
     <div className="rounded-md border border-slate-200">
       <Table>
         <TableHeader>
@@ -408,6 +409,7 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
         </div>
       </DialogContent>
     </Dialog>
+  </>
   )
 }
 
