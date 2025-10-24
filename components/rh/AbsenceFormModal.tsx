@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Trash2 } from "lucide-react"
+import { Trash2, AlertTriangle } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -68,6 +68,7 @@ export function AbsenceFormModal({
 }: AbsenceFormModalProps) {
   const [openInternal, setOpenInternal] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   
   // Utiliser la prop open si fournie, sinon l'état interne
   const open = openProp !== undefined ? openProp : openInternal
@@ -203,12 +204,12 @@ export function AbsenceFormModal({
     setFormData({ ...formData, motif: value })
   }
 
-  const handleDeleteAbsence = async () => {
+  const handleDeleteAbsence = () => {
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteAbsence = async () => {
     if (!absenceId) return
-    
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette absence ?')) {
-      return
-    }
 
     try {
       setLoading(true)
@@ -226,6 +227,7 @@ export function AbsenceFormModal({
       // Déclencher l'événement de rafraîchissement
       window.dispatchEvent(new Event('absence-deleted'))
       
+      setShowDeleteConfirm(false)
       setOpen(false)
       if (onClose) onClose()
     } catch (err: any) {
@@ -508,6 +510,63 @@ export function AbsenceFormModal({
             </div>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+
+    {/* Modal de confirmation de suppression */}
+    <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg font-semibold text-slate-900">
+                Confirmer la suppression
+              </DialogTitle>
+              <DialogDescription className="text-slate-600">
+                Cette action est irréversible
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+        
+        <div className="py-4">
+          <p className="text-slate-700">
+            Êtes-vous sûr de vouloir supprimer cette absence ? Cette action ne peut pas être annulée.
+          </p>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowDeleteConfirm(false)}
+            disabled={loading}
+          >
+            Annuler
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={confirmDeleteAbsence}
+            disabled={loading}
+            className="gap-2"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Suppression...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4" />
+                Supprimer
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
