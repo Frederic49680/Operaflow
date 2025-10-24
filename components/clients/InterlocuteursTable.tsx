@@ -79,9 +79,8 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
       // Appliquer les filtres
       if (filters.actif !== undefined && filters.actif !== "") {
         query = query.eq('actif', filters.actif === 'true')
-      } else {
-        query = query.eq('actif', true) // Par défaut, seulement les actifs
       }
+      // Si pas de filtre actif spécifique, on affiche tous (actifs et inactifs)
 
       if (filters.typeInterlocuteur) {
         query = query.eq('type_interlocuteur', filters.typeInterlocuteur)

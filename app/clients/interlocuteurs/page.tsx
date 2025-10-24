@@ -33,7 +33,7 @@ export default function InterlocuteursPage() {
     setShowInactifs(!showInactifs)
     setFilters(prev => ({
       ...prev,
-      actif: showInactifs ? "" : "true" // Si on masque les inactifs, on filtre sur actifs seulement
+      actif: showInactifs ? "true" : "" // Si on affiche les inactifs, on enlève le filtre actif
     }))
   }
 
