@@ -78,12 +78,12 @@ export function InterlocuteursTable() {
         id: item.id,
         nom: item.nom,
         prenom: item.prenom,
-        nom_client: item.clients?.nom_client || 'Client inconnu',
+        nom_client: (item.clients as any)?.nom_client || 'Client inconnu',
         fonction: item.fonction || '',
         type_interlocuteur: item.type_interlocuteur || '',
         email: item.email || '',
         telephone: item.telephone || '',
-        site_nom: item.sites?.nom || '',
+        site_nom: (item.sites as any)?.nom || '',
         actif: item.actif
       })) || []
 
