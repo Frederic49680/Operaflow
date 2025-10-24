@@ -232,6 +232,8 @@ export function CollaborateursTable({
       
       if (newStatus === 'Inactif') {
         updateData = { actif: false }
+      } else if (newStatus === 'Actif') {
+        updateData = { actif: true }
       } else if (newStatus === 'Prolonger' && newDate) {
         updateData = { date_sortie: newDate }
       }
@@ -245,6 +247,8 @@ export function CollaborateursTable({
 
       const message = newStatus === 'Inactif' 
         ? `Collaborateur ${updatingStatus.nom} désactivé avec succès`
+        : newStatus === 'Actif'
+        ? `Collaborateur ${updatingStatus.nom} réactivé avec succès`
         : `Contrat de ${updatingStatus.nom} prolongé jusqu'au ${newDate}`
         
       if (onSuccess) onSuccess(message)
@@ -253,6 +257,28 @@ export function CollaborateursTable({
     } catch (error) {
       console.error('Erreur mise à jour statut:', error)
       if (onError) onError('Erreur lors de la mise à jour du statut')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleQuickActivate = async (collab: Collaborateur) => {
+    setIsUpdating(true)
+    try {
+      const supabase = createClient()
+      
+      const { error } = await supabase
+        .from('ressources')
+        .update({ actif: true })
+        .eq('id', collab.id)
+
+      if (error) throw error
+
+      if (onSuccess) onSuccess(`Collaborateur ${collab.prenom} ${collab.nom} réactivé avec succès`)
+      loadCollaborateurs()
+    } catch (error) {
+      console.error('Erreur réactivation:', error)
+      if (onError) onError('Erreur lors de la réactivation du collaborateur')
     } finally {
       setIsUpdating(false)
     }
@@ -541,21 +567,36 @@ export function CollaborateursTable({
                 )}
               </TableCell>
               <TableCell>
-                <Badge 
-                  className={`cursor-pointer transition-all ${
-                    getCollaborateurStatus(collab) === 'Actif' 
-                      ? 'bg-green-500 hover:bg-green-600' 
-                      : getCollaborateurStatus(collab) === 'À renouveler'
-                      ? 'bg-orange-500 hover:bg-orange-600'
-                      : 'bg-slate-500 hover:bg-slate-600'
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleStatusClick(collab)
-                  }}
-                >
-                  {getCollaborateurStatus(collab)}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    className={`cursor-pointer transition-all ${
+                      getCollaborateurStatus(collab) === 'Actif' 
+                        ? 'bg-green-500 hover:bg-green-600' 
+                        : getCollaborateurStatus(collab) === 'À renouveler'
+                        ? 'bg-orange-500 hover:bg-orange-600'
+                        : 'bg-slate-500 hover:bg-slate-600'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleStatusClick(collab)
+                    }}
+                  >
+                    {getCollaborateurStatus(collab)}
+                  </Badge>
+                  {!collab.actif && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-xs bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleQuickActivate(collab)
+                      }}
+                    >
+                      Actif
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
