@@ -55,10 +55,6 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
   const [deletingInterlocuteur, setDeletingInterlocuteur] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  useEffect(() => {
-    loadInterlocuteurs()
-  }, [loadInterlocuteurs])
-
   const loadInterlocuteurs = useCallback(async () => {
     try {
       setLoading(true)
@@ -129,6 +125,10 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
       setLoading(false)
     }
   }, [filters])
+
+  useEffect(() => {
+    loadInterlocuteurs()
+  }, [loadInterlocuteurs])
 
   // Rafraîchir la liste après création/modification
   useEffect(() => {
