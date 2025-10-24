@@ -89,7 +89,7 @@ export function AbsencesTable({
         site_code: absence.site || '',
         date_debut: absence.date_debut,
         date_fin: absence.date_fin,
-        motif: absence.type || absence.motif || '',  // Lire depuis 'type' (ou 'motif' en fallback)
+        motif: absence.motif || '',  // Lire depuis le champ 'motif'
         statut: absence.statut,
       })) || []
 
@@ -119,7 +119,7 @@ export function AbsencesTable({
       window.removeEventListener('absence-updated', handleRefresh)
       window.removeEventListener('absence-deleted', handleRefresh)
     }
-  }, [])
+  }, [loadAbsences])
 
   const handleEditAbsence = (absenceId: string) => {
     setEditingAbsenceId(absenceId)
