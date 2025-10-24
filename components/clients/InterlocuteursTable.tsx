@@ -331,10 +331,10 @@ export function InterlocuteursTable({ searchTerm = "", filters = {} }: Interlocu
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`gap-2 ${
+                  className={`rounded-full px-4 py-1 text-sm font-medium transition-all duration-200 ${
                     interlocuteur.actif 
-                      ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' 
-                      : 'bg-slate-500 hover:bg-slate-600 text-white border-slate-500'
+                      ? 'bg-green-500 hover:bg-green-600 text-white border-green-500 shadow-sm' 
+                      : 'bg-slate-500 hover:bg-slate-600 text-white border-slate-500 shadow-sm'
                   }`}
                   onClick={(e) => {
                     e.stopPropagation()
