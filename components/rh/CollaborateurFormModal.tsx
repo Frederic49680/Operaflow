@@ -167,6 +167,7 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
           actif: data.actif ? "true" : "false"
         })
         setCompetencesSelectionnees(data.competences || [])
+        setRolePrincipal(data.role_principal || "")
       }
     } catch (error) {
       console.error('Erreur chargement collaborateur:', error)
@@ -276,6 +277,7 @@ export function CollaborateurFormModal({ children, collaborateurId, onClose, ope
         telephone: formData.telephone || null,
         adresse_postale: formData.adresse || null,
         competences: competencesSelectionnees,
+        role_principal: rolePrincipal || null,
         date_entree: formData.date_entree || null,
         date_sortie: formData.date_sortie || null,
         actif: formData.actif === "true",
