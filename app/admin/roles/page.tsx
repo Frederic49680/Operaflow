@@ -15,6 +15,13 @@ interface Role {
   seniority_rank: number
   description?: string
   created_at: string
+  role_permissions?: Array<{
+    permission_id: string
+    permissions: {
+      code: string
+      label: string
+    }
+  }>
 }
 
 interface Permission {
@@ -43,10 +50,16 @@ export default function AdminRolesPage() {
     try {
       setLoading(true)
       
-      // Charger les rôles
+      // Charger les rôles avec leurs permissions
       const { data: rolesData, error: rolesError } = await supabase
         .from('roles')
-        .select('*')
+        .select(`
+          *,
+          role_permissions(
+            permission_id,
+            permissions(code, label)
+          )
+        `)
         .order('seniority_rank', { ascending: true })
 
       if (rolesError) throw rolesError
@@ -268,7 +281,20 @@ export default function AdminRolesPage() {
                       Rang {role.seniority_rank}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className="text-gray-400">À implémenter</span>
+                      <div className="flex flex-wrap gap-1">
+                        {role.role_permissions && role.role_permissions.length > 0 ? (
+                          role.role_permissions.map((rp: any, index: number) => (
+                            <span 
+                              key={index}
+                              className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800"
+                            >
+                              {rp.permissions?.label || rp.permissions?.code}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 text-xs">Aucune permission</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
