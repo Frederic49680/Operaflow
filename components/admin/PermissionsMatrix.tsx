@@ -100,17 +100,27 @@ export default function PermissionsMatrix() {
   }
 
   const updateAccess = (roleId: string, route: string, access: 'none' | 'read' | 'write') => {
+    console.log(`Mise à jour: Role ${roleId}, Route ${route}, Access ${access}`)
+    
     setPageAccess(prev => {
-      const existing = prev.find(a => a.role_id === roleId && a.route === route)
-      if (existing) {
-        return prev.map(a => 
-          a.role_id === roleId && a.route === route 
-            ? { ...a, access }
-            : a
-        )
+      // Créer une copie de l'état actuel
+      const newPageAccess = [...prev]
+      
+      // Trouver l'index de l'entrée existante
+      const existingIndex = newPageAccess.findIndex(a => a.role_id === roleId && a.route === route)
+      
+      if (existingIndex !== -1) {
+        // Mettre à jour l'entrée existante
+        newPageAccess[existingIndex] = { ...newPageAccess[existingIndex], access }
+        console.log(`Mise à jour existante à l'index ${existingIndex}`)
       } else {
-        return [...prev, { role_id: roleId, route, access }]
+        // Ajouter une nouvelle entrée
+        newPageAccess.push({ role_id: roleId, route, access })
+        console.log(`Nouvelle entrée ajoutée`)
       }
+      
+      console.log('Nouvel état:', newPageAccess.filter(a => a.role_id === roleId))
+      return newPageAccess
     })
   }
 
@@ -239,11 +249,19 @@ export default function PermissionsMatrix() {
                   </td>
                   {APP_PAGES.map((page) => {
                     const currentAccess = getAccessLevel(role.id, page.route)
+                    const cellKey = `${role.id}-${page.route}`
+                    console.log(`Rendu cellule: ${cellKey}, Access: ${currentAccess}`)
+                    
                     return (
-                      <td key={`${role.id}-${page.route}`} className="px-3 py-3 text-center">
+                      <td key={cellKey} className="px-3 py-3 text-center">
                         <div className="flex justify-center space-x-1">
                           <button
-                            onClick={() => updateAccess(role.id, page.route, 'none')}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              console.log(`Clic sur None pour ${cellKey}`)
+                              updateAccess(role.id, page.route, 'none')
+                            }}
                             className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
                               currentAccess === 'none'
                                 ? 'bg-red-100 text-red-800 border-2 border-red-300'
@@ -254,7 +272,12 @@ export default function PermissionsMatrix() {
                             ✗
                           </button>
                           <button
-                            onClick={() => updateAccess(role.id, page.route, 'read')}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              console.log(`Clic sur Read pour ${cellKey}`)
+                              updateAccess(role.id, page.route, 'read')
+                            }}
                             className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
                               currentAccess === 'read'
                                 ? 'bg-green-100 text-green-800 border-2 border-green-300'
@@ -265,7 +288,12 @@ export default function PermissionsMatrix() {
                             👁
                           </button>
                           <button
-                            onClick={() => updateAccess(role.id, page.route, 'write')}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              console.log(`Clic sur Write pour ${cellKey}`)
+                              updateAccess(role.id, page.route, 'write')
+                            }}
                             className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
                               currentAccess === 'write'
                                 ? 'bg-purple-100 text-purple-800 border-2 border-purple-300'
