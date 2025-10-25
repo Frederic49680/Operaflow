@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import ClientNavigation from '@/components/ClientNavigation'
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import SpeedInsightsComponent from '@/components/SpeedInsights'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,7 +26,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ClientNavigation />
         {children}
-        <SpeedInsights />
+        <SpeedInsightsComponent />
       </body>
     </html>
   )
