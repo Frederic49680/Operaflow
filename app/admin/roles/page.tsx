@@ -6,7 +6,7 @@ import RoleFormModal from '@/components/admin/RoleFormModal'
 import PermissionsMatrix from '@/components/admin/PermissionsMatrix'
 import DebugRoles from '@/components/admin/DebugRoles'
 import { Button } from '@/components/ui/button'
-import { Shield, Users, CheckCircle, Plus, Edit, Trash2, Settings } from 'lucide-react'
+import { Shield, Users, CheckCircle, Plus, Edit, Trash2, Settings, RefreshCw } from 'lucide-react'
 
 interface Role {
   id: string
@@ -53,11 +53,17 @@ export default function AdminRolesPage() {
              setLoading(true)
              console.log('🔍 [ROLES] Début du chargement des données...')
              
-             // Charger les rôles d'abord
-             console.log('📋 [ROLES] Chargement des rôles...')
+             // Charger directement les rôles avec leurs permissions
+             console.log('📋 [ROLES] Chargement des rôles avec permissions...')
              const { data: rolesData, error: rolesError } = await supabase
                .from('roles')
-               .select('*')
+               .select(`
+                 *,
+                 role_permissions(
+                   permission_id,
+                   permissions(code, label)
+                 )
+               `)
                .order('seniority_rank', { ascending: true })
 
              if (rolesError) {
@@ -65,10 +71,18 @@ export default function AdminRolesPage() {
                alert(`❌ Erreur rôles: ${rolesError.message}`)
                throw rolesError
              }
+             
              console.log('✅ [ROLES] Rôles chargés:', rolesData?.length || 0, 'rôles')
              alert(`✅ Rôles chargés: ${rolesData?.length || 0}`)
+             
+             // Log détaillé de chaque rôle
+             rolesData?.forEach((role: any) => {
+               const permCount = role.role_permissions?.length || 0
+               console.log(`📊 [ROLE] ${role.code} (${role.label}): ${permCount} permissions`)
+               alert(`📊 ${role.code}: ${permCount} permissions`)
+             })
 
-             // Charger les permissions
+             // Charger les permissions séparément
              console.log('🔐 [PERMISSIONS] Chargement des permissions...')
              const { data: permissionsData, error: permissionsError } = await supabase
                .from('permissions')
@@ -80,57 +94,22 @@ export default function AdminRolesPage() {
                alert(`❌ Erreur permissions: ${permissionsError.message}`)
                throw permissionsError
              }
+             
              console.log('✅ [PERMISSIONS] Permissions chargées:', permissionsData?.length || 0, 'permissions')
              alert(`✅ Permissions chargées: ${permissionsData?.length || 0}`)
 
-             // Essayer de charger les permissions des rôles si la table existe
-             let rolesWithPermissions = rolesData || []
-             console.log('🔗 [ROLE_PERMISSIONS] Tentative de chargement des permissions des rôles...')
-             try {
-               const { data: rolesWithPermsData, error: rolesWithPermsError } = await supabase
-                 .from('roles')
-                 .select(`
-                   *,
-                   role_permissions(
-                     permission_id,
-                     permissions(code, label)
-                   )
-                 `)
-                 .order('seniority_rank', { ascending: true })
-
-               if (!rolesWithPermsError && rolesWithPermsData) {
-                 rolesWithPermissions = rolesWithPermsData
-                 console.log('✅ [ROLE_PERMISSIONS] Permissions des rôles chargées:', rolesWithPermsData.length, 'rôles')
-                 alert(`✅ Permissions des rôles chargées: ${rolesWithPermsData.length} rôles`)
-                 
-                 // Log détaillé de chaque rôle et ses permissions
-                 rolesWithPermsData.forEach((role: any) => {
-                   const permCount = role.role_permissions?.length || 0
-                   console.log(`📊 [ROLE] ${role.code} (${role.label}): ${permCount} permissions`)
-                   if (role.role_permissions && role.role_permissions.length > 0) {
-                     role.role_permissions.forEach((rp: any) => {
-                       console.log(`  └─ ${rp.permissions?.code || 'N/A'}: ${rp.permissions?.label || 'N/A'}`)
-                     })
-                   }
-                 })
-               } else {
-                 console.log('⚠️ [ROLE_PERMISSIONS] Erreur ou pas de permissions:', rolesWithPermsError)
-                 alert(`⚠️ Erreur permissions des rôles: ${rolesWithPermsError?.message || 'Pas de permissions'}`)
-               }
-             } catch (err) {
-               console.log('⚠️ [ROLE_PERMISSIONS] Table role_permissions pas encore créée, utilisation des rôles de base:', err)
-             }
-
              console.log('🎯 [FINAL] Données finales:')
-             console.log('  - Rôles:', rolesWithPermissions.length)
+             console.log('  - Rôles:', rolesData?.length || 0)
              console.log('  - Permissions:', permissionsData?.length || 0)
              
-             setRoles(rolesWithPermissions)
+             setRoles(rolesData || [])
              setPermissions(permissionsData || [])
              
              console.log('✅ [ROLES] Chargement terminé avec succès')
+             alert('✅ Chargement terminé avec succès')
            } catch (err) {
              console.error('❌ [ROLES] Erreur lors du chargement:', err)
+             alert(`❌ Erreur: ${err instanceof Error ? err.message : 'Erreur inconnue'}`)
              setError(err instanceof Error ? err.message : 'Erreur inconnue')
            } finally {
              setLoading(false)
@@ -277,23 +256,31 @@ export default function AdminRolesPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-medium text-gray-900">Liste des Rôles</h2>
-              <div className="flex space-x-3">
-                <Button 
-                  onClick={() => setShowPermissions(!showPermissions)}
-                  variant="outline"
-                  className="border-purple-200 text-purple-700 hover:bg-purple-50"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  {showPermissions ? 'Masquer Permissions' : 'Gérer Permissions'}
-                </Button>
-                <Button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouveau Rôle
-                </Button>
-              </div>
+                     <div className="flex space-x-3">
+                       <Button 
+                         onClick={loadData}
+                         variant="outline"
+                         className="border-green-200 text-green-700 hover:bg-green-50"
+                       >
+                         <RefreshCw className="h-4 w-4 mr-2" />
+                         Recharger
+                       </Button>
+                       <Button 
+                         onClick={() => setShowPermissions(!showPermissions)}
+                         variant="outline"
+                         className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                       >
+                         <Settings className="h-4 w-4 mr-2" />
+                         {showPermissions ? 'Masquer Permissions' : 'Gérer Permissions'}
+                       </Button>
+                       <Button 
+                         onClick={() => setIsModalOpen(true)}
+                         className="bg-blue-600 hover:bg-blue-700 text-white"
+                       >
+                         <Plus className="h-4 w-4 mr-2" />
+                         Nouveau Rôle
+                       </Button>
+                     </div>
             </div>
           </div>
 
