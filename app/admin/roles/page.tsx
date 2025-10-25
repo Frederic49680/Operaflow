@@ -301,14 +301,21 @@ export default function AdminRolesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex flex-wrap gap-1">
                         {role.role_permissions && role.role_permissions.length > 0 ? (
-                          role.role_permissions.map((rp: any, index: number) => (
-                            <span 
-                              key={index}
-                              className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800"
-                            >
-                              {rp.permissions?.label || rp.permissions?.code || 'Permission inconnue'}
-                            </span>
-                          ))
+                          <>
+                            {role.role_permissions.slice(0, 3).map((rp: any, index: number) => (
+                              <span 
+                                key={index}
+                                className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800"
+                              >
+                                {rp.permissions?.label || rp.permissions?.code || 'Permission inconnue'}
+                              </span>
+                            ))}
+                            {role.role_permissions.length > 3 && (
+                              <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                                +{role.role_permissions.length - 3} autres
+                              </span>
+                            )}
+                          </>
                         ) : (
                           <span className="text-gray-400 text-xs">Aucune permission</span>
                         )}
