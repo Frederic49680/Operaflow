@@ -50,16 +50,10 @@ export default function AdminRolesPage() {
     try {
       setLoading(true)
       
-      // Charger les rôles avec leurs permissions
+      // Charger les rôles d'abord
       const { data: rolesData, error: rolesError } = await supabase
         .from('roles')
-        .select(`
-          *,
-          role_permissions(
-            permission_id,
-            permissions(code, label)
-          )
-        `)
+        .select('*')
         .order('seniority_rank', { ascending: true })
 
       if (rolesError) throw rolesError
@@ -72,7 +66,28 @@ export default function AdminRolesPage() {
 
       if (permissionsError) throw permissionsError
 
-      setRoles(rolesData || [])
+      // Essayer de charger les permissions des rôles si la table existe
+      let rolesWithPermissions = rolesData || []
+      try {
+        const { data: rolesWithPermsData, error: rolesWithPermsError } = await supabase
+          .from('roles')
+          .select(`
+            *,
+            role_permissions(
+              permission_id,
+              permissions(code, label)
+            )
+          `)
+          .order('seniority_rank', { ascending: true })
+
+        if (!rolesWithPermsError) {
+          rolesWithPermissions = rolesWithPermsData || []
+        }
+      } catch (err) {
+        console.log('Table role_permissions pas encore créée, utilisation des rôles de base')
+      }
+
+      setRoles(rolesWithPermissions)
       setPermissions(permissionsData || [])
     } catch (err) {
       console.error('Erreur lors du chargement:', err)
