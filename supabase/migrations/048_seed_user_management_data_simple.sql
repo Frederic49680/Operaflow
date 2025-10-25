@@ -9,26 +9,26 @@ BEGIN
         SELECT 1 FROM information_schema.columns 
         WHERE table_name = 'roles' AND column_name = 'system'
     ) THEN
-        -- Insérer avec la colonne system
-        INSERT INTO roles (code, label, system) VALUES
-        ('admin', 'Administrateur', true),
-        ('planificateur', 'Planificateur', true),
-        ('ca', 'Chargé d''Affaires', true),
-        ('resp_site', 'Responsable de site', true),
-        ('maintenance', 'Maintenance', true),
-        ('rh', 'RH', true),
-        ('direction', 'Direction/PMO', true)
+        -- Insérer avec la colonne system et seniority_rank
+        INSERT INTO roles (code, label, system, seniority_rank) VALUES
+        ('admin', 'Administrateur', true, 1),
+        ('planificateur', 'Planificateur', true, 2),
+        ('ca', 'Chargé d''Affaires', true, 3),
+        ('resp_site', 'Responsable de site', true, 4),
+        ('maintenance', 'Maintenance', true, 5),
+        ('rh', 'RH', true, 6),
+        ('direction', 'Direction/PMO', true, 7)
         ON CONFLICT (code) DO NOTHING;
     ELSE
-        -- Insérer sans la colonne system
-        INSERT INTO roles (code, label) VALUES
-        ('admin', 'Administrateur'),
-        ('planificateur', 'Planificateur'),
-        ('ca', 'Chargé d''Affaires'),
-        ('resp_site', 'Responsable de site'),
-        ('maintenance', 'Maintenance'),
-        ('rh', 'RH'),
-        ('direction', 'Direction/PMO')
+        -- Insérer sans la colonne system mais avec seniority_rank
+        INSERT INTO roles (code, label, seniority_rank) VALUES
+        ('admin', 'Administrateur', 1),
+        ('planificateur', 'Planificateur', 2),
+        ('ca', 'Chargé d''Affaires', 3),
+        ('resp_site', 'Responsable de site', 4),
+        ('maintenance', 'Maintenance', 5),
+        ('rh', 'RH', 6),
+        ('direction', 'Direction/PMO', 7)
         ON CONFLICT (code) DO NOTHING;
     END IF;
 END $$;
