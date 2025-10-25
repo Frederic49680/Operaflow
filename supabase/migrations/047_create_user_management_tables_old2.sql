@@ -1,5 +1,5 @@
--- Migration 047: Création des tables de gestion des utilisateurs (version 2)
--- Création des tables de base sans contraintes de clé étrangère
+-- Migration 047: Création des tables de gestion des utilisateurs (version simplifiée)
+-- Basé sur le PRD1.mdc
 
 -- Table des utilisateurs de l'application
 CREATE TABLE IF NOT EXISTS app_users (
@@ -32,54 +32,54 @@ CREATE TABLE IF NOT EXISTS permissions (
     label TEXT NOT NULL
 );
 
--- Table de liaison rôles-permissions (sans contrainte FK pour l'instant)
+-- Table de liaison rôles-permissions
 CREATE TABLE IF NOT EXISTS role_permissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    role_id UUID,
-    permission_id UUID,
+    role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
+    permission_id UUID REFERENCES permissions(id) ON DELETE CASCADE,
     UNIQUE(role_id, permission_id)
 );
 
--- Table de liaison utilisateurs-rôles (sans contrainte FK pour l'instant)
+-- Table de liaison utilisateurs-rôles
 CREATE TABLE IF NOT EXISTS user_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID,
-    role_id UUID,
+    user_id UUID REFERENCES app_users(id) ON DELETE CASCADE,
+    role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
     UNIQUE(user_id, role_id)
 );
 
--- Table des règles d'accès par page (sans contrainte FK pour l'instant)
+-- Table des règles d'accès par page
 CREATE TABLE IF NOT EXISTS page_access_rules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     route TEXT NOT NULL,
-    role_id UUID,
+    role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
     access TEXT CHECK (access IN ('none', 'read', 'write')),
     UNIQUE(route, role_id)
 );
 
--- Table des flags de composants (sans contrainte FK pour l'instant)
+-- Table des flags de composants
 CREATE TABLE IF NOT EXISTS component_flags (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     component_key TEXT NOT NULL,
-    role_id UUID,
+    role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
     enabled BOOLEAN DEFAULT true,
     UNIQUE(component_key, role_id)
 );
 
--- Table des tokens utilisateur (sans contrainte FK pour l'instant)
+-- Table des tokens utilisateur (activation/reset)
 CREATE TABLE IF NOT EXISTS user_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID,
+    user_id UUID REFERENCES app_users(id) ON DELETE CASCADE,
     type TEXT CHECK (type IN ('activation', 'reset')),
     token_hash TEXT NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,
     used_at TIMESTAMPTZ
 );
 
--- Table d'audit (sans contrainte FK pour l'instant)
+-- Table d'audit
 CREATE TABLE IF NOT EXISTS audit_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    actor_id UUID,
+    actor_id UUID REFERENCES app_users(id),
     action TEXT NOT NULL,
     entity TEXT NOT NULL,
     entity_id UUID,
