@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 interface PermissionCellProps {
   roleId: string
@@ -17,7 +16,6 @@ export default function PermissionCell({
   onAccessChange 
 }: PermissionCellProps) {
   const [currentAccess, setCurrentAccess] = useState<'none' | 'read' | 'write'>(initialAccess)
-  const supabase = createClient()
 
   // Mettre à jour l'état local quand la prop change
   useEffect(() => {
@@ -27,7 +25,8 @@ export default function PermissionCell({
   const handleAccessChange = (newAccess: 'none' | 'read' | 'write') => {
     console.log(`Cellule ${roleId}-${route}: changement de ${currentAccess} vers ${newAccess}`)
     setCurrentAccess(newAccess)
-    onAccessChange(roleId, route, newAccess)
+    // Ne pas appeler onAccessChange immédiatement pour éviter la propagation
+    // L'état sera synchronisé lors de la sauvegarde
   }
 
   return (

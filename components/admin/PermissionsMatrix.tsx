@@ -47,6 +47,7 @@ export default function PermissionsMatrix() {
   const [roles, setRoles] = useState<Role[]>([])
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [pageAccess, setPageAccess] = useState<PageAccess[]>([])
+  const [localChanges, setLocalChanges] = useState<Map<string, 'none' | 'read' | 'write'>>(new Map())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -96,24 +97,26 @@ export default function PermissionsMatrix() {
   }
 
   const getAccessLevel = (roleId: string, route: string): 'none' | 'read' | 'write' => {
+    const cellKey = `${roleId}-${route}`
+    
+    // Vérifier d'abord les changements locaux
+    if (localChanges.has(cellKey)) {
+      return localChanges.get(cellKey)!
+    }
+    
+    // Sinon, utiliser l'état de la base de données
     const access = pageAccess.find(a => a.role_id === roleId && a.route === route)
     return access?.access || 'none'
   }
 
   const updateAccess = (roleId: string, route: string, access: 'none' | 'read' | 'write') => {
-    console.log(`Mise à jour: Role ${roleId}, Route ${route}, Access ${access}`)
+    console.log(`Mise à jour locale: Role ${roleId}, Route ${route}, Access ${access}`)
     
-    setPageAccess(prev => {
-      // Filtrer pour enlever l'entrée existante
-      const filtered = prev.filter(a => !(a.role_id === roleId && a.route === route))
-      
-      // Si l'accès n'est pas 'none', ajouter la nouvelle entrée
-      if (access !== 'none') {
-        return [...filtered, { role_id: roleId, route, access }]
-      }
-      
-      // Si l'accès est 'none', retourner seulement les entrées filtrées
-      return filtered
+    const cellKey = `${roleId}-${route}`
+    setLocalChanges(prev => {
+      const newChanges = new Map(prev)
+      newChanges.set(cellKey, access)
+      return newChanges
     })
   }
 
@@ -130,8 +133,25 @@ export default function PermissionsMatrix() {
 
       if (deleteError) throw deleteError
 
+      // Appliquer les changements locaux à l'état principal
+      const updatedPageAccess = [...pageAccess]
+      
+      localChanges.forEach((access, cellKey) => {
+        const [roleId, route] = cellKey.split('-', 2)
+        
+        // Supprimer l'entrée existante
+        const filtered = updatedPageAccess.filter(a => !(a.role_id === roleId && a.route === route))
+        
+        // Si l'accès n'est pas 'none', ajouter la nouvelle entrée
+        if (access !== 'none') {
+          updatedPageAccess.splice(0, updatedPageAccess.length, ...filtered, { role_id: roleId, route, access })
+        } else {
+          updatedPageAccess.splice(0, updatedPageAccess.length, ...filtered)
+        }
+      })
+
       // Insérer les nouvelles règles (seulement celles qui ne sont pas 'none')
-      const rulesToInsert = pageAccess
+      const rulesToInsert = updatedPageAccess
         .filter(rule => rule.access !== 'none')
         .map(rule => ({
           role_id: rule.role_id,
@@ -147,6 +167,9 @@ export default function PermissionsMatrix() {
         if (insertError) throw insertError
       }
 
+      // Mettre à jour l'état local et vider les changements
+      setPageAccess(updatedPageAccess)
+      setLocalChanges(new Map())
       alert('Permissions sauvegardées avec succès !')
     } catch (err) {
       console.error('Erreur lors de la sauvegarde:', err)
