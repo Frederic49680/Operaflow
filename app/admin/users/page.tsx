@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import UserFormModal from '@/components/admin/UserFormModal'
+import LoggingModule from '@/components/admin/LoggingModule'
 
 interface AppUser {
   id: string
@@ -169,27 +170,8 @@ export default function AdminUsersPage() {
           </p>
         </div>
 
-        {/* Debug Info */}
-        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <h3 className="text-lg font-bold text-yellow-800 mb-2">🐛 DEBUG - État des données</h3>
-          <div className="text-sm text-yellow-700">
-            <p><strong>Utilisateurs chargés:</strong> {users.length}</p>
-            <p><strong>Rôles chargés:</strong> {roles.length}</p>
-            <p><strong>Utilisateurs avec rôles:</strong> {users.filter(u => u.user_roles && u.user_roles.length > 0).length}</p>
-            {users.length > 0 && (
-              <div className="mt-2">
-                <p><strong>Premier utilisateur:</strong></p>
-                <ul className="ml-4">
-                  <li>Email: {users[0].email}</li>
-                  <li>Rôles: {users[0].user_roles?.length || 0}</li>
-                  {users[0].user_roles && users[0].user_roles.length > 0 && (
-                    <li>Noms des rôles: {users[0].user_roles.map(ur => ur.roles?.label || ur.roles?.code).join(', ')}</li>
-                  )}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Module de Logging */}
+        <LoggingModule />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
