@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { 
   Home, 
@@ -14,7 +14,10 @@ import {
   FileText,
   GraduationCap,
   Menu,
-  X
+  X,
+  ChevronDown,
+  UserCog,
+  Shield
 } from "lucide-react"
 
 const navigationItems = [
@@ -63,6 +66,22 @@ const navigationItems = [
 export default function Navigation() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false)
+  const adminMenuRef = useRef<HTMLDivElement>(null)
+
+  // Fermer le menu admin quand on clique ailleurs
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (adminMenuRef.current && !adminMenuRef.current.contains(event.target as Node)) {
+        setIsAdminMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   return (
     <nav className="bg-white border-b">
@@ -109,9 +128,33 @@ export default function Navigation() {
 
           {/* Actions Desktop */}
           <div className="hidden lg:flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              Admin
-            </Button>
+            <div className="relative" ref={adminMenuRef}>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+                className="flex items-center gap-1"
+              >
+                <Shield className="h-4 w-4" />
+                Admin
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+              
+              {isAdminMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border">
+                  <div className="py-1">
+                    <Link href="/admin/users" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <UserCog className="h-4 w-4 mr-2" />
+                      Utilisateurs
+                    </Link>
+                    <Link href="/admin/roles" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Rôles & Permissions
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
             <Button variant="outline" size="sm">
               Dashboard
             </Button>
