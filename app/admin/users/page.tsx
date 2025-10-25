@@ -68,6 +68,16 @@ export default function AdminUsersPage() {
         roles: u.user_roles?.length || 0,
         roleNames: u.user_roles?.map(ur => ur.roles?.label || ur.roles?.code) || []
       })))
+      
+      // Alertes visuelles pour debug
+      alert(`✅ Utilisateurs chargés: ${usersData?.length || 0}`)
+      if (usersData && usersData.length > 0) {
+        const firstUser = usersData[0]
+        alert(`📊 Premier utilisateur: ${firstUser.email} - Rôles: ${firstUser.user_roles?.length || 0}`)
+        if (firstUser.user_roles && firstUser.user_roles.length > 0) {
+          alert(`🔍 Rôles du premier utilisateur: ${firstUser.user_roles.map(ur => ur.roles?.label || ur.roles?.code).join(', ')}`)
+        }
+      }
 
       // Charger les rôles
       const { data: rolesData, error: rolesError } = await supabase
@@ -157,6 +167,28 @@ export default function AdminUsersPage() {
           <p className="mt-2 text-gray-600">
             Gérez les comptes utilisateurs, rôles et permissions
           </p>
+        </div>
+
+        {/* Debug Info */}
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h3 className="text-lg font-bold text-yellow-800 mb-2">🐛 DEBUG - État des données</h3>
+          <div className="text-sm text-yellow-700">
+            <p><strong>Utilisateurs chargés:</strong> {users.length}</p>
+            <p><strong>Rôles chargés:</strong> {roles.length}</p>
+            <p><strong>Utilisateurs avec rôles:</strong> {users.filter(u => u.user_roles && u.user_roles.length > 0).length}</p>
+            {users.length > 0 && (
+              <div className="mt-2">
+                <p><strong>Premier utilisateur:</strong></p>
+                <ul className="ml-4">
+                  <li>Email: {users[0].email}</li>
+                  <li>Rôles: {users[0].user_roles?.length || 0}</li>
+                  {users[0].user_roles && users[0].user_roles.length > 0 && (
+                    <li>Noms des rôles: {users[0].user_roles.map(ur => ur.roles?.label || ur.roles?.code).join(', ')}</li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}
