@@ -233,9 +233,6 @@ export default function AdminUsersPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Sécurité
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -264,30 +261,19 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleToggleActive(user)
+                          }}
+                          className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                             user.active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {user.active ? 'Actif' : 'Inactif'}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleToggleActive(user)
-                            }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                              user.active ? 'bg-blue-600' : 'bg-gray-200'
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                user.active ? 'translate-x-6' : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
-                        </div>
+                              ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          {user.active ? 'Actif' : 'Inactif'}
+                        </button>
                         {!user.email_verified && (
                           <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
                             Email non vérifié
@@ -309,28 +295,6 @@ export default function AdminUsersPage() {
                             🔓 Standard
                           </span>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleEditUser(user)
-                          }}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Modifier
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleToggleActive(user)
-                          }}
-                          className={`${user.active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
-                        >
-                          {user.active ? 'Désactiver' : 'Activer'}
-                        </button>
                       </div>
                     </td>
                   </tr>
