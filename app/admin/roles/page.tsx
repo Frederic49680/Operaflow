@@ -46,28 +46,40 @@ export default function AdminRolesPage() {
     loadData()
   }, [])
 
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      
-      // Charger les rôles d'abord
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('roles')
-        .select('*')
-        .order('seniority_rank', { ascending: true })
+         const loadData = async () => {
+           try {
+             setLoading(true)
+             console.log('🔍 [ROLES] Début du chargement des données...')
+             
+             // Charger les rôles d'abord
+             console.log('📋 [ROLES] Chargement des rôles...')
+             const { data: rolesData, error: rolesError } = await supabase
+               .from('roles')
+               .select('*')
+               .order('seniority_rank', { ascending: true })
 
-      if (rolesError) throw rolesError
+             if (rolesError) {
+               console.error('❌ [ROLES] Erreur lors du chargement des rôles:', rolesError)
+               throw rolesError
+             }
+             console.log('✅ [ROLES] Rôles chargés:', rolesData?.length || 0, 'rôles')
 
-      // Charger les permissions
-      const { data: permissionsData, error: permissionsError } = await supabase
-        .from('permissions')
-        .select('*')
-        .order('code', { ascending: true })
+             // Charger les permissions
+             console.log('🔐 [PERMISSIONS] Chargement des permissions...')
+             const { data: permissionsData, error: permissionsError } = await supabase
+               .from('permissions')
+               .select('*')
+               .order('code', { ascending: true })
 
-      if (permissionsError) throw permissionsError
+             if (permissionsError) {
+               console.error('❌ [PERMISSIONS] Erreur lors du chargement des permissions:', permissionsError)
+               throw permissionsError
+             }
+             console.log('✅ [PERMISSIONS] Permissions chargées:', permissionsData?.length || 0, 'permissions')
 
              // Essayer de charger les permissions des rôles si la table existe
              let rolesWithPermissions = rolesData || []
+             console.log('🔗 [ROLE_PERMISSIONS] Tentative de chargement des permissions des rôles...')
              try {
                const { data: rolesWithPermsData, error: rolesWithPermsError } = await supabase
                  .from('roles')
@@ -82,23 +94,40 @@ export default function AdminRolesPage() {
 
                if (!rolesWithPermsError && rolesWithPermsData) {
                  rolesWithPermissions = rolesWithPermsData
-                 console.log('Permissions chargées:', rolesWithPermsData)
+                 console.log('✅ [ROLE_PERMISSIONS] Permissions des rôles chargées:', rolesWithPermsData.length, 'rôles')
+                 
+                 // Log détaillé de chaque rôle et ses permissions
+                 rolesWithPermsData.forEach((role: any) => {
+                   const permCount = role.role_permissions?.length || 0
+                   console.log(`📊 [ROLE] ${role.code} (${role.label}): ${permCount} permissions`)
+                   if (role.role_permissions && role.role_permissions.length > 0) {
+                     role.role_permissions.forEach((rp: any) => {
+                       console.log(`  └─ ${rp.permissions?.code || 'N/A'}: ${rp.permissions?.label || 'N/A'}`)
+                     })
+                   }
+                 })
                } else {
-                 console.log('Erreur ou pas de permissions:', rolesWithPermsError)
+                 console.log('⚠️ [ROLE_PERMISSIONS] Erreur ou pas de permissions:', rolesWithPermsError)
                }
              } catch (err) {
-               console.log('Table role_permissions pas encore créée, utilisation des rôles de base')
+               console.log('⚠️ [ROLE_PERMISSIONS] Table role_permissions pas encore créée, utilisation des rôles de base:', err)
              }
 
-      setRoles(rolesWithPermissions)
-      setPermissions(permissionsData || [])
-    } catch (err) {
-      console.error('Erreur lors du chargement:', err)
-      setError(err instanceof Error ? err.message : 'Erreur inconnue')
-    } finally {
-      setLoading(false)
-    }
-  }
+             console.log('🎯 [FINAL] Données finales:')
+             console.log('  - Rôles:', rolesWithPermissions.length)
+             console.log('  - Permissions:', permissionsData?.length || 0)
+             
+             setRoles(rolesWithPermissions)
+             setPermissions(permissionsData || [])
+             
+             console.log('✅ [ROLES] Chargement terminé avec succès')
+           } catch (err) {
+             console.error('❌ [ROLES] Erreur lors du chargement:', err)
+             setError(err instanceof Error ? err.message : 'Erreur inconnue')
+           } finally {
+             setLoading(false)
+           }
+         }
 
   const handleRoleCreated = () => {
     loadData() // Recharger les données après création/modification

@@ -124,20 +124,30 @@ export default function PermissionsMatrix() {
     try {
       setSaving(true)
       setError(null)
+      console.log('💾 [SAVE] Début de la sauvegarde des permissions...')
+      console.log('📊 [SAVE] Changements locaux:', localChanges.size, 'changements')
+      console.log('📋 [SAVE] Règles d\'accès actuelles:', pageAccess.length, 'règles')
 
       // Supprimer toutes les règles existantes
+      console.log('🗑️ [SAVE] Suppression des règles existantes...')
       const { error: deleteError } = await supabase
         .from('page_access_rules')
         .delete()
         .neq('id', '00000000-0000-0000-0000-000000000000') // Supprimer toutes les règles
 
-      if (deleteError) throw deleteError
+      if (deleteError) {
+        console.error('❌ [SAVE] Erreur lors de la suppression:', deleteError)
+        throw deleteError
+      }
+      console.log('✅ [SAVE] Règles existantes supprimées')
 
       // Appliquer les changements locaux à l'état principal
+      console.log('🔄 [SAVE] Application des changements locaux...')
       const updatedPageAccess = [...pageAccess]
       
       localChanges.forEach((access, cellKey) => {
         const [roleId, route] = cellKey.split('-', 2)
+        console.log(`🔧 [SAVE] Mise à jour: ${roleId} - ${route} = ${access}`)
         
         // Supprimer l'entrée existante
         const filtered = updatedPageAccess.filter(a => !(a.role_id === roleId && a.route === route))
@@ -145,8 +155,10 @@ export default function PermissionsMatrix() {
         // Si l'accès n'est pas 'none', ajouter la nouvelle entrée
         if (access !== 'none') {
           updatedPageAccess.splice(0, updatedPageAccess.length, ...filtered, { role_id: roleId, route, access })
+          console.log(`✅ [SAVE] Ajouté: ${roleId} - ${route} = ${access}`)
         } else {
           updatedPageAccess.splice(0, updatedPageAccess.length, ...filtered)
+          console.log(`🗑️ [SAVE] Supprimé: ${roleId} - ${route}`)
         }
       })
 
@@ -159,20 +171,34 @@ export default function PermissionsMatrix() {
           access: rule.access
         }))
 
+      console.log('📝 [SAVE] Règles à insérer:', rulesToInsert.length, 'règles')
+      rulesToInsert.forEach(rule => {
+        console.log(`  └─ ${rule.role_id} - ${rule.route} = ${rule.access}`)
+      })
+
       if (rulesToInsert.length > 0) {
+        console.log('💾 [SAVE] Insertion des nouvelles règles...')
         const { error: insertError } = await supabase
           .from('page_access_rules')
           .insert(rulesToInsert)
 
-        if (insertError) throw insertError
+        if (insertError) {
+          console.error('❌ [SAVE] Erreur lors de l\'insertion:', insertError)
+          throw insertError
+        }
+        console.log('✅ [SAVE] Nouvelles règles insérées avec succès')
+      } else {
+        console.log('⚠️ [SAVE] Aucune règle à insérer')
       }
 
       // Mettre à jour l'état local et vider les changements
+      console.log('🔄 [SAVE] Mise à jour de l\'état local...')
       setPageAccess(updatedPageAccess)
       setLocalChanges(new Map())
+      console.log('✅ [SAVE] Sauvegarde terminée avec succès')
       alert('Permissions sauvegardées avec succès !')
     } catch (err) {
-      console.error('Erreur lors de la sauvegarde:', err)
+      console.error('❌ [SAVE] Erreur lors de la sauvegarde:', err)
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
     } finally {
       setSaving(false)
