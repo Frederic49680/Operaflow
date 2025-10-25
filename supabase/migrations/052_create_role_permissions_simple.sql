@@ -27,26 +27,5 @@ BEGIN
     END IF;
 END $$;
 
--- Ajouter les contraintes de clé étrangère seulement si les tables existent
-DO $$
-BEGIN
-    -- Ajouter la contrainte pour role_id si la table roles existe
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'roles') THEN
-        BEGIN
-            ALTER TABLE role_permissions ADD CONSTRAINT fk_role_permissions_role_id FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE;
-        EXCEPTION
-            WHEN duplicate_object THEN
-                RAISE NOTICE 'Contrainte fk_role_permissions_role_id existe déjà';
-        END;
-    END IF;
-
-    -- Ajouter la contrainte pour permission_id si la table permissions existe
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'permissions') THEN
-        BEGIN
-            ALTER TABLE role_permissions ADD CONSTRAINT fk_role_permissions_permission_id FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE;
-        EXCEPTION
-            WHEN duplicate_object THEN
-                RAISE NOTICE 'Contrainte fk_role_permissions_permission_id existe déjà';
-        END;
-    END IF;
-END $$;
+-- Les contraintes de clé étrangère seront ajoutées dans une migration ultérieure
+-- après que les tables roles et permissions aient été corrigées
