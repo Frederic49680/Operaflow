@@ -32,11 +32,21 @@ DO $$
 BEGIN
     -- Ajouter la contrainte pour role_id si la table roles existe
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'roles') THEN
-        ALTER TABLE role_permissions ADD CONSTRAINT IF NOT EXISTS fk_role_permissions_role_id FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE;
+        BEGIN
+            ALTER TABLE role_permissions ADD CONSTRAINT fk_role_permissions_role_id FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE;
+        EXCEPTION
+            WHEN duplicate_object THEN
+                RAISE NOTICE 'Contrainte fk_role_permissions_role_id existe déjà';
+        END;
     END IF;
 
     -- Ajouter la contrainte pour permission_id si la table permissions existe
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'permissions') THEN
-        ALTER TABLE role_permissions ADD CONSTRAINT IF NOT EXISTS fk_role_permissions_permission_id FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE;
+        BEGIN
+            ALTER TABLE role_permissions ADD CONSTRAINT fk_role_permissions_permission_id FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE;
+        EXCEPTION
+            WHEN duplicate_object THEN
+                RAISE NOTICE 'Contrainte fk_role_permissions_permission_id existe déjà';
+        END;
     END IF;
 END $$;
