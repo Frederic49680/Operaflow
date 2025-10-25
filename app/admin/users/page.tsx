@@ -13,6 +13,14 @@ interface AppUser {
   email_verified: boolean
   twofa_enabled: boolean
   created_at: string
+  role?: string
+  user_roles?: Array<{
+    role_id: string
+    roles: {
+      code: string
+      label: string
+    }
+  }>
 }
 
 interface Role {
@@ -40,13 +48,26 @@ export default function AdminUsersPage() {
     try {
       setLoading(true)
       
-      // Charger les utilisateurs
+      // Charger les utilisateurs avec leurs rôles
       const { data: usersData, error: usersError } = await supabase
         .from('app_users')
-        .select('*')
+        .select(`
+          *,
+          user_roles(
+            role_id,
+            roles(code, label)
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (usersError) throw usersError
+
+      console.log('✅ [USERS] Utilisateurs chargés:', usersData?.length || 0)
+      console.log('📊 [USERS] Détail des utilisateurs:', usersData?.map(u => ({
+        email: u.email,
+        roles: u.user_roles?.length || 0,
+        roleNames: u.user_roles?.map(ur => ur.roles?.label || ur.roles?.code) || []
+      })))
 
       // Charger les rôles
       const { data: rolesData, error: rolesError } = await supabase
@@ -282,7 +303,20 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className="text-gray-400">À implémenter</span>
+                      <div className="flex flex-wrap gap-1">
+                        {user.user_roles && user.user_roles.length > 0 ? (
+                          user.user_roles.map((ur, index) => (
+                            <span 
+                              key={index}
+                              className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800"
+                            >
+                              {ur.roles?.label || ur.roles?.code || 'Rôle inconnu'}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 text-xs">Aucun rôle</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
