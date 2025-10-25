@@ -7,9 +7,19 @@ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'roles') THEN
         -- Vérifier si la colonne id existe
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'roles' AND column_name = 'id') THEN
-            -- Ajouter la colonne id si elle n'existe pas
-            ALTER TABLE roles ADD COLUMN id UUID PRIMARY KEY DEFAULT gen_random_uuid();
-            RAISE NOTICE 'Colonne id ajoutée à la table roles';
+            -- Vérifier s'il y a déjà une clé primaire
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.table_constraints 
+                WHERE table_name = 'roles' AND constraint_type = 'PRIMARY KEY'
+            ) THEN
+                -- Ajouter la colonne id avec clé primaire
+                ALTER TABLE roles ADD COLUMN id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+                RAISE NOTICE 'Colonne id ajoutée à la table roles avec clé primaire';
+            ELSE
+                -- Ajouter la colonne id sans clé primaire
+                ALTER TABLE roles ADD COLUMN id UUID DEFAULT gen_random_uuid();
+                RAISE NOTICE 'Colonne id ajoutée à la table roles (clé primaire existante)';
+            END IF;
         END IF;
         
         -- Vérifier si la colonne code existe
@@ -37,9 +47,19 @@ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'permissions') THEN
         -- Vérifier si la colonne id existe
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'permissions' AND column_name = 'id') THEN
-            -- Ajouter la colonne id si elle n'existe pas
-            ALTER TABLE permissions ADD COLUMN id UUID PRIMARY KEY DEFAULT gen_random_uuid();
-            RAISE NOTICE 'Colonne id ajoutée à la table permissions';
+            -- Vérifier s'il y a déjà une clé primaire
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.table_constraints 
+                WHERE table_name = 'permissions' AND constraint_type = 'PRIMARY KEY'
+            ) THEN
+                -- Ajouter la colonne id avec clé primaire
+                ALTER TABLE permissions ADD COLUMN id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+                RAISE NOTICE 'Colonne id ajoutée à la table permissions avec clé primaire';
+            ELSE
+                -- Ajouter la colonne id sans clé primaire
+                ALTER TABLE permissions ADD COLUMN id UUID DEFAULT gen_random_uuid();
+                RAISE NOTICE 'Colonne id ajoutée à la table permissions (clé primaire existante)';
+            END IF;
         END IF;
         
         -- Vérifier si la colonne code existe
