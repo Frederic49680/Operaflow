@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import UserFormModal from '@/components/admin/UserFormModal'
 
 interface AppUser {
   id: string
@@ -26,6 +27,7 @@ export default function AdminUsersPage() {
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const supabase = createClient()
 
@@ -61,6 +63,10 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleUserCreated = () => {
+    loadData() // Recharger les données après création
   }
 
   if (loading) {
@@ -172,7 +178,10 @@ export default function AdminUsersPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-medium text-gray-900">Liste des Utilisateurs</h2>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
                 + Nouvel Utilisateur
               </button>
             </div>
@@ -267,6 +276,13 @@ export default function AdminUsersPage() {
             </table>
           </div>
         </div>
+
+        {/* Modal */}
+        <UserFormModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={handleUserCreated}
+        />
       </div>
     </div>
   )
