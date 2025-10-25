@@ -43,6 +43,7 @@ export default function AdminRolesPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    console.log('🚀 [ROLES] Composant monté, début du chargement...')
     loadData()
   }, [])
 
@@ -169,16 +170,19 @@ export default function AdminRolesPage() {
     setEditingRole(null)
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement des rôles...</p>
-        </div>
-      </div>
-    )
-  }
+         console.log('🎨 [ROLES] Rendu du composant - loading:', loading, 'error:', error, 'roles:', roles.length)
+         
+         if (loading) {
+           console.log('⏳ [ROLES] Affichage du loader...')
+           return (
+             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+               <div className="text-center">
+                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                 <p className="mt-4 text-gray-600">Chargement des rôles...</p>
+               </div>
+             </div>
+           )
+         }
 
   if (error) {
     return (
@@ -197,16 +201,18 @@ export default function AdminRolesPage() {
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Gestion des Rôles & Permissions</h1>
-          <p className="mt-2 text-gray-600">
-            Configurez les rôles et leurs permissions d'accès
-          </p>
-        </div>
+         console.log('✅ [ROLES] Affichage de la page principale avec', roles.length, 'rôles')
+         
+         return (
+           <div className="min-h-screen bg-gray-50">
+             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+               {/* Header */}
+               <div className="mb-8">
+                 <h1 className="text-3xl font-bold text-gray-900">Gestion des Rôles & Permissions</h1>
+                 <p className="mt-2 text-gray-600">
+                   Configurez les rôles et leurs permissions d'accès
+                 </p>
+               </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
