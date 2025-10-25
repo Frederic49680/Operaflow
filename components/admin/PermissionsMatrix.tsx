@@ -127,6 +127,7 @@ export default function PermissionsMatrix() {
       console.log('💾 [SAVE] Début de la sauvegarde des permissions...')
       console.log('📊 [SAVE] Changements locaux:', localChanges.size, 'changements')
       console.log('📋 [SAVE] Règles d\'accès actuelles:', pageAccess.length, 'règles')
+      alert(`💾 Début sauvegarde - ${localChanges.size} changements, ${pageAccess.length} règles actuelles`)
 
       // Supprimer toutes les règles existantes
       console.log('🗑️ [SAVE] Suppression des règles existantes...')
@@ -137,9 +138,11 @@ export default function PermissionsMatrix() {
 
       if (deleteError) {
         console.error('❌ [SAVE] Erreur lors de la suppression:', deleteError)
+        alert(`❌ Erreur suppression: ${deleteError.message}`)
         throw deleteError
       }
       console.log('✅ [SAVE] Règles existantes supprimées')
+      alert('✅ Règles existantes supprimées')
 
       // Appliquer les changements locaux à l'état principal
       console.log('🔄 [SAVE] Application des changements locaux...')
@@ -187,8 +190,10 @@ export default function PermissionsMatrix() {
           throw insertError
         }
         console.log('✅ [SAVE] Nouvelles règles insérées avec succès')
+        alert(`✅ ${rulesToInsert.length} règles insérées avec succès`)
       } else {
         console.log('⚠️ [SAVE] Aucune règle à insérer')
+        alert('⚠️ Aucune règle à insérer')
       }
 
       // Mettre à jour l'état local et vider les changements
@@ -196,7 +201,7 @@ export default function PermissionsMatrix() {
       setPageAccess(updatedPageAccess)
       setLocalChanges(new Map())
       console.log('✅ [SAVE] Sauvegarde terminée avec succès')
-      alert('Permissions sauvegardées avec succès !')
+      alert('✅ Permissions sauvegardées avec succès !')
     } catch (err) {
       console.error('❌ [SAVE] Erreur lors de la sauvegarde:', err)
       setError(err instanceof Error ? err.message : 'Erreur inconnue')

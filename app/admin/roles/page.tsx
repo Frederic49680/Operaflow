@@ -61,9 +61,11 @@ export default function AdminRolesPage() {
 
              if (rolesError) {
                console.error('❌ [ROLES] Erreur lors du chargement des rôles:', rolesError)
+               alert(`❌ Erreur rôles: ${rolesError.message}`)
                throw rolesError
              }
              console.log('✅ [ROLES] Rôles chargés:', rolesData?.length || 0, 'rôles')
+             alert(`✅ Rôles chargés: ${rolesData?.length || 0}`)
 
              // Charger les permissions
              console.log('🔐 [PERMISSIONS] Chargement des permissions...')
@@ -74,9 +76,11 @@ export default function AdminRolesPage() {
 
              if (permissionsError) {
                console.error('❌ [PERMISSIONS] Erreur lors du chargement des permissions:', permissionsError)
+               alert(`❌ Erreur permissions: ${permissionsError.message}`)
                throw permissionsError
              }
              console.log('✅ [PERMISSIONS] Permissions chargées:', permissionsData?.length || 0, 'permissions')
+             alert(`✅ Permissions chargées: ${permissionsData?.length || 0}`)
 
              // Essayer de charger les permissions des rôles si la table existe
              let rolesWithPermissions = rolesData || []
@@ -96,6 +100,7 @@ export default function AdminRolesPage() {
                if (!rolesWithPermsError && rolesWithPermsData) {
                  rolesWithPermissions = rolesWithPermsData
                  console.log('✅ [ROLE_PERMISSIONS] Permissions des rôles chargées:', rolesWithPermsData.length, 'rôles')
+                 alert(`✅ Permissions des rôles chargées: ${rolesWithPermsData.length} rôles`)
                  
                  // Log détaillé de chaque rôle et ses permissions
                  rolesWithPermsData.forEach((role: any) => {
@@ -109,6 +114,7 @@ export default function AdminRolesPage() {
                  })
                } else {
                  console.log('⚠️ [ROLE_PERMISSIONS] Erreur ou pas de permissions:', rolesWithPermsError)
+                 alert(`⚠️ Erreur permissions des rôles: ${rolesWithPermsError?.message || 'Pas de permissions'}`)
                }
              } catch (err) {
                console.log('⚠️ [ROLE_PERMISSIONS] Table role_permissions pas encore créée, utilisation des rôles de base:', err)
