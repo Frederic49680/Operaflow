@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Save, RefreshCw } from 'lucide-react'
+import PermissionCell from './PermissionCell'
 
 interface Role {
   id: string
@@ -103,24 +104,16 @@ export default function PermissionsMatrix() {
     console.log(`Mise à jour: Role ${roleId}, Route ${route}, Access ${access}`)
     
     setPageAccess(prev => {
-      // Créer une copie de l'état actuel
-      const newPageAccess = [...prev]
+      // Filtrer pour enlever l'entrée existante
+      const filtered = prev.filter(a => !(a.role_id === roleId && a.route === route))
       
-      // Trouver l'index de l'entrée existante
-      const existingIndex = newPageAccess.findIndex(a => a.role_id === roleId && a.route === route)
-      
-      if (existingIndex !== -1) {
-        // Mettre à jour l'entrée existante
-        newPageAccess[existingIndex] = { ...newPageAccess[existingIndex], access }
-        console.log(`Mise à jour existante à l'index ${existingIndex}`)
-      } else {
-        // Ajouter une nouvelle entrée
-        newPageAccess.push({ role_id: roleId, route, access })
-        console.log(`Nouvelle entrée ajoutée`)
+      // Si l'accès n'est pas 'none', ajouter la nouvelle entrée
+      if (access !== 'none') {
+        return [...filtered, { role_id: roleId, route, access }]
       }
       
-      console.log('Nouvel état:', newPageAccess.filter(a => a.role_id === roleId))
-      return newPageAccess
+      // Si l'accès est 'none', retourner seulement les entrées filtrées
+      return filtered
     })
   }
 
@@ -250,61 +243,15 @@ export default function PermissionsMatrix() {
                   {APP_PAGES.map((page) => {
                     const currentAccess = getAccessLevel(role.id, page.route)
                     const cellKey = `${role.id}-${page.route}`
-                    console.log(`Rendu cellule: ${cellKey}, Access: ${currentAccess}`)
                     
                     return (
-                      <td key={cellKey} className="px-3 py-3 text-center">
-                        <div className="flex justify-center space-x-1">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              console.log(`Clic sur None pour ${cellKey}`)
-                              updateAccess(role.id, page.route, 'none')
-                            }}
-                            className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
-                              currentAccess === 'none'
-                                ? 'bg-red-100 text-red-800 border-2 border-red-300'
-                                : 'bg-gray-100 text-gray-600 hover:bg-red-50'
-                            }`}
-                            title="Aucun accès"
-                          >
-                            ✗
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              console.log(`Clic sur Read pour ${cellKey}`)
-                              updateAccess(role.id, page.route, 'read')
-                            }}
-                            className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
-                              currentAccess === 'read'
-                                ? 'bg-green-100 text-green-800 border-2 border-green-300'
-                                : 'bg-gray-100 text-gray-600 hover:bg-green-50'
-                            }`}
-                            title="Lecture seule"
-                          >
-                            👁
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              console.log(`Clic sur Write pour ${cellKey}`)
-                              updateAccess(role.id, page.route, 'write')
-                            }}
-                            className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
-                              currentAccess === 'write'
-                                ? 'bg-purple-100 text-purple-800 border-2 border-purple-300'
-                                : 'bg-gray-100 text-gray-600 hover:bg-purple-50'
-                            }`}
-                            title="Lecture + Écriture"
-                          >
-                            ✏
-                          </button>
-                        </div>
-                      </td>
+                      <PermissionCell
+                        key={cellKey}
+                        roleId={role.id}
+                        route={page.route}
+                        initialAccess={currentAccess}
+                        onAccessChange={updateAccess}
+                      />
                     )
                   })}
                 </tr>
