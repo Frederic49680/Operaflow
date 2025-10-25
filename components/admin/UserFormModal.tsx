@@ -9,6 +9,17 @@ interface UserFormModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  editingUser?: AppUser | null
+}
+
+interface AppUser {
+  id: string
+  email: string
+  prenom?: string
+  nom?: string
+  active: boolean
+  email_verified: boolean
+  twofa_enabled: boolean
 }
 
 interface Role {
@@ -17,7 +28,7 @@ interface Role {
   label: string
 }
 
-export default function UserFormModal({ isOpen, onClose, onSuccess }: UserFormModalProps) {
+export default function UserFormModal({ isOpen, onClose, onSuccess, editingUser }: UserFormModalProps) {
   const [formData, setFormData] = useState({
     email: '',
     prenom: '',
@@ -32,12 +43,29 @@ export default function UserFormModal({ isOpen, onClose, onSuccess }: UserFormMo
 
   const supabase = createClient()
 
-  // Charger les rôles au montage
+  // Charger les rôles au montage et initialiser le formulaire
   useEffect(() => {
     if (isOpen) {
       loadRoles()
+      if (editingUser) {
+        setFormData({
+          email: editingUser.email,
+          prenom: editingUser.prenom || '',
+          nom: editingUser.nom || '',
+          active: editingUser.active,
+          twofa_enabled: editingUser.twofa_enabled
+        })
+      } else {
+        setFormData({
+          email: '',
+          prenom: '',
+          nom: '',
+          active: true,
+          twofa_enabled: false
+        })
+      }
     }
-  }, [isOpen])
+  }, [isOpen, editingUser])
 
   const loadRoles = async () => {
     try {
@@ -59,34 +87,71 @@ export default function UserFormModal({ isOpen, onClose, onSuccess }: UserFormMo
     setError(null)
 
     try {
-      // Créer l'utilisateur
-      const { data: userData, error: userError } = await supabase
-        .from('app_users')
-        .insert([{
-          email: formData.email,
-          prenom: formData.prenom,
-          nom: formData.nom,
-          active: formData.active,
-          twofa_enabled: formData.twofa_enabled,
-          email_verified: false,
-          force_pwd_change: true
-        }])
-        .select()
+      if (editingUser) {
+        // Mise à jour de l'utilisateur existant
+        const { error: userError } = await supabase
+          .from('app_users')
+          .update({
+            email: formData.email,
+            prenom: formData.prenom,
+            nom: formData.nom,
+            active: formData.active,
+            twofa_enabled: formData.twofa_enabled
+          })
+          .eq('id', editingUser.id)
 
-      if (userError) throw userError
+        if (userError) throw userError
 
-      // Assigner les rôles
-      if (selectedRoles.length > 0 && userData?.[0]) {
-        const roleAssignments = selectedRoles.map(roleId => ({
-          user_id: userData[0].id,
-          role_id: roleId
-        }))
+        // Mettre à jour les rôles
+        if (selectedRoles.length > 0) {
+          // Supprimer les anciens rôles
+          await supabase
+            .from('user_roles')
+            .delete()
+            .eq('user_id', editingUser.id)
 
-        const { error: rolesError } = await supabase
-          .from('user_roles')
-          .insert(roleAssignments)
+          // Ajouter les nouveaux rôles
+          const roleAssignments = selectedRoles.map(roleId => ({
+            user_id: editingUser.id,
+            role_id: roleId
+          }))
 
-        if (rolesError) throw rolesError
+          const { error: rolesError } = await supabase
+            .from('user_roles')
+            .insert(roleAssignments)
+
+          if (rolesError) throw rolesError
+        }
+      } else {
+        // Créer un nouvel utilisateur
+        const { data: userData, error: userError } = await supabase
+          .from('app_users')
+          .insert([{
+            email: formData.email,
+            prenom: formData.prenom,
+            nom: formData.nom,
+            active: formData.active,
+            twofa_enabled: formData.twofa_enabled,
+            email_verified: false,
+            force_pwd_change: true
+          }])
+          .select()
+
+        if (userError) throw userError
+
+        // Assigner les rôles
+        if (selectedRoles.length > 0 && userData?.[0]) {
+          const roleAssignments = selectedRoles.map(roleId => ({
+            user_id: userData[0].id,
+            role_id: roleId
+          }))
+
+          const { error: rolesError } = await supabase
+            .from('user_roles')
+            .insert(roleAssignments)
+
+          if (rolesError) throw rolesError
+        }
       }
 
       // Réinitialiser le formulaire
@@ -102,7 +167,7 @@ export default function UserFormModal({ isOpen, onClose, onSuccess }: UserFormMo
       onSuccess()
       onClose()
     } catch (err) {
-      console.error('Erreur lors de la création:', err)
+      console.error('Erreur lors de la sauvegarde:', err)
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
     } finally {
       setLoading(false)
@@ -128,7 +193,9 @@ export default function UserFormModal({ isOpen, onClose, onSuccess }: UserFormMo
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
               <UserPlus className="h-4 w-4 text-blue-600" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">Nouvel Utilisateur</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {editingUser ? 'Modifier Utilisateur' : 'Nouvel Utilisateur'}
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -247,7 +314,7 @@ export default function UserFormModal({ isOpen, onClose, onSuccess }: UserFormMo
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {loading ? 'Création...' : 'Créer'}
+              {loading ? (editingUser ? 'Mise à jour...' : 'Création...') : (editingUser ? 'Modifier' : 'Créer')}
             </Button>
           </div>
         </form>

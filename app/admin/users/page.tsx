@@ -28,6 +28,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<AppUser | null>(null)
 
   const supabase = createClient()
 
@@ -67,6 +68,35 @@ export default function AdminUsersPage() {
 
   const handleUserCreated = () => {
     loadData() // Recharger les données après création
+  }
+
+  const handleEditUser = (user: AppUser) => {
+    setEditingUser(user)
+    setIsModalOpen(true)
+  }
+
+  const handleToggleActive = async (user: AppUser) => {
+    try {
+      const { error } = await supabase
+        .from('app_users')
+        .update({ active: !user.active })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      // Mettre à jour l'état local
+      setUsers(prev => prev.map(u => 
+        u.id === user.id ? { ...u, active: !u.active } : u
+      ))
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour:', err)
+      setError(err instanceof Error ? err.message : 'Erreur inconnue')
+    }
+  }
+
+  const handleModalClose = () => {
+    setIsModalOpen(false)
+    setEditingUser(null)
   }
 
   if (loading) {
@@ -210,7 +240,11 @@ export default function AdminUsersPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr 
+                    key={user.id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleEditUser(user)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -230,13 +264,30 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col space-y-1">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {user.active ? 'Actif' : 'Inactif'}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            user.active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {user.active ? 'Actif' : 'Inactif'}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleToggleActive(user)
+                            }}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                              user.active ? 'bg-blue-600' : 'bg-gray-200'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                user.active ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </div>
                         {!user.email_verified && (
                           <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
                             Email non vérifié
@@ -262,11 +313,23 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditUser(user)
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
                           Modifier
                         </button>
-                        <button className="text-red-600 hover:text-red-900">
-                          Désactiver
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleToggleActive(user)
+                          }}
+                          className={`${user.active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                        >
+                          {user.active ? 'Désactiver' : 'Activer'}
                         </button>
                       </div>
                     </td>
@@ -280,8 +343,9 @@ export default function AdminUsersPage() {
         {/* Modal */}
         <UserFormModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={handleModalClose}
           onSuccess={handleUserCreated}
+          editingUser={editingUser}
         />
       </div>
     </div>
