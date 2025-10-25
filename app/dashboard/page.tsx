@@ -18,7 +18,10 @@ import {
   Wrench,
   Network,
   Settings,
-  GraduationCap
+  GraduationCap,
+  UserCog,
+  Shield,
+  Zap
 } from "lucide-react"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
 
@@ -116,6 +119,129 @@ export default function DashboardPage() {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Accès rapide */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold text-slate-800 mb-4">⚡ Accès rapide</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Admin */}
+            <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-red-200 bg-gradient-to-br from-red-50 to-pink-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center shadow-md shadow-red-500/30">
+                    <Shield className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-800">Administration</h4>
+                    <p className="text-xs text-slate-600">Gestion utilisateurs</p>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1">
+                  <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-red-100 hover:text-red-700" asChild>
+                    <a href="/admin/users">
+                      <UserCog className="h-4 w-4 mr-2" />
+                      Utilisateurs
+                    </a>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-red-100 hover:text-red-700" asChild>
+                    <a href="/admin/roles">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Rôles & Permissions
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Planning */}
+            <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/30">
+                    <GanttChart className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-800">Planning</h4>
+                    <p className="text-xs text-slate-600">Gestion des tâches</p>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1">
+                  <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-blue-100 hover:text-blue-700" asChild>
+                    <a href="/planning">
+                      <GanttChart className="h-4 w-4 mr-2" />
+                      Gantt
+                    </a>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-blue-100 hover:text-blue-700" asChild>
+                    <a href="/affaires">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Affaires
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Terrain */}
+            <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg flex items-center justify-center shadow-md shadow-orange-500/30">
+                    <Wrench className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-800">Terrain</h4>
+                    <p className="text-xs text-slate-600">Opérations</p>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1">
+                  <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-orange-100 hover:text-orange-700" asChild>
+                    <a href="/maintenance">
+                      <Wrench className="h-4 w-4 mr-2" />
+                      Maintenance
+                    </a>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-orange-100 hover:text-orange-700" asChild>
+                    <a href="/terrain/remontee">
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Remontées
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* RH */}
+            <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md shadow-green-500/30">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-800">Ressources Humaines</h4>
+                    <p className="text-xs text-slate-600">Équipe & Formations</p>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1">
+                  <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-green-100 hover:text-green-700" asChild>
+                    <a href="/rh/collaborateurs">
+                      <Users className="h-4 w-4 mr-2" />
+                      Collaborateurs
+                    </a>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full justify-start hover:bg-green-100 hover:text-green-700" asChild>
+                    <a href="/rh/formations">
+                      <GraduationCap className="h-4 w-4 mr-2" />
+                      Formations
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Modules par catégories */}
