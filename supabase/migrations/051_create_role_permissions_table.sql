@@ -26,21 +26,21 @@ BEGIN
     -- Permissions pour l'admin (toutes les permissions)
     IF EXISTS (SELECT 1 FROM roles WHERE code = 'admin') AND EXISTS (SELECT 1 FROM permissions WHERE code = 'admin.users.read') THEN
         INSERT INTO role_permissions (role_id, permission_id)
-        SELECT r.id, p.id
-        FROM roles r
-        CROSS JOIN permissions p
-        WHERE r.code = 'admin'
+        SELECT roles_table.id, permissions_table.id
+        FROM roles roles_table
+        CROSS JOIN permissions permissions_table
+        WHERE roles_table.code = 'admin'
         ON CONFLICT (role_id, permission_id) DO NOTHING;
     END IF;
 
     -- Permissions pour le planificateur
     IF EXISTS (SELECT 1 FROM roles WHERE code = 'planificateur') THEN
         INSERT INTO role_permissions (role_id, permission_id)
-        SELECT r.id, p.id
-        FROM roles r
-        CROSS JOIN permissions p
-        WHERE r.code = 'planificateur'
-        AND p.code IN (
+        SELECT roles_table.id, permissions_table.id
+        FROM roles roles_table
+        CROSS JOIN permissions permissions_table
+        WHERE roles_table.code = 'planificateur'
+        AND permissions_table.code IN (
             'page.dashboard.read',
             'page.planning.read',
             'page.planning.write',
@@ -55,11 +55,11 @@ BEGIN
     -- Permissions pour le CA
     IF EXISTS (SELECT 1 FROM roles WHERE code = 'ca') THEN
         INSERT INTO role_permissions (role_id, permission_id)
-        SELECT r.id, p.id
-        FROM roles r
-        CROSS JOIN permissions p
-        WHERE r.code = 'ca'
-        AND p.code IN (
+        SELECT roles_table.id, permissions_table.id
+        FROM roles roles_table
+        CROSS JOIN permissions permissions_table
+        WHERE roles_table.code = 'ca'
+        AND permissions_table.code IN (
             'page.dashboard.read',
             'page.affaires.read',
             'page.affaires.write',
@@ -72,11 +72,11 @@ BEGIN
     -- Permissions pour le responsable de site
     IF EXISTS (SELECT 1 FROM roles WHERE code = 'resp_site') THEN
         INSERT INTO role_permissions (role_id, permission_id)
-        SELECT r.id, p.id
-        FROM roles r
-        CROSS JOIN permissions p
-        WHERE r.code = 'resp_site'
-        AND p.code IN (
+        SELECT roles_table.id, permissions_table.id
+        FROM roles roles_table
+        CROSS JOIN permissions permissions_table
+        WHERE roles_table.code = 'resp_site'
+        AND permissions_table.code IN (
             'page.dashboard.read',
             'page.terrain.read',
             'page.terrain.write',
@@ -89,11 +89,11 @@ BEGIN
     -- Permissions pour la maintenance
     IF EXISTS (SELECT 1 FROM roles WHERE code = 'maintenance') THEN
         INSERT INTO role_permissions (role_id, permission_id)
-        SELECT r.id, p.id
-        FROM roles r
-        CROSS JOIN permissions p
-        WHERE r.code = 'maintenance'
-        AND p.code IN (
+        SELECT roles_table.id, permissions_table.id
+        FROM roles roles_table
+        CROSS JOIN permissions permissions_table
+        WHERE roles_table.code = 'maintenance'
+        AND permissions_table.code IN (
             'page.maintenance.read',
             'page.maintenance.write'
         )
@@ -103,11 +103,11 @@ BEGIN
     -- Permissions pour RH
     IF EXISTS (SELECT 1 FROM roles WHERE code = 'rh') THEN
         INSERT INTO role_permissions (role_id, permission_id)
-        SELECT r.id, p.id
-        FROM roles r
-        CROSS JOIN permissions p
-        WHERE r.code = 'rh'
-        AND p.code IN (
+        SELECT roles_table.id, permissions_table.id
+        FROM roles roles_table
+        CROSS JOIN permissions permissions_table
+        WHERE roles_table.code = 'rh'
+        AND permissions_table.code IN (
             'page.rh.read',
             'page.rh.write',
             'page.sites.read'
@@ -118,11 +118,11 @@ BEGIN
     -- Permissions pour la direction
     IF EXISTS (SELECT 1 FROM roles WHERE code = 'direction') THEN
         INSERT INTO role_permissions (role_id, permission_id)
-        SELECT r.id, p.id
-        FROM roles r
-        CROSS JOIN permissions p
-        WHERE r.code = 'direction'
-        AND p.code IN (
+        SELECT roles_table.id, permissions_table.id
+        FROM roles roles_table
+        CROSS JOIN permissions permissions_table
+        WHERE roles_table.code = 'direction'
+        AND permissions_table.code IN (
             'page.dashboard.read',
             'page.affaires.read',
             'page.claims.read'
