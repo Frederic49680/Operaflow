@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { X, UserPlus } from 'lucide-react'
+import { X, UserPlus, Mail } from 'lucide-react'
 
 interface UserFormModalProps {
   isOpen: boolean
@@ -40,6 +40,8 @@ export default function UserFormModal({ isOpen, onClose, onSuccess, editingUser 
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sendEmail, setSendEmail] = useState(true)
+  const [emailSent, setEmailSent] = useState(false)
 
   const supabase = createClient()
 
@@ -151,6 +153,35 @@ export default function UserFormModal({ isOpen, onClose, onSuccess, editingUser 
             .insert(roleAssignments)
 
           if (rolesError) throw rolesError
+        }
+
+        // Envoyer l'email d'activation si demandé
+        if (sendEmail && userData?.[0]) {
+          try {
+            const response = await fetch('/api/email/send', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                type: 'activation',
+                userData: {
+                  email: formData.email,
+                  prenom: formData.prenom,
+                  nom: formData.nom
+                }
+              })
+            })
+
+            if (response.ok) {
+              setEmailSent(true)
+              console.log('✅ Email d\'activation envoyé')
+            } else {
+              console.warn('⚠️ Échec de l\'envoi de l\'email d\'activation')
+            }
+          } catch (emailError) {
+            console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError)
+          }
         }
       }
 
@@ -297,7 +328,34 @@ export default function UserFormModal({ isOpen, onClose, onSuccess, editingUser 
               />
               <span className="ml-2 text-sm text-gray-700">2FA activé</span>
             </label>
+
+            {!editingUser && (
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={sendEmail}
+                  onChange={(e) => setSendEmail(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-700 flex items-center gap-1">
+                  <Mail className="h-4 w-4" />
+                  Envoyer email d'activation
+                </span>
+              </label>
+            )}
           </div>
+
+          {/* Confirmation email envoyé */}
+          {emailSent && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-3">
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-green-600" />
+                <span className="text-sm text-green-800 font-medium">
+                  Email d'activation envoyé avec succès !
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4">

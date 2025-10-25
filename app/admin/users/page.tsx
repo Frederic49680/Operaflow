@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import UserFormModal from '@/components/admin/UserFormModal'
 import LoggingModule from '@/components/admin/LoggingModule'
+import EmailTester from '@/components/admin/EmailTester'
 
 interface AppUser {
   id: string
@@ -172,6 +173,9 @@ export default function AdminUsersPage() {
 
         {/* Module de Logging */}
         <LoggingModule />
+
+        {/* Testeur d'Emails */}
+        <EmailTester />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
