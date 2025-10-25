@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import RoleFormModal from '@/components/admin/RoleFormModal'
+import PermissionsMatrix from '@/components/admin/PermissionsMatrix'
 import { Button } from '@/components/ui/button'
-import { Shield, Users, CheckCircle, Plus, Edit, Trash2 } from 'lucide-react'
+import { Shield, Users, CheckCircle, Plus, Edit, Trash2, Settings } from 'lucide-react'
 
 interface Role {
   id: string
@@ -30,6 +31,7 @@ export default function AdminRolesPage() {
   const [error, setError] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
+  const [showPermissions, setShowPermissions] = useState(false)
 
   const supabase = createClient()
 
@@ -192,13 +194,23 @@ export default function AdminRolesPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-medium text-gray-900">Liste des Rôles</h2>
-              <Button 
-                onClick={() => setIsModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nouveau Rôle
-              </Button>
+              <div className="flex space-x-3">
+                <Button 
+                  onClick={() => setShowPermissions(!showPermissions)}
+                  variant="outline"
+                  className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  {showPermissions ? 'Masquer Permissions' : 'Gérer Permissions'}
+                </Button>
+                <Button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouveau Rôle
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -284,6 +296,21 @@ export default function AdminRolesPage() {
             </table>
           </div>
         </div>
+
+        {/* Permissions Matrix */}
+        {showPermissions && (
+          <div className="mt-8 bg-white shadow rounded-lg">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900">Matrice des Permissions</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Configurez les accès par rôle et par page de l'application
+              </p>
+            </div>
+            <div className="p-6">
+              <PermissionsMatrix />
+            </div>
+          </div>
+        )}
 
         {/* Permissions Section */}
         <div className="mt-8 bg-white shadow rounded-lg">
