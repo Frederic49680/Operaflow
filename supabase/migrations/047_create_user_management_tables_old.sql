@@ -1,4 +1,4 @@
--- Migration 047: Création des tables de gestion des utilisateurs (version simplifiée)
+-- Migration 047: Création des tables de gestion des utilisateurs
 -- Basé sur le PRD1.mdc
 
 -- Table des utilisateurs de l'application
@@ -87,11 +87,57 @@ CREATE TABLE IF NOT EXISTS audit_log (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Ajouter le champ titulaire_id aux tâches planning (si la table existe)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'planning_taches') THEN
+        ALTER TABLE planning_taches ADD COLUMN IF NOT EXISTS titulaire_id UUID REFERENCES app_users(id);
+    END IF;
+END $$;
+
+-- Ajouter le champ titulaire_id aux remontées site (si la table existe)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'remontee_site') THEN
+        ALTER TABLE remontee_site ADD COLUMN IF NOT EXISTS titulaire_id UUID REFERENCES app_users(id);
+    END IF;
+END $$;
+
+-- Ajouter le champ titulaire_id au journal maintenance (si la table existe)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'maintenance_journal') THEN
+        ALTER TABLE maintenance_journal ADD COLUMN IF NOT EXISTS titulaire_id UUID REFERENCES app_users(id);
+    END IF;
+END $$;
+
 -- Index pour les performances
 CREATE INDEX IF NOT EXISTS idx_app_users_email ON app_users(email);
 CREATE INDEX IF NOT EXISTS idx_app_users_active ON app_users(active);
 CREATE INDEX IF NOT EXISTS idx_roles_code ON roles(code);
 CREATE INDEX IF NOT EXISTS idx_permissions_code ON permissions(code);
+
+-- Index conditionnels pour les titulaires
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'planning_taches') THEN
+        CREATE INDEX IF NOT EXISTS idx_planning_taches_titulaire ON planning_taches(titulaire_id);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'remontee_site') THEN
+        CREATE INDEX IF NOT EXISTS idx_remontee_site_titulaire ON remontee_site(titulaire_id);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'maintenance_journal') THEN
+        CREATE INDEX IF NOT EXISTS idx_maintenance_journal_titulaire ON maintenance_journal(titulaire_id);
+    END IF;
+END $$;
 
 -- RLS (Row Level Security)
 ALTER TABLE app_users ENABLE ROW LEVEL SECURITY;
