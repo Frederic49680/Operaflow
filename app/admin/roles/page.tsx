@@ -66,26 +66,29 @@ export default function AdminRolesPage() {
 
       if (permissionsError) throw permissionsError
 
-      // Essayer de charger les permissions des rôles si la table existe
-      let rolesWithPermissions = rolesData || []
-      try {
-        const { data: rolesWithPermsData, error: rolesWithPermsError } = await supabase
-          .from('roles')
-          .select(`
-            *,
-            role_permissions(
-              permission_id,
-              permissions(code, label)
-            )
-          `)
-          .order('seniority_rank', { ascending: true })
+             // Essayer de charger les permissions des rôles si la table existe
+             let rolesWithPermissions = rolesData || []
+             try {
+               const { data: rolesWithPermsData, error: rolesWithPermsError } = await supabase
+                 .from('roles')
+                 .select(`
+                   *,
+                   role_permissions(
+                     permission_id,
+                     permissions(code, label)
+                   )
+                 `)
+                 .order('seniority_rank', { ascending: true })
 
-        if (!rolesWithPermsError) {
-          rolesWithPermissions = rolesWithPermsData || []
-        }
-      } catch (err) {
-        console.log('Table role_permissions pas encore créée, utilisation des rôles de base')
-      }
+               if (!rolesWithPermsError && rolesWithPermsData) {
+                 rolesWithPermissions = rolesWithPermsData
+                 console.log('Permissions chargées:', rolesWithPermsData)
+               } else {
+                 console.log('Erreur ou pas de permissions:', rolesWithPermsError)
+               }
+             } catch (err) {
+               console.log('Table role_permissions pas encore créée, utilisation des rôles de base')
+             }
 
       setRoles(rolesWithPermissions)
       setPermissions(permissionsData || [])
@@ -303,7 +306,7 @@ export default function AdminRolesPage() {
                               key={index}
                               className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800"
                             >
-                              {rp.permissions?.label || rp.permissions?.code}
+                              {rp.permissions?.label || rp.permissions?.code || 'Permission inconnue'}
                             </span>
                           ))
                         ) : (
