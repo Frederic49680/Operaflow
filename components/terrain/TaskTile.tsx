@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -35,11 +35,17 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
   const [isEditing, setIsEditing] = useState(false)
   const [comment, setComment] = useState("")
   const [progress, setProgress] = useState(task.avancement_pct || 0)
+  const [currentStatus, setCurrentStatus] = useState(task.statut || "Non lancé")
   const [showDailyReport, setShowDailyReport] = useState(false)
   const [reportMode, setReportMode] = useState<"manual" | "auto">("auto")
   const [manualProgress, setManualProgress] = useState(0)
   const [showHistory, setShowHistory] = useState(false)
   const [historyData, setHistoryData] = useState<any[]>([])
+
+  // Mettre à jour le statut local quand la prop change
+  useEffect(() => {
+    setCurrentStatus(task.statut || "Non lancé")
+  }, [task.statut])
 
   const getStatusConfig = (statut: string) => {
     switch (statut) {
@@ -96,7 +102,7 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
     }
   }
 
-  const statusConfig = getStatusConfig(task.statut)
+  const statusConfig = getStatusConfig(currentStatus)
   const StatusIcon = statusConfig.icon
 
   const handleStatusChange = async (newStatus: string) => {
@@ -265,7 +271,7 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
       </div>
 
       {/* Progression */}
-      {task.statut === "En cours" && (
+      {currentStatus === "En cours" && (
         <div className="mb-3">
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-medium">Avancement</span>
@@ -306,7 +312,7 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
       {statusConfig.actions.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
           {/* Bouton "Déclarer la journée" pour les tâches En cours */}
-          {task.statut === "En cours" && (
+          {currentStatus === "En cours" && (
             <Button
               size="sm"
               variant="outline"
