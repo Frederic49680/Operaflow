@@ -38,6 +38,8 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
   const [showDailyReport, setShowDailyReport] = useState(false)
   const [reportMode, setReportMode] = useState<"manual" | "auto">("auto")
   const [manualProgress, setManualProgress] = useState(0)
+  const [showHistory, setShowHistory] = useState(false)
+  const [historyData, setHistoryData] = useState<any[]>([])
 
   const getStatusConfig = (statut: string) => {
     switch (statut) {
@@ -207,6 +209,23 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
     } catch (error) {
       console.error("Error reporting daily progress:", error)
       toast.error("Erreur lors de la mise à jour")
+    }
+  }
+
+  const loadHistory = async () => {
+    try {
+      const response = await fetch(`/api/terrain/history?tache_id=${task.tache_id}`)
+      const result = await response.json()
+      
+      if (result.success) {
+        setHistoryData(result.data)
+        setShowHistory(true)
+      } else {
+        toast.error(result.message || "Erreur lors du chargement de l'historique")
+      }
+    } catch (error) {
+      console.error("Error loading history:", error)
+      toast.error("Erreur lors du chargement de l'historique")
     }
   }
 
@@ -389,7 +408,7 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
         size="sm"
         variant="ghost"
         className="w-full mt-2"
-        onClick={() => setIsEditing(!isEditing)}
+        onClick={loadHistory}
       >
         <History className="h-4 w-4 mr-2" />
         Voir l'historique
@@ -474,7 +493,82 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
-  )
-}
+
+      {/* Modale d'historique */}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Historique des remontées - {task.libelle_tache}</DialogTitle>
+            <DialogDescription>
+              Historique complet des modifications de statut et d'avancement
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {historyData.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Aucun historique disponible pour cette tâche
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {historyData.map((entry, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          {new Date(entry.date_saisie).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
+                      <Badge className={`${
+                        entry.statut_reel === 'Terminée' ? 'bg-green-100 text-green-800' :
+                        entry.statut_reel === 'En cours' ? 'bg-blue-100 text-blue-800' :
+                        entry.statut_reel === 'Suspendue' ? 'bg-slate-100 text-slate-800' :
+                        entry.statut_reel === 'Reportée' ? 'bg-orange-100 text-orange-800' :
+                        entry.statut_reel === 'Prolongée' ? 'bg-purple-100 text-purple-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {entry.statut_reel}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Avancement:</span> {entry.avancement_pct || 0}%
+                      </div>
+                      <div>
+                        <span className="font-medium">Heures métal:</span> {entry.heures_metal || 0}h
+                      </div>
+                      {entry.nb_present && (
+                        <div>
+                          <span className="font-medium">Présents:</span> {entry.nb_present}
+                        </div>
+                      )}
+                      {entry.motif && (
+                        <div>
+                          <span className="font-medium">Motif:</span> {entry.motif}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {entry.commentaire && (
+                      <div className="bg-slate-50 rounded p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">Commentaire</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{entry.commentaire}</p>
+                      </div>
+                    )}
+                    
+                    <div className="text-xs text-muted-foreground">
+                      Mis à jour le {new Date(entry.updated_at).toLocaleString('fr-FR')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 

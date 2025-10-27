@@ -113,16 +113,30 @@ export default function AffairesListWithTiles({ siteId, onRefresh }: AffairesLis
               <TaskTile
                 key={task.tache_id}
                 task={task}
-                onStatusChange={(taskId, newStatus) => {
+                onStatusChange={async (taskId, newStatus) => {
+                  // Mettre à jour l'état local immédiatement pour l'UX
                   setTasks(tasks.map((t) => 
                     t.tache_id === taskId ? { ...t, statut: newStatus } : t
                   ))
+                  
+                  // Recharger les tâches depuis le serveur pour avoir les vraies données
+                  if (selectedAffaire) {
+                    await loadTasks(selectedAffaire)
+                  }
+                  
                   if (onRefresh) onRefresh()
                 }}
-                onProgressChange={(taskId, progress) => {
+                onProgressChange={async (taskId, progress) => {
+                  // Mettre à jour l'état local immédiatement pour l'UX
                   setTasks(tasks.map((t) => 
                     t.tache_id === taskId ? { ...t, avancement_pct: progress } : t
                   ))
+                  
+                  // Recharger les tâches depuis le serveur pour avoir les vraies données
+                  if (selectedAffaire) {
+                    await loadTasks(selectedAffaire)
+                  }
+                  
                   if (onRefresh) onRefresh()
                 }}
               />
