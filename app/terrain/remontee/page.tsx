@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ClipboardList, Plus, Search, Download, Filter, CheckCircle, AlertTriangle } from "lucide-react"
+import { ClipboardList, Plus, Search, Download, Filter, AlertTriangle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { RemonteesTable } from "@/components/terrain/RemonteesTable"
 import { RemonteeFormModal } from "@/components/terrain/RemonteeFormModal"
@@ -73,25 +73,6 @@ export default function RemonteePage() {
     return () => clearInterval(interval)
   }, [])
 
-  const handleConfirmDay = async () => {
-    try {
-      const response = await fetch("/api/terrain/confirm-day", {
-        method: "POST",
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        toast.success(result.message || "Jour confirmé avec succès")
-        loadStats() // Rafraîchir les stats
-      } else {
-        toast.error(result.message || "Erreur lors de la confirmation")
-      }
-    } catch (error) {
-      console.error("Error confirming day:", error)
-      toast.error("Erreur lors de la confirmation")
-    }
-  }
 
   const handleExport = () => {
     toast.info("Fonctionnalité d'export en cours de développement")
@@ -141,7 +122,7 @@ export default function RemonteePage() {
                 À confirmer
               </CardTitle>
               <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md shadow-yellow-500/30">
-                <CheckCircle className="h-5 w-5 text-white" />
+                <AlertTriangle className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
@@ -208,14 +189,6 @@ export default function RemonteePage() {
               >
                 <Download className="h-4 w-4" />
                 Exporter
-              </Button>
-              <Button 
-                className="gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-md hover:shadow-lg transition-all"
-                onClick={handleConfirmDay}
-                disabled={stats.nbAConfirmer === 0}
-              >
-                <CheckCircle className="h-4 w-4" />
-                Confirmer le jour
               </Button>
               <BlocageGeneralModal sites={[]} affaires={[]} />
             </div>
