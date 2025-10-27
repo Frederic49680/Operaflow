@@ -14,6 +14,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Récupérer les informations de la tâche pour obtenir site_id et affaire_id
+    const { data: tache, error: tacheError } = await supabase
+      .from("planning_taches")
+      .select("site_id, affaire_id")
+      .eq("id", tache_id)
+      .single()
+
+    if (tacheError || !tache) {
+      console.error("Error fetching task:", tacheError)
+      return NextResponse.json(
+        { success: false, message: "Task not found" },
+        { status: 404 }
+      )
+    }
+
     // Vérifier si une remontée existe déjà pour aujourd'hui
     const { data: existingRemontee } = await supabase
       .from("remontee_site")
@@ -40,11 +55,13 @@ export async function POST(request: NextRequest) {
         )
       }
     } else {
-      // Créer une nouvelle remontée
+      // Créer une nouvelle remontée avec tous les champs nécessaires
       const { error } = await supabase
         .from("remontee_site")
         .insert({
           tache_id,
+          site_id: tache.site_id,
+          affaire_id: tache.affaire_id,
           date_saisie: new Date().toISOString().split("T")[0],
           statut_reel,
           avancement_pct: 0,
