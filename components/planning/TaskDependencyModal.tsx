@@ -57,6 +57,15 @@ export default function TaskDependencyModal({
     try {
       setIsCreating(true)
       
+      // Convertir le type de dépendance pour correspondre au CHECK constraint
+      const dependencyTypeMap: Record<string, string> = {
+        'finish_to_start': 'fin-debut',
+        'start_to_start': 'debut-debut',
+        'finish_to_finish': 'fin-fin',
+        'start_to_finish': 'debut-fin'
+      }
+      const dbDependencyType = dependencyTypeMap[dependencyType] || dependencyType
+      
       // Envoyer la requête à l'API
       const response = await fetch('/api/gantt/dependances', {
         method: 'POST',
@@ -64,7 +73,7 @@ export default function TaskDependencyModal({
         body: JSON.stringify({
           tache_id: sourceTaskId, // Tâche qui dépend de...
           tache_precedente_id: selectedTargetTask, // ...cette tâche
-          type_dependance: dependencyType,
+          type_dependance: dbDependencyType,
           lag_jours: lagDays
         })
       })
@@ -92,13 +101,17 @@ export default function TaskDependencyModal({
   }
 
   const getDependencyTypeLabel = (type: string) => {
-    const types = {
+    const types: Record<string, string> = {
       'finish_to_start': 'Fin → Début (FS)',
       'start_to_start': 'Début → Début (SS)',
       'finish_to_finish': 'Fin → Fin (FF)',
-      'start_to_finish': 'Début → Fin (SF)'
+      'start_to_finish': 'Début → Fin (SF)',
+      'fin-debut': 'Fin → Début (FS)',
+      'debut-debut': 'Début → Début (SS)',
+      'fin-fin': 'Fin → Fin (FF)',
+      'debut-fin': 'Début → Fin (SF)'
     }
-    return types[type as keyof typeof types] || type
+    return types[type] || type
   }
 
   return (

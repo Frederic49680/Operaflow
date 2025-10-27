@@ -130,6 +130,11 @@ export default function TaskCard({
                     {task.affaire.code_affaire}
                   </Badge>
                 )}
+                {level > 0 && (
+                  <Badge variant="outline" className="bg-indigo-100 text-indigo-800">
+                    Niveau {level}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
