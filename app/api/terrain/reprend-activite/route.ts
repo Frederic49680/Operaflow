@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
     console.log("Task found:", tache)
 
     // Vérifier que la tâche est dans le bon statut
-    if (!["Suspendu", "Reporté"].includes(tache.statut)) {
+    if (!["Suspendu", "Reporté", "Prolongé"].includes(tache.statut)) {
       console.error("Task not in correct status:", tache.statut)
       return NextResponse.json(
-        { success: false, message: `Task must be suspended or reported to be resumed` },
+        { success: false, message: `Task must be suspended, reported, or prolonged to be resumed` },
         { status: 400 }
       )
     }

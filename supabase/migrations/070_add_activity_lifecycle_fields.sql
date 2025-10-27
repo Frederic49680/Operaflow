@@ -172,8 +172,8 @@ BEGIN
         RAISE EXCEPTION 'Tâche non trouvée';
     END IF;
     
-    IF tache_record.statut NOT IN ('Suspendu', 'Reporté') THEN
-        RAISE EXCEPTION 'La tâche doit être suspendue ou reportée pour être reprise';
+    IF tache_record.statut NOT IN ('Suspendu', 'Reporté', 'Prolongé') THEN
+        RAISE EXCEPTION 'La tâche doit être suspendue, reportée ou prolongée pour être reprise';
     END IF;
     
     -- Mettre à jour la tâche
