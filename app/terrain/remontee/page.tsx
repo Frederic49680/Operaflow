@@ -33,12 +33,20 @@ export default function RemonteePage() {
         .select("*", { count: "exact", head: true })
         .eq("date_saisie", today)
 
-      // À confirmer
-      const { count: nbAConfirmer } = await supabase
+      // À confirmer - Tâches "En cours" qui n'ont pas encore de remontée journalière aujourd'hui
+      const { data: tasksEnCours } = await supabase
+        .from("planning_taches")
+        .select("id")
+        .eq("statut", "En cours")
+
+      const { data: remonteesAujourdhui } = await supabase
         .from("remontee_site")
-        .select("*", { count: "exact", head: true })
+        .select("tache_id")
         .eq("date_saisie", today)
-        .eq("etat_confirme", false)
+        .gt("avancement_pct", 0)
+
+      const tasksAvecRemontee = remonteesAujourdhui?.map(r => r.tache_id) || []
+      const nbAConfirmer = (tasksEnCours?.filter(t => !tasksAvecRemontee.includes(t.id)).length || 0)
 
       // Tâches bloquées
       const { count: nbBloquees } = await supabase
