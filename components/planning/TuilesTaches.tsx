@@ -271,6 +271,8 @@ export default function TuilesTaches() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [conflicts, setConflicts] = useState<any[]>([])
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -398,8 +400,8 @@ export default function TuilesTaches() {
   }
 
   const handleEdit = (task: Task) => {
-    // TODO: Ouvrir modal d'édition
-    console.log('Édition de la tâche:', task)
+    setEditingTask(task)
+    setShowEditModal(true)
   }
 
   const handleDelete = async (taskId: string) => {
@@ -570,6 +572,172 @@ export default function TuilesTaches() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* Modal d'édition de tâche */}
+      {showEditModal && editingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Edit className="h-5 w-5 text-blue-600" />
+              Modifier la tâche
+            </h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nom de la tâche</label>
+                  <Input
+                    id="edit-libelle"
+                    defaultValue={editingTask.libelle_tache}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Statut</label>
+                  <select
+                    id="edit-statut"
+                    defaultValue={editingTask.statut}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="Non lancé">Non lancé</option>
+                    <option value="En cours">En cours</option>
+                    <option value="Terminé">Terminé</option>
+                    <option value="Bloqué">Bloqué</option>
+                    <option value="Reporté">Reporté</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Avancement (%)</label>
+                  <Input
+                    id="edit-avancement"
+                    type="number"
+                    min="0"
+                    max="100"
+                    defaultValue={editingTask.avancement_pct}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Type de tâche</label>
+                  <select
+                    id="edit-type"
+                    defaultValue={editingTask.type_tache || "Autre"}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="Préparation">Préparation</option>
+                    <option value="Exécution">Exécution</option>
+                    <option value="Contrôle">Contrôle</option>
+                    <option value="Autre">Autre</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Date début</label>
+                  <Input
+                    id="edit-date-debut"
+                    type="date"
+                    defaultValue={editingTask.date_debut_plan || ""}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Date fin</label>
+                  <Input
+                    id="edit-date-fin"
+                    type="date"
+                    defaultValue={editingTask.date_fin_plan || ""}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Effort planifié (heures)</label>
+                  <Input
+                    id="edit-effort"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    defaultValue={editingTask.effort_plan_h || 0}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Niveau hiérarchique</label>
+                  <select
+                    id="task-level"
+                    defaultValue={editingTask.level || 0}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="0">0 - Racine</option>
+                    <option value="1">1 - Sous-tâche</option>
+                    <option value="2">2 - Sous-sous-tâche</option>
+                    <option value="3">3 - Sous-sous-sous-tâche</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditModal(false)}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={async () => {
+                  try {
+                    if (!editingTask) return
+                    
+                    // Récupérer toutes les valeurs du formulaire
+                    const libelleInput = document.getElementById('edit-libelle') as HTMLInputElement
+                    const statutSelect = document.getElementById('edit-statut') as HTMLSelectElement
+                    const avancementInput = document.getElementById('edit-avancement') as HTMLInputElement
+                    const typeSelect = document.getElementById('edit-type') as HTMLSelectElement
+                    const dateDebutInput = document.getElementById('edit-date-debut') as HTMLInputElement
+                    const dateFinInput = document.getElementById('edit-date-fin') as HTMLInputElement
+                    const effortInput = document.getElementById('edit-effort') as HTMLInputElement
+                    const levelSelect = document.getElementById('task-level') as HTMLSelectElement
+                    
+                    const updates: any = {
+                      libelle_tache: libelleInput?.value || editingTask.libelle_tache,
+                      statut: statutSelect?.value || editingTask.statut,
+                      avancement_pct: avancementInput ? parseInt(avancementInput.value) : editingTask.avancement_pct || 0,
+                      type_tache: typeSelect?.value || editingTask.type_tache,
+                      date_debut_plan: dateDebutInput?.value || editingTask.date_debut_plan,
+                      date_fin_plan: dateFinInput?.value || editingTask.date_fin_plan,
+                      effort_plan_h: effortInput ? parseFloat(effortInput.value) : editingTask.effort_plan_h || 0,
+                      level: levelSelect ? parseInt(levelSelect.value) : editingTask.level || 0
+                    }
+                    
+                    const supabase = createClient()
+                    const { error } = await supabase
+                      .from('planning_taches')
+                      .update(updates)
+                      .eq('id', editingTask.id)
+                    
+                    if (error) throw error
+                    
+                    toast.success("Tâche modifiée avec succès")
+                    setShowEditModal(false)
+                    loadTasks()
+                  } catch (error) {
+                    console.error('Erreur lors de la modification:', error)
+                    toast.error("Erreur lors de la modification de la tâche")
+                  }
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Modifier
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

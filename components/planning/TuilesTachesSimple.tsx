@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,6 +38,9 @@ export default function TuilesTachesSimple() {
   const [showResourceModal, setShowResourceModal] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [selectedTaskName, setSelectedTaskName] = useState<string>("")
+  
+  // Refs pour récupérer les valeurs du formulaire
+  const formRef = useRef<HTMLDivElement>(null)
 
   const toggleExpand = (taskId: string) => {
     const newExpanded = new Set(expandedTasks)
@@ -312,70 +315,76 @@ export default function TuilesTachesSimple() {
                      Modifier la tâche
                    </h3>
                    <div className="space-y-4">
-                     <div className="grid grid-cols-2 gap-4">
-                       <div>
-                         <label className="block text-sm font-medium mb-1">Nom de la tâche</label>
-                         <Input
-                           defaultValue={editingTask.libelle_tache}
-                           className="w-full"
-                         />
-                       </div>
-                       <div>
-                         <label className="block text-sm font-medium mb-1">Statut</label>
-                         <select
-                           defaultValue={editingTask.statut}
-                           className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                         >
-                           <option value="Non lancé">Non lancé</option>
-                           <option value="En cours">En cours</option>
-                           <option value="Terminé">Terminé</option>
-                           <option value="Bloqué">Bloqué</option>
-                           <option value="Reporté">Reporté</option>
-                         </select>
-                       </div>
-                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                       <div>
-                         <label className="block text-sm font-medium mb-1">Avancement (%)</label>
-                         <Input
-                           type="number"
-                           min="0"
-                           max="100"
-                           defaultValue={editingTask.avancement_pct}
-                           className="w-full"
-                         />
-                       </div>
-                       <div>
-                         <label className="block text-sm font-medium mb-1">Type de tâche</label>
-                         <select
-                           defaultValue={editingTask.type_tache || "Autre"}
-                           className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                         >
-                           <option value="Préparation">Préparation</option>
-                           <option value="Exécution">Exécution</option>
-                           <option value="Contrôle">Contrôle</option>
-                           <option value="Autre">Autre</option>
-                         </select>
-                       </div>
-                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                       <div>
-                         <label className="block text-sm font-medium mb-1">Date début</label>
-                         <Input
-                           type="date"
-                           defaultValue={editingTask.date_debut_plan || ""}
-                           className="w-full"
-                         />
-                       </div>
-                       <div>
-                         <label className="block text-sm font-medium mb-1">Date fin</label>
-                         <Input
-                           type="date"
-                           defaultValue={editingTask.date_fin_plan || ""}
-                           className="w-full"
-                         />
-                       </div>
-                     </div>
+                                           <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Nom de la tâche</label>
+                          <Input
+                            id="edit-libelle"
+                            defaultValue={editingTask.libelle_tache}
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Statut</label>
+                          <select
+                            id="edit-statut"
+                            defaultValue={editingTask.statut}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          >
+                            <option value="Non lancé">Non lancé</option>
+                            <option value="En cours">En cours</option>
+                            <option value="Terminé">Terminé</option>
+                            <option value="Bloqué">Bloqué</option>
+                            <option value="Reporté">Reporté</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Avancement (%)</label>
+                          <Input
+                            id="edit-avancement"
+                            type="number"
+                            min="0"
+                            max="100"
+                            defaultValue={editingTask.avancement_pct}
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Type de tâche</label>
+                          <select
+                            id="edit-type"
+                            defaultValue={editingTask.type_tache || "Autre"}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          >
+                            <option value="Préparation">Préparation</option>
+                            <option value="Exécution">Exécution</option>
+                            <option value="Contrôle">Contrôle</option>
+                            <option value="Autre">Autre</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Date début</label>
+                          <Input
+                            id="edit-date-debut"
+                            type="date"
+                            defaultValue={editingTask.date_debut_plan || ""}
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Date fin</label>
+                          <Input
+                            id="edit-date-fin"
+                            type="date"
+                            defaultValue={editingTask.date_fin_plan || ""}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
                      <div>
                        <label className="block text-sm font-medium mb-1">Compétence requise</label>
                          <select
@@ -393,6 +402,7 @@ export default function TuilesTachesSimple() {
                         <div>
                           <label className="block text-sm font-medium mb-1">Effort planifié (heures)</label>
                           <Input
+                            id="edit-effort"
                             type="number"
                             min="0"
                             step="0.5"
@@ -429,21 +439,36 @@ export default function TuilesTachesSimple() {
                      >
                        Annuler
                      </Button>
-                                           <Button
+                      <Button
                         onClick={async () => {
                           try {
-                            // Récupérer le niveau hiérarchique
+                            if (!editingTask) return
+                            
+                            // Récupérer toutes les valeurs du formulaire
+                            const libelleInput = document.getElementById('edit-libelle') as HTMLInputElement
+                            const statutSelect = document.getElementById('edit-statut') as HTMLSelectElement
+                            const avancementInput = document.getElementById('edit-avancement') as HTMLInputElement
+                            const typeSelect = document.getElementById('edit-type') as HTMLSelectElement
+                            const dateDebutInput = document.getElementById('edit-date-debut') as HTMLInputElement
+                            const dateFinInput = document.getElementById('edit-date-fin') as HTMLInputElement
+                            const effortInput = document.getElementById('edit-effort') as HTMLInputElement
                             const levelSelect = document.getElementById('task-level') as HTMLSelectElement
+                            
                             const updates: any = {
+                              libelle_tache: libelleInput?.value || editingTask.libelle_tache,
+                              statut: statutSelect?.value || editingTask.statut,
+                              avancement_pct: avancementInput ? parseInt(avancementInput.value) : editingTask.avancement_pct || 0,
+                              type_tache: typeSelect?.value || editingTask.type_tache,
+                              date_debut_plan: dateDebutInput?.value || editingTask.date_debut_plan,
+                              date_fin_plan: dateFinInput?.value || editingTask.date_fin_plan,
+                              effort_plan_h: effortInput ? parseFloat(effortInput.value) : editingTask.effort_plan_h || 0,
                               level: levelSelect ? parseInt(levelSelect.value) : editingTask.level || 0
                             }
                             
-                            if (editingTask) {
-                              await updateTask(editingTask.id, updates)
-                              toast.success("Tâche modifiée avec succès")
-                              setShowEditModal(false)
-                              loadTasks()
-                            }
+                            await updateTask(editingTask.id, updates)
+                            toast.success("Tâche modifiée avec succès")
+                            setShowEditModal(false)
+                            loadTasks()
                           } catch (error) {
                             console.error('Erreur lors de la modification:', error)
                             toast.error("Erreur lors de la modification de la tâche")
