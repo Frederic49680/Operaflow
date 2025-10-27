@@ -144,26 +144,46 @@ export async function POST(request: NextRequest) {
     console.log("Existing remontee check:", { existingRemontee, existingError })
 
     if (existingRemontee) {
-      console.log("Updating existing remontee:", existingRemontee.id)
-      console.log("Update data:", { statut_reel: mappedStatutRemontee })
+      console.log("Existing remontee found:", existingRemontee.id)
       
-      // Mettre à jour la remontée existante
+      // Vérifier si le statut a vraiment changé
+      if (existingRemontee.statut_reel === mappedStatutRemontee) {
+        console.log("Status unchanged, no update needed")
+        return NextResponse.json({ success: true, message: "Status unchanged" })
+      }
+      
+      console.log("Creating new historical entry for status change")
+      console.log("Previous status:", existingRemontee.statut_reel, "-> New status:", mappedStatutRemontee)
+      
+      // Créer une nouvelle entrée historique au lieu de mettre à jour l'existante
+      const insertData = {
+        tache_id,
+        site_id: tache.site_id,
+        affaire_id: tache.affaire_id,
+        date_saisie: today,
+        statut_reel: mappedStatutRemontee,
+        avancement_pct: existingRemontee.avancement_pct || 0,
+        nb_present: existingRemontee.nb_present || 0,
+        heures_metal: existingRemontee.heures_metal || 0,
+        motif: existingRemontee.motif,
+        commentaire: existingRemontee.commentaire,
+      }
+      
+      console.log("Creating new historical entry with data:", insertData)
+      
       const { error } = await supabase
         .from("remontee_site")
-        .update({
-          statut_reel: mappedStatutRemontee,
-        })
-        .eq("id", existingRemontee.id)
+        .insert(insertData)
 
       if (error) {
-        console.error("Error updating remontee:", error)
+        console.error("Error creating historical entry:", error)
         console.error("Error details:", JSON.stringify(error, null, 2))
         return NextResponse.json(
-          { success: false, message: `Update error: ${error.message}` },
+          { success: false, message: `Insert error: ${error.message}` },
           { status: 500 }
         )
       }
-      console.log("Remontee updated successfully")
+      console.log("Historical entry created successfully")
       
       // Mettre à jour aussi le statut dans planning_taches
       const { error: updateTaskError } = await supabase
