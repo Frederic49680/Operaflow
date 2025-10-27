@@ -18,9 +18,10 @@ import TaskTile from "./TaskTile"
 
 interface AffairesListWithTilesProps {
   siteId?: string
+  onRefresh?: () => void
 }
 
-export default function AffairesListWithTiles({ siteId }: AffairesListWithTilesProps) {
+export default function AffairesListWithTiles({ siteId, onRefresh }: AffairesListWithTilesProps) {
   const [affaires, setAffaires] = useState<any[]>([])
   const [selectedAffaire, setSelectedAffaire] = useState<string | null>(null)
   const [tasks, setTasks] = useState<any[]>([])
@@ -116,11 +117,13 @@ export default function AffairesListWithTiles({ siteId }: AffairesListWithTilesP
                   setTasks(tasks.map((t) => 
                     t.tache_id === taskId ? { ...t, statut: newStatus } : t
                   ))
+                  if (onRefresh) onRefresh()
                 }}
                 onProgressChange={(taskId, progress) => {
                   setTasks(tasks.map((t) => 
                     t.tache_id === taskId ? { ...t, avancement_pct: progress } : t
                   ))
+                  if (onRefresh) onRefresh()
                 }}
               />
             ))}

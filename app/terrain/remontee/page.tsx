@@ -1,3 +1,6 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,9 +10,92 @@ import { RemonteesTable } from "@/components/terrain/RemonteesTable"
 import { RemonteeFormModal } from "@/components/terrain/RemonteeFormModal"
 import AffairesListWithTiles from "@/components/terrain/AffairesListWithTiles"
 import BlocageGeneralModal from "@/components/terrain/BlocageGeneralModal"
-import Link from "next/link"
+import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
 
 export default function RemonteePage() {
+  const [stats, setStats] = useState({
+    nbRemonteesJour: 0,
+    nbAConfirmer: 0,
+    nbBloquees: 0,
+    heuresMetal: 0,
+  })
+
+  // Charger les stats
+  const loadStats = async () => {
+    try {
+      const supabase = createClient()
+      const today = new Date().toISOString().split("T")[0]
+
+      // Remontées du jour
+      const { count: nbRemontees } = await supabase
+        .from("remontee_site")
+        .select("*", { count: "exact", head: true })
+        .eq("date_saisie", today)
+
+      // À confirmer
+      const { count: nbAConfirmer } = await supabase
+        .from("remontee_site")
+        .select("*", { count: "exact", head: true })
+        .eq("date_saisie", today)
+        .eq("etat_confirme", false)
+
+      // Tâches bloquées
+      const { count: nbBloquees } = await supabase
+        .from("remontee_site")
+        .select("*", { count: "exact", head: true })
+        .eq("date_saisie", today)
+        .in("statut_reel", ["Bloquée", "Suspendue"])
+
+      // Heures métal
+      const { data: remonteesMetal } = await supabase
+        .from("remontee_site")
+        .select("heures_metal")
+        .eq("date_saisie", today)
+
+      const heuresMetal = remonteesMetal?.reduce((sum, r) => sum + (r.heures_metal || 0), 0) || 0
+
+      setStats({
+        nbRemonteesJour: nbRemontees || 0,
+        nbAConfirmer: nbAConfirmer || 0,
+        nbBloquees: nbBloquees || 0,
+        heuresMetal: heuresMetal,
+      })
+    } catch (error) {
+      console.error("Error loading stats:", error)
+    }
+  }
+
+  useEffect(() => {
+    loadStats()
+    // Rafraîchir les stats toutes les minutes
+    const interval = setInterval(loadStats, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleConfirmDay = async () => {
+    try {
+      const response = await fetch("/api/terrain/confirm-day", {
+        method: "POST",
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast.success(result.message || "Jour confirmé avec succès")
+        loadStats() // Rafraîchir les stats
+      } else {
+        toast.error(result.message || "Erreur lors de la confirmation")
+      }
+    } catch (error) {
+      console.error("Error confirming day:", error)
+      toast.error("Erreur lors de la confirmation")
+    }
+  }
+
+  const handleExport = () => {
+    toast.info("Fonctionnalité d'export en cours de développement")
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-slate-100">
 
@@ -42,7 +128,7 @@ export default function RemonteePage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
+              <div className="text-3xl font-bold text-slate-900">{stats.nbRemonteesJour}</div>
               <p className="text-xs text-slate-500 mt-1">
                 Enregistrées
               </p>
@@ -59,7 +145,9 @@ export default function RemonteePage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
+              <div className={`text-3xl font-bold ${stats.nbAConfirmer > 0 ? 'text-yellow-600' : 'text-slate-900'}`}>
+                {stats.nbAConfirmer}
+              </div>
               <p className="text-xs text-slate-500 mt-1">
                 En attente
               </p>
@@ -76,7 +164,9 @@ export default function RemonteePage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
+              <div className={`text-3xl font-bold ${stats.nbBloquees > 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                {stats.nbBloquees}
+              </div>
               <p className="text-xs text-slate-500 mt-1">
                 Blocages actifs
               </p>
@@ -93,7 +183,7 @@ export default function RemonteePage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">0</div>
+              <div className="text-3xl font-bold text-green-600">{stats.heuresMetal.toFixed(1)}</div>
               <p className="text-xs text-slate-500 mt-1">
                 Heures productives
               </p>
@@ -110,11 +200,20 @@ export default function RemonteePage() {
               <p className="text-sm text-slate-600">Vue liste et tuiles interactives</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={handleExport}
+              >
                 <Download className="h-4 w-4" />
                 Exporter
               </Button>
-              <Button className="gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-md hover:shadow-lg transition-all">
+              <Button 
+                className="gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-md hover:shadow-lg transition-all"
+                onClick={handleConfirmDay}
+                disabled={stats.nbAConfirmer === 0}
+              >
                 <CheckCircle className="h-4 w-4" />
                 Confirmer le jour
               </Button>
@@ -123,7 +222,7 @@ export default function RemonteePage() {
           </div>
 
           {/* Composant principal */}
-          <AffairesListWithTiles />
+          <AffairesListWithTiles onRefresh={loadStats} />
         </div>
       </main>
     </div>
