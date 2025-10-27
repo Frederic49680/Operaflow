@@ -20,10 +20,17 @@ import {
   History,
   Building2,
   User,
-  TrendingUp
+  TrendingUp,
+  RotateCcw,
+  Plus,
+  AlertTriangle
 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
+import SuspendModal from "./SuspendModal"
+import ReprendModal from "./ReprendModal"
+import ReportModal from "./ReportModal"
+import ProlongModal from "./ProlongModal"
 
 interface TaskTileProps {
   task: any
@@ -43,6 +50,12 @@ export default function TaskTile({ task, onStatusChange, onProgressChange, onDai
   const [showHistory, setShowHistory] = useState(false)
   const [historyData, setHistoryData] = useState<any[]>([])
   const [hasDailyReportToday, setHasDailyReportToday] = useState(false)
+  
+  // États pour les nouvelles modales
+  const [showSuspendModal, setShowSuspendModal] = useState(false)
+  const [showReprendModal, setShowReprendModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [showProlongModal, setShowProlongModal] = useState(false)
 
   // Mettre à jour le statut local quand la prop change
   useEffect(() => {
@@ -291,12 +304,18 @@ export default function TaskTile({ task, onStatusChange, onProgressChange, onDai
         </Badge>
       </div>
 
-      {/* Dates */}
+      {/* Dates et jours actifs */}
       <div className="flex items-center gap-4 text-sm mb-3">
         <div className="flex items-center gap-1">
           <Calendar className="h-4 w-4" />
           <span>{new Date(task.date_debut_plan).toLocaleDateString()} → {new Date(task.date_fin_plan).toLocaleDateString()}</span>
         </div>
+        {task.jours_actifs !== undefined && task.jours_actifs > 0 && (
+          <div className="flex items-center gap-1 text-blue-600">
+            <Clock className="h-4 w-4" />
+            <span>{task.jours_actifs} jour{task.jours_actifs > 1 ? 's' : ''} actif{task.jours_actifs > 1 ? 's' : ''}</span>
+          </div>
+        )}
       </div>
 
       {/* Progression */}
@@ -318,7 +337,7 @@ export default function TaskTile({ task, onStatusChange, onProgressChange, onDai
         </div>
       )}
 
-      {/* Alertes */}
+      {/* Alertes et informations de statut */}
       {task.nb_blocages_actifs > 0 && (
         <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-center gap-2 text-red-700 text-sm">
@@ -337,53 +356,144 @@ export default function TaskTile({ task, onStatusChange, onProgressChange, onDai
         </div>
       )}
 
-      {/* Actions rapides */}
-      {statusConfig.actions.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          {/* Bouton "Déclarer la journée" pour les tâches En cours */}
-          {currentStatus === "En cours" && !hasDailyReportToday && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowDailyReport(true)}
-              className="border-blue-500 text-blue-700 hover:bg-blue-50"
-            >
-              <TrendingUp className="h-4 w-4 mr-1" />
-              Déclarer la journée
-            </Button>
-          )}
-          
-          {statusConfig.actions.includes("Lancer") && (
-            <Button
-              size="sm"
-              onClick={() => handleStatusChange("En cours")}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Play className="h-4 w-4 mr-1" />
-              Lancer
-            </Button>
-          )}
-          {statusConfig.actions.includes("Terminer") && (
-            <Button
-              size="sm"
-              onClick={() => handleStatusChange("Terminé")}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Terminer
-            </Button>
-          )}
-          {statusConfig.actions.includes("Suspendre") && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleStatusChange("Suspendu")}
-            >
-              <Pause className="h-4 w-4 mr-1" />
-              Suspendre
-            </Button>
-          )}
-          {statusConfig.actions.includes("Relancer") && (
+      {/* Informations de suspension */}
+      {currentStatus === "Suspendu" && task.motif_suspension && (
+        <div className="mb-3 p-2 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="flex items-center gap-2 text-orange-700 text-sm mb-1">
+            <Pause className="h-4 w-4" />
+            <span className="font-medium">Suspendu depuis le {task.date_suspension ? new Date(task.date_suspension).toLocaleDateString() : 'N/A'}</span>
+          </div>
+          <p className="text-xs text-orange-600">{task.motif_suspension}</p>
+        </div>
+      )}
+
+      {/* Informations de report */}
+      {currentStatus === "Reporté" && task.motif_report && (
+        <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center gap-2 text-yellow-700 text-sm mb-1">
+            <Calendar className="h-4 w-4" />
+            <span className="font-medium">Reporté - Reprise prévue le {task.date_report ? new Date(task.date_report).toLocaleDateString() : 'N/A'}</span>
+          </div>
+          <p className="text-xs text-yellow-600">{task.motif_report}</p>
+        </div>
+      )}
+
+      {/* Informations de prolongation */}
+      {currentStatus === "Prolongé" && task.motif_prolongation && (
+        <div className="mb-3 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="flex items-center gap-2 text-purple-700 text-sm mb-1">
+            <Plus className="h-4 w-4" />
+            <span className="font-medium">Prolongé de {task.duree_sup || 0} jour{(task.duree_sup || 0) > 1 ? 's' : ''}</span>
+          </div>
+          <p className="text-xs text-purple-600">{task.motif_prolongation}</p>
+        </div>
+      )}
+
+      {/* Actions rapides selon PRD v2 */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        {/* Bouton "Déclarer la journée" pour les tâches En cours */}
+        {currentStatus === "En cours" && !hasDailyReportToday && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowDailyReport(true)}
+            className="border-blue-500 text-blue-700 hover:bg-blue-50"
+          >
+            <TrendingUp className="h-4 w-4 mr-1" />
+            Déclarer la journée
+          </Button>
+        )}
+        
+        {/* ▶️ Lancer - Visible si statut = Non lancé */}
+        {currentStatus === "Non lancé" && (
+          <Button
+            size="sm"
+            onClick={() => handleStatusChange("En cours")}
+            className="bg-green-500 hover:bg-green-600"
+          >
+            <Play className="h-4 w-4 mr-1" />
+            Lancer
+          </Button>
+        )}
+        
+        {/* ⏸️ Suspendre - Visible si statut = En cours */}
+        {currentStatus === "En cours" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowSuspendModal(true)}
+            className="border-orange-500 text-orange-700 hover:bg-orange-50"
+          >
+            <Pause className="h-4 w-4 mr-1" />
+            Suspendre
+          </Button>
+        )}
+        
+        {/* 🔁 Reprendre - Visible si statut = Suspendu ou Reporté */}
+        {(currentStatus === "Suspendu" || currentStatus === "Reporté") && (
+          <Button
+            size="sm"
+            onClick={() => setShowReprendModal(true)}
+            className="bg-green-500 hover:bg-green-600"
+          >
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Reprendre
+          </Button>
+        )}
+        
+        {/* 🟨 Reporter - Visible si statut = En cours */}
+        {currentStatus === "En cours" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowReportModal(true)}
+            className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+          >
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Reporter
+          </Button>
+        )}
+        
+        {/* 🟥 Claim - Visible si statut = Reporté / Bloqué */}
+        {(currentStatus === "Reporté" || currentStatus === "Bloqué") && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {/* TODO: Ouvrir modal Claim */}}
+            className="border-red-500 text-red-700 hover:bg-red-50"
+          >
+            <AlertTriangle className="h-4 w-4 mr-1" />
+            Claim
+          </Button>
+        )}
+        
+        {/* ➕ Prolonger - Visible si statut = En cours ou Suspendu */}
+        {(currentStatus === "En cours" || currentStatus === "Suspendu") && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowProlongModal(true)}
+            className="border-green-500 text-green-700 hover:bg-green-50"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Prolonger
+          </Button>
+        )}
+        
+        {/* Terminer - Visible si statut = En cours */}
+        {currentStatus === "En cours" && (
+          <Button
+            size="sm"
+            onClick={() => handleStatusChange("Terminé")}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <CheckCircle2 className="h-4 w-4 mr-1" />
+            Terminer
+          </Button>
+        )}
+        
+        {/* Actions legacy pour compatibilité */}
+        {statusConfig.actions.includes("Relancer") && (
             <Button
               size="sm"
               onClick={() => handleStatusChange("En cours")}
@@ -606,6 +716,52 @@ export default function TaskTile({ task, onStatusChange, onProgressChange, onDai
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modales PRD v2 */}
+      <SuspendModal
+        isOpen={showSuspendModal}
+        onClose={() => setShowSuspendModal(false)}
+        taskId={task.tache_id}
+        taskName={task.libelle_tache}
+        onSuccess={() => {
+          if (onStatusChange) onStatusChange(task.tache_id, "Suspendu")
+          setCurrentStatus("Suspendu")
+        }}
+      />
+
+      <ReprendModal
+        isOpen={showReprendModal}
+        onClose={() => setShowReprendModal(false)}
+        taskId={task.tache_id}
+        taskName={task.libelle_tache}
+        onSuccess={() => {
+          if (onStatusChange) onStatusChange(task.tache_id, "En cours")
+          setCurrentStatus("En cours")
+        }}
+      />
+
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        taskId={task.tache_id}
+        taskName={task.libelle_tache}
+        onSuccess={() => {
+          if (onStatusChange) onStatusChange(task.tache_id, "Reporté")
+          setCurrentStatus("Reporté")
+        }}
+      />
+
+      <ProlongModal
+        isOpen={showProlongModal}
+        onClose={() => setShowProlongModal(false)}
+        taskId={task.tache_id}
+        taskName={task.libelle_tache}
+        currentEndDate={task.date_fin_plan}
+        onSuccess={() => {
+          // Recharger les données de la tâche pour voir la nouvelle date de fin
+          if (onStatusChange) onStatusChange(task.tache_id, currentStatus)
+        }}
+      />
     </Card>
   )
 }
