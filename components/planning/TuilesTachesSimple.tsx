@@ -411,6 +411,7 @@ export default function TuilesTachesSimple() {
                onClose={() => setShowResourceModal(false)}
                taskId={selectedTaskId || ""}
                taskName={selectedTaskName}
+               onResourceAdded={loadTasks}
              />
     </div>
   )

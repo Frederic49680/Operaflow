@@ -22,12 +22,13 @@ import {
 } from "@/components/ui/select"
 import { User, Plus, Trash2, Clock, Users } from "lucide-react"
 import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
 
 interface Resource {
   id: string
   nom: string
   prenom: string
-  competence: string
+  competences: string[]
   site: string
 }
 
@@ -43,13 +44,15 @@ interface TaskResourceModalProps {
   onClose: () => void
   taskId: string
   taskName: string
+  onResourceAdded?: () => void
 }
 
 export default function TaskResourceModal({
   isOpen,
   onClose,
   taskId,
-  taskName
+  taskName,
+  onResourceAdded
 }: TaskResourceModalProps) {
   const [resources, setResources] = useState<Resource[]>([])
   const [taskResources, setTaskResources] = useState<TaskResource[]>([])
@@ -57,31 +60,83 @@ export default function TaskResourceModal({
   const [charge, setCharge] = useState<number>(100)
   const [heures, setHeures] = useState<number>(8)
   const [isLoading, setIsLoading] = useState(false)
+  const supabase = createClient()
 
-  // Charger les ressources disponibles
+  // Charger les ressources disponibles depuis Supabase
   useEffect(() => {
     if (isOpen) {
       loadResources()
+      loadTaskResources()
     }
-  }, [isOpen])
+  }, [isOpen, taskId])
 
   const loadResources = async () => {
     try {
       setIsLoading(true)
-      // Simulation de chargement des ressources
-      const mockResources: Resource[] = [
-        { id: "1", nom: "Dupont", prenom: "Jean", competence: "Électricité", site: "E-03A" },
-        { id: "2", nom: "Martin", prenom: "Pierre", competence: "CVC", site: "E-03A" },
-        { id: "3", nom: "Bernard", prenom: "Marie", competence: "Électricité", site: "DAM" },
-        { id: "4", nom: "Leroy", prenom: "Paul", competence: "Automatisme", site: "DAM" },
-        { id: "5", nom: "Moreau", prenom: "Sophie", competence: "CVC", site: "PDC_FBA" }
-      ]
-      setResources(mockResources)
+      const { data, error } = await supabase
+        .from('ressources')
+        .select('id, nom, prenom, competences, site_id')
+        .eq('actif', true)
+        .order('nom')
+
+      if (error) throw error
+
+      // Charger les infos de site pour chaque ressource
+      const resourcesWithSites = await Promise.all(
+        (data || []).map(async (r) => {
+          let site = 'Non assigné'
+          if (r.site_id) {
+            const { data: siteData } = await supabase
+              .from('sites')
+              .select('nom, code_site')
+              .eq('id', r.site_id)
+              .single()
+            if (siteData) {
+              site = `${siteData.code_site} - ${siteData.nom}`
+            }
+          }
+          return {
+            id: r.id,
+            nom: r.nom,
+            prenom: r.prenom,
+            competences: r.competences || [],
+            site: site
+          }
+        })
+      )
+
+      setResources(resourcesWithSites)
     } catch (error) {
       console.error('Erreur lors du chargement des ressources:', error)
       toast.error("Erreur lors du chargement des ressources")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadTaskResources = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('taches_ressources')
+        .select(`
+          ressource_id,
+          charge_h,
+          ressources!inner(nom, prenom)
+        `)
+        .eq('tache_id', taskId)
+
+      if (error) throw error
+
+      const mappedResources = (data || []).map((tr: any) => ({
+        resourceId: tr.ressource_id,
+        resourceName: `${tr.ressources.prenom} ${tr.ressources.nom}`,
+        charge: tr.charge_h || 8,
+        heures: tr.charge_h || 8
+      }))
+
+      setTaskResources(mappedResources)
+    } catch (error) {
+      console.error('Erreur lors du chargement des assignations:', error)
     }
   }
 
@@ -123,10 +178,34 @@ export default function TaskResourceModal({
     try {
       setIsLoading(true)
       
-      // Simulation de sauvegarde
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Supprimer toutes les assignations existantes
+      await supabase
+        .from('taches_ressources')
+        .delete()
+        .eq('tache_id', taskId)
+
+      // Insérer les nouvelles assignations
+      if (taskResources.length > 0) {
+        const insertData = taskResources.map(tr => ({
+          tache_id: taskId,
+          ressource_id: tr.resourceId,
+          charge_h: tr.heures
+        }))
+
+        const { error: insertError } = await supabase
+          .from('taches_ressources')
+          .insert(insertData)
+
+        if (insertError) throw insertError
+      }
       
       toast.success(`${taskResources.length} ressource(s) assignée(s) avec succès`)
+      
+      // Recharger les tâches si callback fourni
+      if (onResourceAdded) {
+        onResourceAdded()
+      }
+      
       onClose()
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
@@ -146,9 +225,9 @@ export default function TaskResourceModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             <User className="h-5 w-5 text-blue-600" />
             Assigner des ressources
           </DialogTitle>
@@ -157,37 +236,37 @@ export default function TaskResourceModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-6 py-4">
           {/* Statistiques */}
           {taskResources.length > 0 && (
-            <div className="grid grid-cols-3 gap-4 p-3 bg-gray-50 rounded-md">
+            <div className="grid grid-cols-3 gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{taskResources.length}</div>
-                <div className="text-xs text-gray-500">Ressources</div>
+                <div className="text-xs text-gray-600">Ressources</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{getTotalCharge()}%</div>
-                <div className="text-xs text-gray-500">Charge totale</div>
+                <div className="text-xs text-gray-600">Charge totale</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">{getTotalHeures()}h</div>
-                <div className="text-xs text-gray-500">Heures totales</div>
+                <div className="text-xs text-gray-600">Heures totales</div>
               </div>
             </div>
           )}
 
           {/* Ajouter une ressource */}
-          <div className="grid gap-4 p-4 border rounded-md">
-            <h4 className="font-medium flex items-center gap-2">
+          <div className="grid gap-4 p-4 border border-slate-200 rounded-lg bg-white">
+            <h4 className="font-medium flex items-center gap-2 text-slate-700">
               <Plus className="h-4 w-4" />
               Ajouter une ressource
             </h4>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label className="text-sm font-medium">Ressource</Label>
-                <Select value={selectedResource} onValueChange={setSelectedResource}>
-                  <SelectTrigger>
+                <Label className="text-sm font-medium text-slate-700">Ressource</Label>
+                <Select value={selectedResource} onValueChange={setSelectedResource} disabled={isLoading}>
+                  <SelectTrigger className="border-slate-300 focus:border-blue-500">
                     <SelectValue placeholder="Sélectionner une ressource" />
                   </SelectTrigger>
                   <SelectContent>
@@ -195,9 +274,11 @@ export default function TaskResourceModal({
                       <SelectItem key={resource.id} value={resource.id}>
                         <div className="flex items-center gap-2">
                           <span>{resource.prenom} {resource.nom}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {resource.competence}
-                          </Badge>
+                          {resource.competences && resource.competences.length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              {resource.competences[0]}
+                            </Badge>
+                          )}
                         </div>
                       </SelectItem>
                     ))}
@@ -206,32 +287,23 @@ export default function TaskResourceModal({
               </div>
 
               <div className="grid gap-2">
-                <Label className="text-sm font-medium">Charge (%)</Label>
+                <Label className="text-sm font-medium text-slate-700">Heures</Label>
                 <Input
                   type="number"
-                  min="1"
-                  max="100"
-                  value={charge}
-                  onChange={(e) => setCharge(parseInt(e.target.value) || 0)}
+                  value={heures}
+                  onChange={(e) => setHeures(parseInt(e.target.value) || 0)}
+                  min="0"
+                  max="40"
+                  placeholder="8"
+                  className="border-slate-300 focus:border-blue-500"
                 />
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label className="text-sm font-medium">Heures planifiées</Label>
-              <Input
-                type="number"
-                min="0"
-                value={heures}
-                onChange={(e) => setHeures(parseInt(e.target.value) || 0)}
-                className="w-32"
-              />
-            </div>
-
-            <Button 
+            <Button
               onClick={addResource}
-              disabled={!selectedResource}
-              className="w-fit"
+              disabled={!selectedResource || isLoading}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             >
               <Plus className="h-4 w-4 mr-2" />
               Ajouter
@@ -241,65 +313,54 @@ export default function TaskResourceModal({
           {/* Liste des ressources assignées */}
           {taskResources.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-medium flex items-center gap-2">
+              <h4 className="font-medium flex items-center gap-2 text-slate-700">
                 <Users className="h-4 w-4" />
-                Ressources assignées ({taskResources.length})
+                Ressources assignées
               </h4>
-              
-              <div className="space-y-2">
-                {taskResources.map((tr, index) => (
-                  <div key={tr.resourceId} className="flex items-center justify-between p-3 bg-blue-50 rounded-md border">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <div className="font-medium">{tr.resourceName}</div>
-                        <div className="text-sm text-gray-500">
-                          {tr.charge}% • {tr.heures}h
-                        </div>
+              {taskResources.map((tr) => (
+                <div
+                  key={tr.resourceId}
+                  className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-full">
+                      <User className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-slate-700">{tr.resourceName}</div>
+                      <div className="text-sm text-gray-500">
+                        <Clock className="h-3 w-3 inline mr-1" />
+                        {tr.heures}h
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeResource(tr.resourceId)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Avertissement surcharge */}
-          {getTotalCharge() > 100 && (
-            <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
-              <div className="flex items-center gap-2 text-orange-800">
-                <Clock className="h-4 w-4" />
-                <span className="font-medium">Attention :</span>
-                <span>La charge totale ({getTotalCharge()}%) dépasse 100%</span>
-              </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeResource(tr.resourceId)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={onClose}
-            className="flex-1"
+            disabled={isLoading}
           >
             Annuler
           </Button>
           <Button
             onClick={saveAssignments}
-            disabled={taskResources.length === 0 || isLoading}
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            disabled={isLoading}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
           >
-            <User className="h-4 w-4 mr-2" />
             {isLoading ? "Sauvegarde..." : "Sauvegarder"}
           </Button>
         </DialogFooter>
