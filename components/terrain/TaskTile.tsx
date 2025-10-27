@@ -571,4 +571,7 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
           </div>
         </DialogContent>
       </Dialog>
+    </Card>
+  )
+}
 
