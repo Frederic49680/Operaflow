@@ -120,6 +120,7 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
 
       if (result.success) {
         toast.success(`Tâche passée à "${newStatus}"`)
+        setCurrentStatus(newStatus) // Mettre à jour le statut local immédiatement
         if (onStatusChange) {
           onStatusChange(task.tache_id, newStatus)
         }
