@@ -129,6 +129,20 @@ export async function POST(request: NextRequest) {
         )
       }
       console.log("Remontee updated successfully")
+      
+      // Mettre à jour aussi le statut dans planning_taches
+      const { error: updateTaskError } = await supabase
+        .from("planning_taches")
+        .update({ statut: finalStatut })
+        .eq("id", tache_id)
+      
+      if (updateTaskError) {
+        console.error("Error updating task status:", updateTaskError)
+        // Ne pas échouer si la mise à jour de la tâche échoue
+        console.warn("Warning: Could not update task status, but remontee was saved")
+      } else {
+        console.log("Task status updated successfully")
+      }
     } else {
       const insertData = {
         tache_id,
@@ -156,6 +170,20 @@ export async function POST(request: NextRequest) {
         )
       }
       console.log("Remontee created successfully")
+      
+      // Mettre à jour aussi le statut dans planning_taches
+      const { error: updateTaskError } = await supabase
+        .from("planning_taches")
+        .update({ statut: finalStatut })
+        .eq("id", tache_id)
+      
+      if (updateTaskError) {
+        console.error("Error updating task status:", updateTaskError)
+        // Ne pas échouer si la mise à jour de la tâche échoue
+        console.warn("Warning: Could not update task status, but remontee was saved")
+      } else {
+        console.log("Task status updated successfully")
+      }
     }
 
     console.log("=== UPDATE STATUS API CALL SUCCESS ===")
