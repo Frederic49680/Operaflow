@@ -93,7 +93,21 @@ export default function TuilesTachesSimple() {
     }
   }
 
-  const filteredTasks = tasks.filter(task => {
+  // Fonction récursive pour extraire toutes les tâches (racine + enfants)
+  const getAllTasks = (taskList: Task[]): Task[] => {
+    const allTasks: Task[] = []
+    taskList.forEach(task => {
+      allTasks.push(task)
+      if (task.enfants && task.enfants.length > 0) {
+        allTasks.push(...getAllTasks(task.enfants))
+      }
+    })
+    return allTasks
+  }
+
+  const allTasks = getAllTasks(tasks)
+
+  const filteredTasks = allTasks.filter(task => {
     const matchesSearch = task.libelle_tache.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === "all" || task.statut === filterStatus
     return matchesSearch && matchesStatus
