@@ -77,7 +77,7 @@ export function AffaireFormModal({ children, affaireId, onClose }: AffaireFormMo
   const [selectedClient, setSelectedClient] = useState<string>("")
   const [selectedResponsable, setSelectedResponsable] = useState<string>("")
   const [selectedCompetence, setSelectedCompetence] = useState<string>("")
-  const [selectedStatut, setSelectedStatut] = useState<string>("Brouillon")
+  const [selectedStatut, setSelectedStatut] = useState<string>("A_planifier")
   
   // États pour les valeurs des Input
   const [nom, setNom] = useState<string>("")
@@ -151,7 +151,7 @@ export function AffaireFormModal({ children, affaireId, onClose }: AffaireFormMo
       setSelectedClient("")
       setSelectedResponsable("")
       setSelectedCompetence("")
-      setSelectedStatut("Brouillon")
+      setSelectedStatut("A_planifier")
       setTypeAffaire("Forfait")
       setNbRessources(2)
       setHeuresSemaine(35)
@@ -186,7 +186,7 @@ export function AffaireFormModal({ children, affaireId, onClose }: AffaireFormMo
         setSelectedClient(data.client_id || "")
         setSelectedResponsable(data.responsable_id || "")
         setSelectedCompetence(data.competence_principale || "")
-        setSelectedStatut(data.statut || "Brouillon")
+                    setSelectedStatut(data.statut || "A_planifier")
         setTypeAffaire(data.type_affaire || "Forfait")
         setNbRessources(data.nb_ressources_ref || 2)
         setHeuresSemaine(data.heures_semaine_ref || 35)
@@ -255,7 +255,7 @@ export function AffaireFormModal({ children, affaireId, onClose }: AffaireFormMo
             setSelectedClient(affaire.client_id || "")
             setSelectedResponsable(affaire.responsable_id || "")
             setSelectedCompetence(affaire.competence_principale || "")
-            setSelectedStatut(affaire.statut || "Brouillon")
+            setSelectedStatut(affaire.statut || "A_planifier")
             setTypeAffaire(affaire.type_affaire || "Forfait")
             
             if (affaire.type_affaire === "BPU") {
@@ -703,8 +703,10 @@ export function AffaireFormModal({ children, affaireId, onClose }: AffaireFormMo
                     <SelectContent>
                       <SelectItem value="Brouillon">Brouillon</SelectItem>
                       <SelectItem value="A_planifier">À planifier</SelectItem>
-                      <SelectItem value="Validee">Validée</SelectItem>
-                      <SelectItem value="Cloturee">Clôturée</SelectItem>
+                      <SelectItem value="Validée">Validée</SelectItem>
+                      <SelectItem value="Planifiée">Planifiée</SelectItem>
+                      <SelectItem value="En suivi">En suivi</SelectItem>
+                      <SelectItem value="Clôturée">Clôturée</SelectItem>
                     </SelectContent>
                   </Select>
               </div>
