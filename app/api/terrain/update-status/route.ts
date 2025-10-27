@@ -17,6 +17,49 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Mapper les statuts du frontend vers les statuts de la base de données
+    const statutMapping: { [key: string]: string } = {
+      'Non lancé': 'Non lancée',
+      'À lancer': 'Non lancée',
+      'Terminé': 'Terminée',
+      'Suspendu': 'Suspendue',
+      'Reporté': 'Reportée',
+      'Prolongé': 'Prolongée',
+      'Bloqué': 'Bloquée',
+      // Garder les statuts déjà corrects
+      'Non lancée': 'Non lancée',
+      'En cours': 'En cours',
+      'Terminée': 'Terminée',
+      'Bloquée': 'Bloquée',
+      'Suspendue': 'Suspendue',
+      'Reportée': 'Reportée',
+      'Prolongée': 'Prolongée'
+    }
+    
+    const mappedStatut = statutMapping[statut_reel] || statut_reel
+    
+    // Vérifier que le statut mappé est valide
+    const validStatuts = [
+      'Non lancée',
+      'En cours',
+      'Terminée',
+      'Bloquée',
+      'Suspendue',
+      'Reportée',
+      'Prolongée'
+    ]
+    
+    if (!validStatuts.includes(mappedStatut)) {
+      console.error("Invalid statut_reel:", statut_reel, "-> mapped:", mappedStatut)
+      return NextResponse.json(
+        { success: false, message: `Invalid statut_reel: ${statut_reel}` },
+        { status: 400 }
+      )
+    }
+    
+    // Utiliser le statut mappé pour la suite
+    const finalStatut = mappedStatut
+
     // Récupérer les informations de la tâche pour obtenir site_id et affaire_id
     const { data: tache, error: tacheError } = await supabase
       .from("planning_taches")
@@ -60,7 +103,7 @@ export async function POST(request: NextRequest) {
       const { error } = await supabase
         .from("remontee_site")
         .update({
-          statut_reel,
+          statut_reel: finalStatut,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existingRemontee.id)
@@ -91,7 +134,7 @@ export async function POST(request: NextRequest) {
           site_id: tache.site_id,
           affaire_id: tache.affaire_id,
           date_saisie: new Date().toISOString().split("T")[0],
-          statut_reel,
+          statut_reel: finalStatut,
           avancement_pct: 0,
         })
 
