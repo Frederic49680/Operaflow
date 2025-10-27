@@ -122,7 +122,12 @@ export async function POST(request: NextRequest) {
       montant_total_ht: montant_total_ht || null,
       date_debut: date_debut || null,
       date_fin_prevue: date_fin_prevue || null,
-      statut: statut && ['Brouillon', 'A_planifier', 'Validée', 'Planifiée', 'En suivi', 'Clôturée'].includes(statut) ? statut : "A_planifier",
+      statut: (() => {
+        const validStatuts = ['Brouillon', 'A_planifier', 'Validée', 'Planifiée', 'En suivi', 'Clôturée']
+        const finalStatut = statut && validStatuts.includes(statut) ? statut : "A_planifier"
+        console.log(`📊 Statut reçu: "${statut}", Statut final: "${finalStatut}"`)
+        return finalStatut
+      })(),
       // Champs BPU
       nb_ressources_ref: type_affaire === "BPU" ? nb_ressources_ref : null,
       heures_semaine_ref: type_affaire === "BPU" ? heures_semaine_ref : null,
