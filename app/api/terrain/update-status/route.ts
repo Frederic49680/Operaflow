@@ -34,13 +34,25 @@ export async function POST(request: NextRequest) {
 
     console.log("Task found:", tache)
 
+    // Vérifier que site_id et affaire_id ne sont pas NULL
+    if (!tache.site_id || !tache.affaire_id) {
+      console.error("Missing site_id or affaire_id:", tache)
+      return NextResponse.json(
+        { success: false, message: "Task must have site_id and affaire_id" },
+        { status: 400 }
+      )
+    }
+
     // Vérifier si une remontée existe déjà pour aujourd'hui
-    const { data: existingRemontee } = await supabase
+    const today = new Date().toISOString().split("T")[0]
+    const { data: existingRemontee, error: existingError } = await supabase
       .from("remontee_site")
       .select("*")
       .eq("tache_id", tache_id)
-      .eq("date_saisie", new Date().toISOString().split("T")[0])
-      .single()
+      .eq("date_saisie", today)
+      .maybeSingle()
+    
+    console.log("Existing remontee check:", { existingRemontee, existingError })
 
     if (existingRemontee) {
       console.log("Updating existing remontee:", existingRemontee.id)
