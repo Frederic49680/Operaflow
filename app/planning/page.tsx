@@ -110,9 +110,17 @@ export default function PlanningPage() {
             <GripVertical className="h-4 w-4" />
             Tâches
           </TabsTrigger>
-          <TabsTrigger value="affaires" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="affaires" 
+            className={`flex items-center gap-2 ${stats.pendingAffaires > 0 ? 'text-red-600 data-[state=active]:text-red-700' : ''}`}
+          >
             <Calendar className="h-4 w-4" />
             À Planifier
+            {stats.pendingAffaires > 0 && (
+              <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                {stats.pendingAffaires}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
