@@ -373,6 +373,19 @@ export default function TuilesTachesSimple() {
                            <option value="Sécurité">Sécurité</option>
                          </select>
                      </div>
+                     <div>
+                       <label className="block text-sm font-medium mb-1">Effort planifié (heures)</label>
+                       <Input
+                         type="number"
+                         min="0"
+                         step="0.5"
+                         defaultValue={editingTask.effort_plan_h || 0}
+                         className="w-full"
+                       />
+                       <p className="text-xs text-gray-500 mt-1">
+                         Durée estimée de la tâche en heures (ex: 8h = 1 jour, 16h = 2 jours)
+                       </p>
+                     </div>
                    </div>
                    <div className="flex gap-2 mt-6">
                      <Button

@@ -274,11 +274,10 @@ export function useTasks() {
         // Affaire avec statut valide
       }
 
-      // Créer une sous-tâche SANS parent_id pour éviter les cycles
+      // Créer une sous-tâche avec parent_id pour gérer la hiérarchie
       const insertData = {
         libelle_tache: taskData.libelle_tache || 'Nouvelle sous-tâche',
-        // Temporairement sans affaire_id pour éviter les contraintes
-        // affaire_id: parentTask.affaire_id,
+        affaire_id: parentTask.affaire_id || null,
         lot_id: parentTask.lot_id || null,
         site_id: parentTask.site_id || null,
         date_debut_plan: taskData.date_debut_plan || parentTask.date_debut_plan || new Date().toISOString().split('T')[0],
@@ -288,8 +287,7 @@ export function useTasks() {
         statut: taskData.statut || 'Non lancé',
         type_tache: taskData.type_tache || parentTask.type_tache || 'Autre',
         competence: taskData.competence || parentTask.competence || null,
-        // Temporairement sans parent_id pour éviter les cycles
-        // parent_id: parentId,
+        parent_id: parentId, // Ajouter le parent_id pour la hiérarchie
         level: (parentTask.level || 0) + 1,
         // Champs obligatoires avec valeurs par défaut
         effort_reel_h: 0,
@@ -317,24 +315,6 @@ export function useTasks() {
         console.error('Hint erreur:', error.hint)
         throw error
       }
-
-      // Maintenant, mettre à jour avec l'affaire_id UNIQUEMENT (pas de parent_id pour éviter les cycles)
-      if (parentTask.affaire_id) {
-        const { error: updateError } = await supabase
-          .from('planning_taches')
-          .update({ affaire_id: parentTask.affaire_id })
-          .eq('id', data.id)
-
-        if (updateError) {
-          console.error('Erreur lors de la mise à jour de l\'affaire_id:', updateError)
-          // Ne pas faire échouer la création, juste logger l'erreur
-        } else {
-          // affaire_id mis à jour avec succès
-        }
-      }
-      
-      // Note: On n'ajoute PAS de parent_id pour éviter le trigger de détection de cycle
-      // La hiérarchie est gérée visuellement via le champ 'level' uniquement
 
       toast.success("Sous-tâche créée")
       await loadTasks()
