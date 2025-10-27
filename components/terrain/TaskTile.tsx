@@ -524,7 +524,6 @@ export default function TaskTile({ task, onStatusChange, onProgressChange, onDai
             </Button>
           )}
         </div>
-      )}
 
       {/* Commentaire */}
       <div className="border-t pt-3 mt-3">
