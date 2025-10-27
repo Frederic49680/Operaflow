@@ -112,14 +112,13 @@ export async function POST(request: NextRequest) {
       console.log("Updating existing remontee:", existingRemontee.id)
       console.log("Update data:", { statut_reel: finalStatut })
       
-      // Mettre à jour la remontée existante
-      const { error } = await supabase
-        .from("remontee_site")
-        .update({
-          statut_reel: finalStatut,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existingRemontee.id)
+             // Mettre à jour la remontée existante
+             const { error } = await supabase
+               .from("remontee_site")
+               .update({
+                 statut_reel: finalStatut,
+               })
+               .eq("id", existingRemontee.id)
 
       if (error) {
         console.error("Error updating remontee:", error)

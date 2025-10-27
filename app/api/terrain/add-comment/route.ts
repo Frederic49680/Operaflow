@@ -24,13 +24,12 @@ export async function POST(request: NextRequest) {
 
     if (existingRemontee) {
       // Mettre à jour la remontée existante avec le commentaire
-      const { error } = await supabase
-        .from("remontee_site")
-        .update({
-          commentaire,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existingRemontee.id)
+             const { error } = await supabase
+               .from("remontee_site")
+               .update({
+                 commentaire,
+               })
+               .eq("id", existingRemontee.id)
 
       if (error) {
         console.error("Error updating comment:", error)

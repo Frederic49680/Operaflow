@@ -78,13 +78,12 @@ export async function POST(request: NextRequest) {
       console.log("Updating existing remontee:", existingRemontee.id)
       console.log("Update data:", { avancement_pct })
 
-      const { error } = await supabase
-        .from("remontee_site")
-        .update({
-          avancement_pct,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existingRemontee.id)
+             const { error } = await supabase
+               .from("remontee_site")
+               .update({
+                 avancement_pct,
+               })
+               .eq("id", existingRemontee.id)
 
       if (error) {
         console.error("Error updating remontee:", error)
