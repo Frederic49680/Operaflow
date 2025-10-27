@@ -387,19 +387,37 @@ export default function TuilesTachesSimple() {
                            <option value="Sécurité">Sécurité</option>
                          </select>
                      </div>
-                     <div>
-                       <label className="block text-sm font-medium mb-1">Effort planifié (heures)</label>
-                       <Input
-                         type="number"
-                         min="0"
-                         step="0.5"
-                         defaultValue={editingTask.effort_plan_h || 0}
-                         className="w-full"
-                       />
-                       <p className="text-xs text-gray-500 mt-1">
-                         Durée estimée de la tâche en heures (ex: 8h = 1 jour, 16h = 2 jours)
-                       </p>
-                     </div>
+                                           <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Effort planifié (heures)</label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            defaultValue={editingTask.effort_plan_h || 0}
+                            className="w-full"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Durée estimée en heures
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Niveau hiérarchique</label>
+                          <select
+                            id="task-level"
+                            defaultValue={editingTask.level || 0}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          >
+                            <option value="0">0 - Racine</option>
+                            <option value="1">1 - Sous-tâche</option>
+                            <option value="2">2 - Sous-sous-tâche</option>
+                            <option value="3">3 - Sous-sous-sous-tâche</option>
+                          </select>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Profondeur maximale: 3 niveaux
+                          </p>
+                        </div>
+                      </div>
                    </div>
                    <div className="flex gap-2 mt-6">
                      <Button
@@ -409,17 +427,31 @@ export default function TuilesTachesSimple() {
                      >
                        Annuler
                      </Button>
-                     <Button
-                       onClick={() => {
-                         toast.success("Tâche modifiée avec succès")
-                         setShowEditModal(false)
-                         loadTasks()
-                       }}
-                       className="flex-1 bg-blue-600 hover:bg-blue-700"
-                     >
-                       <Edit className="h-4 w-4 mr-2" />
-                       Modifier
-                     </Button>
+                                           <Button
+                        onClick={async () => {
+                          try {
+                            // Récupérer le niveau hiérarchique
+                            const levelSelect = document.getElementById('task-level') as HTMLSelectElement
+                            const updates: any = {
+                              level: levelSelect ? parseInt(levelSelect.value) : editingTask.level || 0
+                            }
+                            
+                            if (editingTask) {
+                              await updateTask(editingTask.id, updates)
+                              toast.success("Tâche modifiée avec succès")
+                              setShowEditModal(false)
+                              loadTasks()
+                            }
+                          } catch (error) {
+                            console.error('Erreur lors de la modification:', error)
+                            toast.error("Erreur lors de la modification de la tâche")
+                          }
+                        }}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Modifier
+                      </Button>
                    </div>
                  </div>
                </div>
