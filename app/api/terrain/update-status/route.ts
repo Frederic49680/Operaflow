@@ -7,7 +7,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { tache_id, statut_reel } = body
 
+    console.log("Update status request:", { tache_id, statut_reel })
+
     if (!tache_id || !statut_reel) {
+      console.error("Missing required fields:", { tache_id, statut_reel })
       return NextResponse.json(
         { success: false, message: "Missing required fields" },
         { status: 400 }
@@ -17,17 +20,19 @@ export async function POST(request: NextRequest) {
     // Récupérer les informations de la tâche pour obtenir site_id et affaire_id
     const { data: tache, error: tacheError } = await supabase
       .from("planning_taches")
-      .select("site_id, affaire_id")
+      .select("site_id, affaire_id, date_debut_plan, date_fin_plan")
       .eq("id", tache_id)
       .single()
 
     if (tacheError || !tache) {
       console.error("Error fetching task:", tacheError)
       return NextResponse.json(
-        { success: false, message: "Task not found" },
+        { success: false, message: `Task not found: ${tacheError?.message}` },
         { status: 404 }
       )
     }
+
+    console.log("Task found:", tache)
 
     // Vérifier si une remontée existe déjà pour aujourd'hui
     const { data: existingRemontee } = await supabase
@@ -38,6 +43,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingRemontee) {
+      console.log("Updating existing remontee:", existingRemontee.id)
       // Mettre à jour la remontée existante
       const { error } = await supabase
         .from("remontee_site")
@@ -50,11 +56,21 @@ export async function POST(request: NextRequest) {
       if (error) {
         console.error("Error updating remontee:", error)
         return NextResponse.json(
-          { success: false, message: error.message },
+          { success: false, message: `Update error: ${error.message}` },
           { status: 500 }
         )
       }
+      console.log("Remontee updated successfully")
     } else {
+      console.log("Creating new remontee with data:", {
+        tache_id,
+        site_id: tache.site_id,
+        affaire_id: tache.affaire_id,
+        date_saisie: new Date().toISOString().split("T")[0],
+        statut_reel,
+        avancement_pct: 0,
+      })
+      
       // Créer une nouvelle remontée avec tous les champs nécessaires
       const { error } = await supabase
         .from("remontee_site")
@@ -70,10 +86,11 @@ export async function POST(request: NextRequest) {
       if (error) {
         console.error("Error creating remontee:", error)
         return NextResponse.json(
-          { success: false, message: error.message },
+          { success: false, message: `Insert error: ${error.message}` },
           { status: 500 }
         )
       }
+      console.log("Remontee created successfully")
     }
 
     return NextResponse.json({ success: true })
