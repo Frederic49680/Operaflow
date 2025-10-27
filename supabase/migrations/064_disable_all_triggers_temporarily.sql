@@ -8,7 +8,7 @@
 DO $$
 DECLARE
     trigger_name TEXT;
-    trigger_list TEXT[] := ARRAY[];
+    trigger_list TEXT[] := ARRAY[]::TEXT[];
 BEGIN
     -- Lister tous les triggers applicatifs sur planning_taches
     FOR trigger_name IN 
