@@ -31,12 +31,11 @@ export async function GET(request: NextRequest) {
         heures_metal,
         motif,
         commentaire,
-        created_at,
-        updated_at
+        date_creation
       `)
       .eq("tache_id", tache_id)
       .order("date_saisie", { ascending: false })
-      .order("updated_at", { ascending: false })
+      .order("date_creation", { ascending: false })
 
     if (error) {
       console.error("Error fetching history:", error)

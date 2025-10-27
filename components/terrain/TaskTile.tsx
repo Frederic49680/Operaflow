@@ -568,7 +568,7 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
                     )}
                     
                     <div className="text-xs text-muted-foreground">
-                      Mis à jour le {new Date(entry.updated_at).toLocaleString('fr-FR')}
+                      Enregistré le {new Date(entry.date_creation).toLocaleString('fr-FR')}
                     </div>
                   </div>
                 ))}
