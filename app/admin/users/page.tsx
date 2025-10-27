@@ -68,7 +68,7 @@ export default function AdminUsersPage() {
       console.log('📊 [USERS] Détail des utilisateurs:', usersData?.map(u => ({
         email: u.email,
         roles: u.user_roles?.length || 0,
-        roleNames: u.user_roles?.map(ur => ur.roles?.label || ur.roles?.code) || []
+        roleNames: u.user_roles?.map((ur: any) => ur.roles?.label || ur.roles?.code) || []
       })))
       
       // Alertes visuelles pour debug
@@ -77,7 +77,7 @@ export default function AdminUsersPage() {
         const firstUser = usersData[0]
         alert(`📊 Premier utilisateur: ${firstUser.email} - Rôles: ${firstUser.user_roles?.length || 0}`)
         if (firstUser.user_roles && firstUser.user_roles.length > 0) {
-          alert(`🔍 Rôles du premier utilisateur: ${firstUser.user_roles.map(ur => ur.roles?.label || ur.roles?.code).join(', ')}`)
+          alert(`🔍 Rôles du premier utilisateur: ${firstUser.user_roles.map((ur: any) => ur.roles?.label || ur.roles?.code).join(', ')}`)
         }
       }
 
