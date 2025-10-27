@@ -5,6 +5,10 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { 
   Play, 
   Pause, 
@@ -15,7 +19,8 @@ import {
   MessageSquare,
   History,
   Building2,
-  User
+  User,
+  TrendingUp
 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
@@ -30,6 +35,9 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
   const [isEditing, setIsEditing] = useState(false)
   const [comment, setComment] = useState("")
   const [progress, setProgress] = useState(task.avancement_pct || 0)
+  const [showDailyReport, setShowDailyReport] = useState(false)
+  const [reportMode, setReportMode] = useState<"manual" | "auto">("auto")
+  const [manualProgress, setManualProgress] = useState(0)
 
   const getStatusConfig = (statut: string) => {
     switch (statut) {
@@ -150,6 +158,58 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
     }
   }
 
+  // Calculer l'avancement automatique basé sur les jours
+  const calculateAutoProgress = () => {
+    const dateDebut = new Date(task.date_debut_plan)
+    const dateFin = new Date(task.date_fin_plan)
+    const dateActuelle = new Date()
+    
+    // Nombre total de jours entre début et fin
+    const totalDays = Math.ceil((dateFin.getTime() - dateDebut.getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Nombre de jours écoulés depuis le début
+    const daysElapsed = Math.ceil((dateActuelle.getTime() - dateDebut.getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Avancement en % (minimum 0, maximum 100)
+    const progress = Math.max(0, Math.min(100, (daysElapsed / totalDays) * 100))
+    
+    return Math.round(progress)
+  }
+
+  const handleDailyReport = async () => {
+    try {
+      const finalProgress = reportMode === "auto" ? calculateAutoProgress() : manualProgress
+      
+      const response = await fetch("/api/terrain/daily-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tache_id: task.tache_id,
+          avancement_pct: finalProgress,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast.success(`Avancement mis à jour : ${finalProgress}%`)
+        setProgress(finalProgress)
+        if (onProgressChange) {
+          onProgressChange(task.tache_id, finalProgress)
+        }
+        setShowDailyReport(false)
+        // Réinitialiser les valeurs
+        setReportMode("auto")
+        setManualProgress(0)
+      } else {
+        toast.error(result.message || "Erreur lors de la mise à jour")
+      }
+    } catch (error) {
+      console.error("Error reporting daily progress:", error)
+      toast.error("Erreur lors de la mise à jour")
+    }
+  }
+
   return (
     <Card className={`p-4 hover:shadow-lg transition-all duration-300 ${statusConfig.color}`}>
       {/* En-tête */}
@@ -226,6 +286,19 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
       {/* Actions rapides */}
       {statusConfig.actions.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
+          {/* Bouton "Déclarer la journée" pour les tâches En cours */}
+          {task.statut === "En cours" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowDailyReport(true)}
+              className="border-blue-500 text-blue-700 hover:bg-blue-50"
+            >
+              <TrendingUp className="h-4 w-4 mr-1" />
+              Déclarer la journée
+            </Button>
+          )}
+          
           {statusConfig.actions.includes("Lancer") && (
             <Button
               size="sm"
@@ -321,6 +394,86 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
         <History className="h-4 w-4 mr-2" />
         Voir l'historique
       </Button>
+
+      {/* Modale de déclaration journalière */}
+      <Dialog open={showDailyReport} onOpenChange={setShowDailyReport}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Déclarer l'avancement du jour</DialogTitle>
+            <DialogDescription>
+              Choisissez le mode de calcul de l'avancement
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <RadioGroup value={reportMode} onValueChange={(value) => setReportMode(value as "manual" | "auto")}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="auto" id="auto" />
+                <Label htmlFor="auto" className="flex-1 cursor-pointer">
+                  <div>
+                    <div className="font-medium">Calcul automatique</div>
+                    <div className="text-sm text-muted-foreground">
+                      Basé sur les jours écoulés ({task.date_debut_plan && task.date_fin_plan && 
+                        Math.ceil((new Date(task.date_fin_plan).getTime() - new Date(task.date_debut_plan).getTime()) / (1000 * 60 * 60 * 24))
+                      } jours au total)
+                    </div>
+                    <div className="text-sm font-semibold text-blue-600 mt-1">
+                      Avancement: {calculateAutoProgress()}%
+                    </div>
+                  </div>
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="manual" id="manual" />
+                <Label htmlFor="manual" className="flex-1 cursor-pointer">
+                  <div>
+                    <div className="font-medium">Saisie manuelle</div>
+                    <div className="text-sm text-muted-foreground">
+                      Définissez l'avancement de 0 à 100%
+                    </div>
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+
+            {reportMode === "manual" && (
+              <div className="space-y-2">
+                <Label htmlFor="manual-progress">Avancement (%)</Label>
+                <Input
+                  id="manual-progress"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={manualProgress}
+                  onChange={(e) => setManualProgress(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={manualProgress}
+                    onChange={(e) => setManualProgress(Number(e.target.value))}
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-medium w-12">{manualProgress}%</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setShowDailyReport(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleDailyReport}>
+                Confirmer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
