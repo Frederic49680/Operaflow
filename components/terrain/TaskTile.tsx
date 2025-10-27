@@ -480,6 +480,30 @@ export default function TaskTile({ task, onStatusChange, onProgressChange, onDai
           </Button>
         )}
         
+        {/* 🔁 Reprendre/Lancer - Visible si statut = Prolongé, Suspendu ou Reporté */}
+        {(currentStatus === "Prolongé" || currentStatus === "Suspendu" || currentStatus === "Reporté") && (
+          <Button
+            size="sm"
+            onClick={() => setShowReprendModal(true)}
+            className="bg-green-500 hover:bg-green-600"
+          >
+            <RotateCcw className="h-4 w-4 mr-1" />
+            {currentStatus === "Prolongé" ? "Reprendre" : "Reprendre"}
+          </Button>
+        )}
+        
+        {/* ▶️ Lancer - Visible si statut = Non lancé */}
+        {currentStatus === "Non lancé" && (
+          <Button
+            size="sm"
+            onClick={() => handleStatusChange("En cours")}
+            className="bg-green-500 hover:bg-green-600"
+          >
+            <Play className="h-4 w-4 mr-1" />
+            Lancer
+          </Button>
+        )}
+        
         {/* Terminer - Visible si statut = En cours */}
         {currentStatus === "En cours" && (
           <Button
