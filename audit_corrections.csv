@@ -1,0 +1,6 @@
+Type,Table,Colonne,Action,Commande SQL,Statut
+Nommage,sites,remplaçant_id,Renommer,ALTER TABLE sites RENAME COLUMN remplaçant_id TO remplacant_id;,À appliquer
+FK,sites,responsable_id,Ajouter FK,ALTER TABLE sites ADD CONSTRAINT fk_sites_responsable FOREIGN KEY (responsable_id) REFERENCES ressources(id);,À appliquer
+FK,sites,remplacant_id,Ajouter FK,ALTER TABLE sites ADD CONSTRAINT fk_sites_remplacant FOREIGN KEY (remplacant_id) REFERENCES ressources(id);,À appliquer
+Documentation,sites,responsable_id,Comment,COMMENT ON COLUMN sites.responsable_id IS 'Responsable principal du site (FK vers ressources)';,À appliquer
+Documentation,sites,remplacant_id,Comment,COMMENT ON COLUMN sites.remplacant_id IS 'Remplaçant du responsable (FK vers ressources)';,À appliquer
