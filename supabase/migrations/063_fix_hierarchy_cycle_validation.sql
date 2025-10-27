@@ -5,13 +5,9 @@
 -- Supprimer l'ancien trigger
 DROP TRIGGER IF EXISTS trigger_validate_task_hierarchy ON planning_taches;
 
--- Recréer la fonction avec une logique corrigée
+-- Recréer la fonction avec une logique simplifiée (sans récursion)
 CREATE OR REPLACE FUNCTION fn_validate_task_hierarchy()
 RETURNS TRIGGER AS $$
-DECLARE
-    v_parent UUID;
-    v_depth INTEGER := 0;
-    v_visited UUID[] := ARRAY[]::UUID[];
 BEGIN
     -- Vérifier que le niveau ne dépasse pas 3
     IF NEW.level > 3 THEN
@@ -30,31 +26,27 @@ BEGIN
             RAISE EXCEPTION 'Une tâche ne peut pas être parent d''elle-même';
         END IF;
         
-        -- Vérifier les cycles: remonter la chaîne de parents pour détecter un cycle
-        v_parent := NEW.parent_id;
-        v_visited := ARRAY[NEW.id];
-        
-        -- Remonter jusqu'à trouver un cycle ou atteindre la racine
-        WHILE v_parent IS NOT NULL AND v_depth < 100 LOOP
-            -- Si on a déjà visité ce parent, c'est un cycle
-            IF v_parent = ANY(v_visited) THEN
-                RAISE EXCEPTION 'Cycle détecté dans la hiérarchie des tâches';
-            END IF;
-            
-            -- Ajouter ce parent à la liste des visités
-            v_visited := v_visited || v_parent;
-            
-            -- Récupérer le parent suivant
-            SELECT parent_id INTO v_parent
-            FROM planning_taches
-            WHERE id = v_parent;
-            
-            v_depth := v_depth + 1;
-        END LOOP;
-        
-        -- Si on a dépassé 100 niveaux, il y a probablement un cycle
-        IF v_depth >= 100 THEN
-            RAISE EXCEPTION 'Profondeur hiérarchique excessive, possible cycle';
+        -- Pour simplifier et éviter la récursion infinie,
+        -- on utilise une requête SQL récursive native qui est mieux optimisée
+        IF EXISTS (
+            WITH RECURSIVE parent_chain AS (
+                -- Point de départ: le parent direct
+                SELECT id, parent_id, 1 as depth
+                FROM planning_taches
+                WHERE id = NEW.parent_id
+                
+                UNION ALL
+                
+                -- Remonter la chaîne des parents
+                SELECT t.id, t.parent_id, pc.depth + 1
+                FROM planning_taches t
+                INNER JOIN parent_chain pc ON t.id = pc.parent_id
+                WHERE pc.depth < 10  -- Limiter à 10 niveaux
+            )
+            -- Vérifier si on tombe sur NEW.id (cycle détecté)
+            SELECT 1 FROM parent_chain WHERE id = NEW.id
+        ) THEN
+            RAISE EXCEPTION 'Cycle détecté dans la hiérarchie des tâches';
         END IF;
     END IF;
     
