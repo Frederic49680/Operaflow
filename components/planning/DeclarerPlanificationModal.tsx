@@ -86,33 +86,61 @@ export function DeclarerPlanificationModal({
         console.log("Application du template:", selectedTemplate)
       }
 
-      // Créer la tâche parapluie si BPU
+      // Créer une tâche pour toutes les affaires
+      let taskToInsert = null
+      
       if (affaire.type_affaire === 'BPU') {
-        const { error: taskError } = await supabase
-          .from('planning_taches')
-          .insert({
-            libelle_tache: `[PARAPLUIE BPU] ${affaire.nom}`,
-            affaire_id: affaire.id,
-            site_id: affaire.site_id,
-            date_debut_plan: dateDebut,
-            date_fin_plan: dateFin,
-            effort_plan_h: affaire.heures_capacite || 0,
-            effort_reel_h: 0,
-            avancement_pct: 0,
-            statut: 'Non lancé',
-            type_tache: 'Autre',
-            competence: affaire.competence_principale || null,
-            ressource_ids: [],
-            is_parapluie_bpu: true,
-            level: 0,
-            order_index: 0,
-            created_by: null,
-            date_creation: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-
-        if (taskError) throw taskError
+        // Tâche parapluie pour BPU
+        taskToInsert = {
+          libelle_tache: `[PARAPLUIE BPU] ${affaire.nom}`,
+          affaire_id: affaire.id,
+          site_id: affaire.site_id,
+          date_debut_plan: dateDebut,
+          date_fin_plan: dateFin,
+          effort_plan_h: affaire.heures_capacite || 0,
+          effort_reel_h: 0,
+          avancement_pct: 0,
+          statut: 'Non lancé',
+          type_tache: 'Autre',
+          competence: affaire.competence_principale || null,
+          ressource_ids: [],
+          is_parapluie_bpu: true,
+          level: 0,
+          order_index: 0,
+          created_by: null,
+          date_creation: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      } else {
+        // Tâche de base pour les affaires normales
+        taskToInsert = {
+          libelle_tache: `Planification - ${affaire.nom}`,
+          affaire_id: affaire.id,
+          site_id: affaire.site_id,
+          date_debut_plan: dateDebut,
+          date_fin_plan: dateFin,
+          effort_plan_h: 0,
+          effort_reel_h: 0,
+          avancement_pct: 0,
+          statut: 'Non lancé',
+          type_tache: 'Autre',
+          competence: affaire.competence_principale || null,
+          ressource_ids: [],
+          is_parapluie_bpu: false,
+          level: 0,
+          order_index: 0,
+          created_by: null,
+          date_creation: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
       }
+
+      // Insérer la tâche
+      const { error: taskError } = await supabase
+        .from('planning_taches')
+        .insert(taskToInsert)
+
+      if (taskError) throw taskError
 
       // Mettre à jour le statut de l'affaire
       const { error } = await supabase
