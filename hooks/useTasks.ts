@@ -86,7 +86,6 @@ export function useTasks() {
           is_milestone,
           manual,
           template_origin_id,
-          is_parapluie_bpu,
           affaires(nom, code_affaire),
           sites(nom, code_site),
           taches_ressources(
@@ -94,7 +93,6 @@ export function useTasks() {
             ressources(nom, prenom, id)
           )
         `)
-        .is('is_parapluie_bpu', null) // Exclure les tâches parapluie BPU
         .order('order_index', { ascending: true })
 
       if (error) throw error
