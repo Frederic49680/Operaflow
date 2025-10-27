@@ -30,6 +30,9 @@ export default function AffairesListWithTiles({ siteId }: AffairesListWithTilesP
   const loadAffaires = useCallback(async () => {
     setIsLoading(true)
     try {
+      // Conditions d'affichage principales :
+      // 1. Affaires avec statut 'Planifiée' ou 'En suivi'
+      // 2. Affaires ayant au moins une tâche avec date_debut_plan <= Aujourd'hui <= date_fin_plan
       const url = siteId 
         ? `/api/terrain/affaires?site_id=${siteId}`
         : "/api/terrain/affaires"
@@ -81,6 +84,8 @@ export default function AffairesListWithTiles({ siteId }: AffairesListWithTilesP
     setTasks([])
   }
 
+  // Filtrage par recherche (côté client)
+  // Recherche sur : code_affaire OU site_nom
   const filteredAffaires = affaires.filter((affaire) =>
     affaire.code_affaire.toLowerCase().includes(searchTerm.toLowerCase()) ||
     affaire.site_nom?.toLowerCase().includes(searchTerm.toLowerCase())

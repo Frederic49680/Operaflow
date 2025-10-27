@@ -230,9 +230,9 @@ export function AffairesTable({
 
     if (tasksError) throw tasksError
 
-    // Si l'affaire est planifiée (statut = 'Planifiée' ou 'En suivi'), supprimer aussi les tâches
-    // Pour les autres statuts (Brouillon, Soumise, etc.), empêcher la suppression si des tâches existent
-    if (affaire.statut === 'Planifiée' || affaire.statut === 'En suivi') {
+    // Si l'affaire est planifiée (statut = 'Planifiée'), supprimer aussi les tâches
+    // Pour les autres statuts (Brouillon, A_planifier, etc.), empêcher la suppression si des tâches existent
+    if (affaire.statut === 'Planifiée') {
       if (tasks && tasks.length > 0) {
         console.log(`🗑️ Suppression des ${tasks.length} tâches liées à l'affaire ${affaire.code_affaire}`)
         
@@ -285,10 +285,10 @@ export function AffairesTable({
     switch (statut) {
       case "Brouillon":
         return <Badge className="bg-slate-500 hover:bg-slate-600">Brouillon</Badge>
-      case "Soumise":
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">Soumise</Badge>
-      case "Validée":
-        return <Badge className="bg-green-500 hover:bg-green-600">Validée</Badge>
+      case "A_planifier":
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600">À planifier</Badge>
+      case "Planifiée":
+        return <Badge className="bg-green-500 hover:bg-green-600">Planifiée</Badge>
       case "Clôturée":
         return <Badge className="bg-blue-500 hover:bg-blue-600">Clôturée</Badge>
       default:

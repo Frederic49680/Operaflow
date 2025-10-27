@@ -703,9 +703,7 @@ export function AffaireFormModal({ children, affaireId, onClose }: AffaireFormMo
                     <SelectContent>
                       <SelectItem value="Brouillon">Brouillon</SelectItem>
                       <SelectItem value="A_planifier">À planifier</SelectItem>
-                      <SelectItem value="Validée">Validée</SelectItem>
                       <SelectItem value="Planifiée">Planifiée</SelectItem>
-                      <SelectItem value="En suivi">En suivi</SelectItem>
                       <SelectItem value="Clôturée">Clôturée</SelectItem>
                     </SelectContent>
                   </Select>
