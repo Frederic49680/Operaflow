@@ -127,6 +127,12 @@ export function DeclarerPlanificationModal({
       if (error) throw error
 
       toast.success("Planification déclarée avec succès")
+      
+      // Rafraîchir la page après 1 seconde pour voir les nouvelles tâches
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+      
       onSuccess()
       onClose()
     } catch (error) {
