@@ -513,16 +513,6 @@ export default function TaskTile({ task, onStatusChange, onProgressChange, onDai
               Reporter
             </Button>
           )}
-          {statusConfig.actions.includes("Prolonger") && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleStatusChange("Prolongé")}
-            >
-              <Clock className="h-4 w-4 mr-1" />
-              Prolonger
-            </Button>
-          )}
         </div>
 
       {/* Commentaire */}
