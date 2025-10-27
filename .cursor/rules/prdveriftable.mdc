@@ -1,3 +1,115 @@
 ---
 alwaysApply: true
 ---
+🧩 PRD – Vérification Globale du Schéma & des Rôles
+🎯 Objectif
+
+Mettre en place un module d’audit automatique dans Cursor pour :
+
+Vérifier la cohérence entre le modèle de données (tables/colonnes) et les requêtes SQL existantes.
+
+Vérifier la conformité des noms (format, cohérence, norme de nommage).
+
+Identifier les anomalies : colonnes manquantes, incohérences de casse, alias non trouvés, erreurs de jointures, etc.
+
+Clarifier et auditer les rôles dans l’application (autorisations techniques) vs rôles métier (hiérarchie entreprise).
+
+⚙️ Périmètre
+A. Vérification du modèle de données
+
+Objectif : vérifier chaque table, colonne et clé de la base par rapport aux requêtes utilisées dans le code (SQL, Supabase, Prisma, etc.)
+
+1. Vérification de structure
+
+Lister toutes les tables existantes dans le schéma (via introspection Supabase / schema.sql).
+
+Lister toutes les colonnes (nom, type, contrainte).
+
+Comparer avec les requêtes SQL / API existantes dans le projet (par parsing des fichiers .ts, .js, .sql).
+
+2. Vérification de nommage
+
+Convention de nommage à appliquer :
+
+Tables : snake_case (ex: suivi_activite, affaires, utilisateurs)
+
+Colonnes : camelCase pour le code, snake_case pour la DB.
+
+Clés étrangères : [table]_id
+
+Champs système : created_at, updated_at, deleted_at
+
+Générer un rapport :
+
+✅ conformité
+
+⚠️ nom incohérent
+
+❌ colonne manquante ou non utilisée
+
+3. Vérification de cohérence requêtes / DB
+
+Identifier les requêtes appelant des champs inexistants.
+
+Identifier les tables jamais requêtées.
+
+Vérifier les jointures cohérentes (site_id lié à sites.id, etc.).
+
+Détecter les types incohérents entre les requêtes et le schéma (int vs text).
+
+B. Vérification des rôles
+1. Rôles de l’application
+
+Liés à la gestion des droits dans l’app, pas à la hiérarchie réelle.
+
+Rôle App	Description	Accès principaux
+SuperAdmin	Contrôle total (configuration, création utilisateurs, supervision globale)	Toutes les pages + admin
+Responsable / Manager	Supervise un site ou périmètre défini	Accès restreint par SiteID
+Utilisateur	Exécute et déclare les activités	Accès à ses affaires / activités uniquement
+Consultant / RH / Financier	Lecture seule ou accès spécialisé (formation, heures, coûts)	Lecture / modules spécifiques
+2. Rôles de l’entreprise
+
+Représentent la hiérarchie réelle et les responsabilités opérationnelles.
+
+Fonction Métier	Description	Correspondance Rôle App
+Conducteur de Travaux	Gère la planification, le suivi et la coordination	Responsable / Manager
+Chef de Chantier	Supervise l’exécution sur site	Utilisateur (avec accès étendu)
+Technicien / Opérateur	Réalise les activités planifiées	Utilisateur
+Responsable d’Agence / Site	Pilote un ou plusieurs chantiers	SuperAdmin ou Manager
+Administratif / RH / Finance	Suit les formations, heures, coûts	Consultant / RH / Financier
+
+🧠 Note : un même utilisateur peut cumuler plusieurs rôles app selon les modules (ex : un conducteur peut aussi être RH pour son site).
+
+🧪 Résultats attendus de l’audit
+Rapport de sortie
+
+✅ Tables et colonnes vérifiées
+
+⚠️ Champs incohérents ou manquants
+
+❌ Requêtes invalides
+
+📊 Taux de couverture du modèle par le code
+
+🔐 Rôles applicatifs utilisés vs définis
+
+🔄 Mapping rôles app ↔ rôles entreprise
+
+Format exportable : .md / .csv / .json
+
+🧱 Exemple de tâche Cursor à exécuter
+# Exemple de tâche Cursor (pseudo-yaml)
+task: "Vérification cohérence DB"
+steps:
+  - Extract all table & column definitions from /supabase/schema.sql
+  - Parse all SQL/Prisma/Supabase queries in /src
+  - Compare references and report mismatches
+  - Check naming conventions per table
+  - Generate report "audit_structure.md"
+
+🚦 Livrables
+Livrable	Description	Format
+Rapport d’audit	Résumé complet des vérifications	.md
+Fichier de corrections	Liste des modifications recommandées (noms, types, requêtes)	.csv
+Rapport des rôles	Mapping hiérarchique + autorisations app	.md
+Log de vérification	Détails techniques de chaque check	.json
