@@ -139,6 +139,10 @@ export default function AffairesListWithTiles({ siteId, onRefresh }: AffairesLis
                   
                   if (onRefresh) onRefresh()
                 }}
+                onDailyReport={() => {
+                  // Mettre à jour les stats quand une remontée journalière est faite
+                  if (onRefresh) onRefresh()
+                }}
               />
             ))}
           </div>

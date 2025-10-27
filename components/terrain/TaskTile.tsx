@@ -29,9 +29,10 @@ interface TaskTileProps {
   task: any
   onStatusChange?: (taskId: string, newStatus: string) => void
   onProgressChange?: (taskId: string, progress: number) => void
+  onDailyReport?: () => void
 }
 
-export default function TaskTile({ task, onStatusChange, onProgressChange }: TaskTileProps) {
+export default function TaskTile({ task, onStatusChange, onProgressChange, onDailyReport }: TaskTileProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [comment, setComment] = useState("")
   const [progress, setProgress] = useState(task.avancement_pct || 0)
@@ -41,11 +42,34 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
   const [manualProgress, setManualProgress] = useState(0)
   const [showHistory, setShowHistory] = useState(false)
   const [historyData, setHistoryData] = useState<any[]>([])
+  const [hasDailyReportToday, setHasDailyReportToday] = useState(false)
 
   // Mettre à jour le statut local quand la prop change
   useEffect(() => {
     setCurrentStatus(task.statut || "Non lancé")
   }, [task.statut])
+
+  // Vérifier si une remontée journalière a déjà été faite aujourd'hui
+  useEffect(() => {
+    const checkDailyReport = async () => {
+      try {
+        const today = new Date().toISOString().split("T")[0]
+        const response = await fetch(`/api/terrain/history?tache_id=${task.tache_id}`)
+        const result = await response.json()
+        
+        if (result.success && result.data) {
+          const hasReportToday = result.data.some((entry: any) => 
+            entry.date_saisie === today && entry.avancement_pct > 0
+          )
+          setHasDailyReportToday(hasReportToday)
+        }
+      } catch (error) {
+        console.error("Error checking daily report:", error)
+      }
+    }
+    
+    checkDailyReport()
+  }, [task.tache_id])
 
   const getStatusConfig = (statut: string) => {
     switch (statut) {
@@ -203,8 +227,12 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
       if (result.success) {
         toast.success(`Avancement mis à jour : ${finalProgress}%`)
         setProgress(finalProgress)
+        setHasDailyReportToday(true) // Marquer qu'une remontée a été faite aujourd'hui
         if (onProgressChange) {
           onProgressChange(task.tache_id, finalProgress)
+        }
+        if (onDailyReport) {
+          onDailyReport() // Notifier le parent pour mettre à jour les stats
         }
         setShowDailyReport(false)
         // Réinitialiser les valeurs
@@ -313,7 +341,7 @@ export default function TaskTile({ task, onStatusChange, onProgressChange }: Tas
       {statusConfig.actions.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
           {/* Bouton "Déclarer la journée" pour les tâches En cours */}
-          {currentStatus === "En cours" && (
+          {currentStatus === "En cours" && !hasDailyReportToday && (
             <Button
               size="sm"
               variant="outline"
