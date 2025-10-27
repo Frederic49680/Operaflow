@@ -57,7 +57,7 @@ export default function AdminUsersPage() {
           *,
           user_roles(
             role_id,
-            roles(code, label)
+            roles!inner(code, label)
           )
         `)
         .order('created_at', { ascending: false })

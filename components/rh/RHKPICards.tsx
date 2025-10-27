@@ -71,7 +71,7 @@ export function RHKPICards() {
       // Compétences (compter les compétences uniques)
       const { data: competencesData, error: competencesError } = await supabase
         .from('competencies')
-        .select('id')
+        .select('code')
 
       if (competencesError) throw competencesError
 

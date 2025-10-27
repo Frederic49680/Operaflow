@@ -61,7 +61,7 @@ export default function AdminRolesPage() {
                  *,
                  role_permissions(
                    permission_id,
-                   permissions(code, label)
+                   permissions!inner(code, label)
                  )
                `)
                .order('seniority_rank', { ascending: true })
