@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import { DeclarerPlanificationModal } from "./DeclarerPlanificationModal"
 
 interface Affaire {
   id: string
@@ -37,6 +38,8 @@ export default function AffairesAPlanifierSimple() {
   const [affaires, setAffaires] = useState<Affaire[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedAffaire, setSelectedAffaire] = useState<Affaire | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const loadAffaires = async () => {
     try {
@@ -70,7 +73,21 @@ export default function AffairesAPlanifierSimple() {
     }
   }
 
-  const handleDeclarePlanification = async (affaireId: string) => {
+  const handleDeclarePlanification = (affaire: Affaire) => {
+    setSelectedAffaire(affaire)
+    setModalOpen(true)
+  }
+
+  const handleModalClose = () => {
+    setModalOpen(false)
+    setSelectedAffaire(null)
+  }
+
+  const handleModalSuccess = () => {
+    loadAffaires()
+  }
+
+  const handleDeclarePlanificationOld = async (affaireId: string) => {
     try {
       const supabase = createClient()
 
@@ -264,15 +281,12 @@ export default function AffairesAPlanifierSimple() {
                 {/* Bouton d'action */}
                 <div className="pt-3 border-t">
                   <Button 
-                    onClick={() => handleDeclarePlanification(affaire.id)}
+                    onClick={() => handleDeclarePlanification(affaire)}
                     className="w-full"
                     size="sm"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    {affaire.type_affaire === 'BPU' 
-                      ? "Planifier automatiquement (BPU)" 
-                      : "Déclarer la Planification"
-                    }
+                    Déclarer la Planification
                   </Button>
                 </div>
               </CardContent>
@@ -280,6 +294,16 @@ export default function AffairesAPlanifierSimple() {
           ))
         )}
       </div>
+
+      {/* Modal de déclaration de planification */}
+      {selectedAffaire && (
+        <DeclarerPlanificationModal
+          affaire={selectedAffaire}
+          isOpen={modalOpen}
+          onClose={handleModalClose}
+          onSuccess={handleModalSuccess}
+        />
+      )}
     </div>
   )
 }
