@@ -115,6 +115,11 @@ export default function NewTaskButton({ onTaskCreated }: NewTaskButtonProps) {
       setIsOpen(false)
       resetForm()
       toast.success("Tâche créée avec succès")
+      
+      // Rafraîchir la page après 1 seconde pour voir les nouvelles tâches
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
     } catch (error) {
       console.error('Erreur lors de la création:', error)
       toast.error("Erreur lors de la création de la tâche")
