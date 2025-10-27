@@ -14,11 +14,17 @@ interface LogEntry {
   data?: any
 }
 
+interface Stats {
+  users?: number
+  usersWithRoles?: number
+  roles?: number
+}
+
 export default function LoggingModule() {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking')
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<Stats | null>(null)
 
   const addLog = (level: LogEntry['level'], message: string, data?: any) => {
     const newLog: LogEntry = {
@@ -82,7 +88,7 @@ export default function LoggingModule() {
         addLog('error', '❌ Erreur lecture rôles', rolesError.message)
       } else {
         addLog('success', `✅ ${roles?.length || 0} rôles lus`)
-        setStats(prev => ({
+        setStats((prev: Stats | null) => ({
           ...prev,
           roles: roles?.length || 0
         }))
