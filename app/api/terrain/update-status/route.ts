@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Mapper les statuts du frontend vers les statuts de la base de données
-    const statutMapping: { [key: string]: string } = {
+    const statutMappingRemontee: { [key: string]: string } = {
       'Non lancé': 'Non lancée',
       'À lancer': 'Non lancée',
       'Terminé': 'Terminée',
@@ -37,10 +37,30 @@ export async function POST(request: NextRequest) {
       'Prolongée': 'Prolongée'
     }
     
-    const mappedStatut = statutMapping[statut_reel] || statut_reel
+    // Mapping pour planning_taches (statuts masculins)
+    const statutMappingPlanning: { [key: string]: string } = {
+      'Non lancée': 'Non lancé',
+      'À lancer': 'Non lancé',
+      'Terminée': 'Terminé',
+      'Suspendue': 'Suspendu',
+      'Reportée': 'Reporté',
+      'Prolongée': 'Prolongé',
+      'Bloquée': 'Bloqué',
+      // Garder les statuts déjà corrects
+      'Non lancé': 'Non lancé',
+      'En cours': 'En cours',
+      'Terminé': 'Terminé',
+      'Bloqué': 'Bloqué',
+      'Suspendu': 'Suspendu',
+      'Reporté': 'Reporté',
+      'Prolongé': 'Prolongé'
+    }
     
-    // Vérifier que le statut mappé est valide
-    const validStatuts = [
+    const mappedStatutRemontee = statutMappingRemontee[statut_reel] || statut_reel
+    const mappedStatutPlanning = statutMappingPlanning[statut_reel] || statut_reel
+    
+    // Vérifier que les statuts mappés sont valides
+    const validStatutsRemontee = [
       'Non lancée',
       'En cours',
       'Terminée',
@@ -50,16 +70,31 @@ export async function POST(request: NextRequest) {
       'Prolongée'
     ]
     
-    if (!validStatuts.includes(mappedStatut)) {
-      console.error("Invalid statut_reel:", statut_reel, "-> mapped:", mappedStatut)
+    const validStatutsPlanning = [
+      'Non lancé',
+      'En cours',
+      'Terminé',
+      'Bloqué',
+      'Suspendu',
+      'Reporté',
+      'Prolongé'
+    ]
+    
+    if (!validStatutsRemontee.includes(mappedStatutRemontee)) {
+      console.error("Invalid statut_reel for remontee:", statut_reel, "-> mapped:", mappedStatutRemontee)
       return NextResponse.json(
-        { success: false, message: `Invalid statut_reel: ${statut_reel}` },
+        { success: false, message: `Invalid statut_reel for remontee: ${statut_reel}` },
         { status: 400 }
       )
     }
     
-    // Utiliser le statut mappé pour la suite
-    const finalStatut = mappedStatut
+    if (!validStatutsPlanning.includes(mappedStatutPlanning)) {
+      console.error("Invalid statut_reel for planning:", statut_reel, "-> mapped:", mappedStatutPlanning)
+      return NextResponse.json(
+        { success: false, message: `Invalid statut_reel for planning: ${statut_reel}` },
+        { status: 400 }
+      )
+    }
 
     // Récupérer les informations de la tâche pour obtenir site_id et affaire_id
     console.log("Fetching task with ID:", tache_id)
@@ -110,15 +145,15 @@ export async function POST(request: NextRequest) {
 
     if (existingRemontee) {
       console.log("Updating existing remontee:", existingRemontee.id)
-      console.log("Update data:", { statut_reel: finalStatut })
+      console.log("Update data:", { statut_reel: mappedStatutRemontee })
       
-             // Mettre à jour la remontée existante
-             const { error } = await supabase
-               .from("remontee_site")
-               .update({
-                 statut_reel: finalStatut,
-               })
-               .eq("id", existingRemontee.id)
+      // Mettre à jour la remontée existante
+      const { error } = await supabase
+        .from("remontee_site")
+        .update({
+          statut_reel: mappedStatutRemontee,
+        })
+        .eq("id", existingRemontee.id)
 
       if (error) {
         console.error("Error updating remontee:", error)
@@ -133,7 +168,7 @@ export async function POST(request: NextRequest) {
       // Mettre à jour aussi le statut dans planning_taches
       const { error: updateTaskError } = await supabase
         .from("planning_taches")
-        .update({ statut: finalStatut })
+        .update({ statut: mappedStatutPlanning })
         .eq("id", tache_id)
       
       if (updateTaskError) {
@@ -149,7 +184,7 @@ export async function POST(request: NextRequest) {
         site_id: tache.site_id,
         affaire_id: tache.affaire_id,
         date_saisie: new Date().toISOString().split("T")[0],
-        statut_reel: finalStatut,
+        statut_reel: mappedStatutRemontee,
         avancement_pct: 0,
       }
       
@@ -174,7 +209,7 @@ export async function POST(request: NextRequest) {
       // Mettre à jour aussi le statut dans planning_taches
       const { error: updateTaskError } = await supabase
         .from("planning_taches")
-        .update({ statut: finalStatut })
+        .update({ statut: mappedStatutPlanning })
         .eq("id", tache_id)
       
       if (updateTaskError) {
