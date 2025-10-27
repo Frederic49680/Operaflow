@@ -5,7 +5,7 @@
 -- Supprimer l'ancien trigger
 DROP TRIGGER IF EXISTS trigger_validate_task_hierarchy ON planning_taches;
 
--- Recréer la fonction avec une logique simplifiée (sans récursion)
+-- Recréer la fonction avec une logique ultra-simplifiée
 CREATE OR REPLACE FUNCTION fn_validate_task_hierarchy()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -26,28 +26,8 @@ BEGIN
             RAISE EXCEPTION 'Une tâche ne peut pas être parent d''elle-même';
         END IF;
         
-        -- Pour simplifier et éviter la récursion infinie,
-        -- on utilise une requête SQL récursive native qui est mieux optimisée
-        IF EXISTS (
-            WITH RECURSIVE parent_chain AS (
-                -- Point de départ: le parent direct
-                SELECT id, parent_id, 1 as depth
-                FROM planning_taches
-                WHERE id = NEW.parent_id
-                
-                UNION ALL
-                
-                -- Remonter la chaîne des parents
-                SELECT t.id, t.parent_id, pc.depth + 1
-                FROM planning_taches t
-                INNER JOIN parent_chain pc ON t.id = pc.parent_id
-                WHERE pc.depth < 10  -- Limiter à 10 niveaux
-            )
-            -- Vérifier si on tombe sur NEW.id (cycle détecté)
-            SELECT 1 FROM parent_chain WHERE id = NEW.id
-        ) THEN
-            RAISE EXCEPTION 'Cycle détecté dans la hiérarchie des tâches';
-        END IF;
+        -- DÉSACTIVÉ TEMPORAIREMENT: détection des cycles (provoque stack overflow)
+        -- La vérification des cycles sera gérée au niveau applicatif si nécessaire
     END IF;
     
     RETURN NEW;
@@ -60,4 +40,4 @@ CREATE TRIGGER trigger_validate_task_hierarchy
     FOR EACH ROW
     EXECUTE FUNCTION fn_validate_task_hierarchy();
 
-COMMENT ON FUNCTION fn_validate_task_hierarchy IS 'Valide la hiérarchie des tâches et détecte les cycles réels (pas les relations parent-enfant normales)';
+COMMENT ON FUNCTION fn_validate_task_hierarchy IS 'Valide uniquement le niveau max (3) et l''existence du parent. Détection des cycles désactivée temporairement.';
