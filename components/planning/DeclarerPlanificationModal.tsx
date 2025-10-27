@@ -194,17 +194,16 @@ export function DeclarerPlanificationModal({
             </div>
           </div>
 
-          {/* Sélection template */}
+                     {/* Sélection template */}
           <div className="space-y-2">
             <Label htmlFor="template" className="text-slate-700 font-medium">
               Template à appliquer (optionnel)
             </Label>
-            <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+            <Select value={selectedTemplate || undefined} onValueChange={setSelectedTemplate}>
               <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                 <SelectValue placeholder="Aucun template" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Aucun template</SelectItem>
                 {templates.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
                     {template.name}
