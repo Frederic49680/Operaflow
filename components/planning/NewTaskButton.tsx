@@ -174,7 +174,7 @@ export default function NewTaskButton({ onTaskCreated }: NewTaskButtonProps) {
               <Label htmlFor="affaire" className="text-slate-700 font-medium">
                 Affaire
               </Label>
-              <Select value={affaireId || undefined} onValueChange={setAffaireId} disabled={loading}>
+              <Select value={affaireId} onValueChange={setAffaireId} disabled={loading}>
                 <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                   <SelectValue placeholder="Sélectionner une affaire" />
                 </SelectTrigger>
@@ -193,7 +193,7 @@ export default function NewTaskButton({ onTaskCreated }: NewTaskButtonProps) {
               <Label htmlFor="site" className="text-slate-700 font-medium">
                 Site
               </Label>
-              <Select value={siteId || undefined} onValueChange={setSiteId} disabled={loading}>
+              <Select value={siteId} onValueChange={setSiteId} disabled={loading}>
                 <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                   <SelectValue placeholder="Sélectionner un site" />
                 </SelectTrigger>

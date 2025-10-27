@@ -87,7 +87,11 @@ export function useTasks() {
           manual,
           template_origin_id,
           affaires(nom, code_affaire),
-          sites(nom, code_site)
+          sites(nom, code_site),
+          taches_ressources(
+            ressource_id,
+            ressources(nom, prenom, id)
+          )
         `)
         .order('order_index', { ascending: true })
 
@@ -111,6 +115,11 @@ export function useTasks() {
             nom: task.sites.nom,
             code_site: task.sites.code_site
           } : undefined,
+          ressources: task.taches_ressources?.map((tr: any) => ({
+            id: tr.ressources?.id || tr.ressource_id,
+            nom: tr.ressources?.nom || '',
+            prenom: tr.ressources?.prenom || ''
+          })).filter((r: any) => r.id) || [],
           enfants: []
         }
         tasksMap.set(task.id, taskWithRelations)
