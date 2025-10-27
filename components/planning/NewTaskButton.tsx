@@ -174,12 +174,11 @@ export default function NewTaskButton({ onTaskCreated }: NewTaskButtonProps) {
               <Label htmlFor="affaire" className="text-slate-700 font-medium">
                 Affaire
               </Label>
-              <Select value={affaireId} onValueChange={setAffaireId} disabled={loading}>
+              <Select value={affaireId || undefined} onValueChange={setAffaireId} disabled={loading}>
                 <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                   <SelectValue placeholder="Sélectionner une affaire" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucune affaire</SelectItem>
                   {affaires.map((aff) => (
                     <SelectItem key={aff.id} value={aff.id}>
                       {aff.code_affaire} - {aff.nom} ({aff.statut})
@@ -194,12 +193,11 @@ export default function NewTaskButton({ onTaskCreated }: NewTaskButtonProps) {
               <Label htmlFor="site" className="text-slate-700 font-medium">
                 Site
               </Label>
-              <Select value={siteId} onValueChange={setSiteId} disabled={loading}>
+              <Select value={siteId || undefined} onValueChange={setSiteId} disabled={loading}>
                 <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500/20">
                   <SelectValue placeholder="Sélectionner un site" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun site</SelectItem>
                   {sites.map((site) => (
                     <SelectItem key={site.id} value={site.id}>
                       {site.code_site} - {site.nom}
