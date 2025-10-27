@@ -223,83 +223,85 @@ export default function TuilesTachesSimple() {
         </CardContent>
       </Card>
 
-             {/* Liste des tâches organisées par affaires */}
-             <div className="space-y-4">
-               {Object.keys(tasksByAffaire).length === 0 ? (
-                 <Card>
-                   <CardContent className="py-8 text-center">
-                     <p className="text-gray-500">
-                       {searchTerm || filterStatus !== "all"
-                         ? "Aucune tâche ne correspond aux critères de recherche"
-                         : "Aucune tâche créée pour le moment"
-                       }
-                     </p>
-                   </CardContent>
-                 </Card>
-               ) : (
-                 Object.values(tasksByAffaire).map(affaire => {
-                   const isExpanded = expandedAffaires.has(affaire.id)
-                   const totalTasks = affaire.tasks.length
-                   const completedTasks = affaire.tasks.filter(t => t.statut === 'Terminé').length
-                   const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+      {/* Liste des tâches organisées par affaires */}
+      <div className="space-y-4">
+        {Object.keys(tasksByAffaire).length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <p className="text-gray-500">
+                {searchTerm || filterStatus !== "all"
+                  ? "Aucune tâche ne correspond aux critères de recherche"
+                  : "Aucune tâche créée pour le moment"
+                }
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          Object.values(tasksByAffaire)
+            .filter(affaire => affaire.tasks.length > 0) // Filtrer les affaires avec au moins une tâche
+            .map(affaire => {
+              const isExpanded = expandedAffaires.has(affaire.id)
+              const totalTasks = affaire.tasks.length
+              const completedTasks = affaire.tasks.filter(t => t.statut === 'Terminé').length
+              const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
-                   return (
-                     <Card key={affaire.id} className="border-l-4 border-l-blue-500">
-                       <CardHeader 
-                         className="cursor-pointer hover:bg-gray-50 transition-colors"
-                         onClick={() => toggleAffaireExpand(affaire.id)}
-                       >
-                         <div className="flex items-center justify-between">
-                           <div className="flex items-center gap-3">
-                             <div className="flex items-center gap-2">
-                               <div className={`transform transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
-                                 <ChevronRight className="h-4 w-4 text-gray-500" />
-                               </div>
-                               <Building className="h-5 w-5 text-blue-600" />
-                               <div>
-                                 <CardTitle className="text-lg text-blue-700">
-                                   {affaire.nom}
-                                 </CardTitle>
-                                 <p className="text-sm text-gray-500">
-                                   Code: {affaire.code} • {totalTasks} tâche(s)
-                                 </p>
-                               </div>
-                             </div>
-                           </div>
-                           <div className="flex items-center gap-4">
-                             <div className="flex items-center gap-2 text-sm text-gray-600">
-                               <CheckCircle className="h-4 w-4 text-green-600" />
-                               <span>{completedTasks}</span>
-                               <Clock className="h-4 w-4 text-orange-600" />
-                               <span>{totalTasks - completedTasks}</span>
-                             </div>
-                             <div className="text-right">
-                               <div className="text-sm font-medium text-gray-700">
-                                 {progressPercentage}% d'avancement
-                               </div>
-                               <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                 <div 
-                                   className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-300"
-                                   style={{ width: `${progressPercentage}%` }}
-                                 />
-                               </div>
-                             </div>
-                           </div>
-                         </div>
-                       </CardHeader>
-                       
-                       {isExpanded && (
-                         <CardContent className="pt-0">
-                           <div className="space-y-3">
-                             {affaire.tasks.map(task => renderTask(task))}
-                           </div>
-                         </CardContent>
-                       )}
-                     </Card>
-                   )
-                 })
-               )}
-             </div>
+              return (
+                <Card key={affaire.id} className="border-l-4 border-l-blue-500">
+                  <CardHeader 
+                    className="cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => toggleAffaireExpand(affaire.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className={`transform transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
+                            <ChevronRight className="h-4 w-4 text-gray-500" />
+                          </div>
+                          <Building className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <CardTitle className="text-lg text-blue-700">
+                              {affaire.nom}
+                            </CardTitle>
+                            <p className="text-sm text-gray-500">
+                              Code: {affaire.code} • {totalTasks} tâche(s)
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span>{completedTasks}</span>
+                          <Clock className="h-4 w-4 text-orange-600" />
+                          <span>{totalTasks - completedTasks}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-gray-700">
+                            {progressPercentage}% d'avancement
+                          </div>
+                          <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-300"
+                              style={{ width: `${progressPercentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  {isExpanded && (
+                    <CardContent className="pt-0">
+                      <div className="space-y-3">
+                        {affaire.tasks.map(task => renderTask(task))}
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              )
+            })
+        )}
+      </div>
 
              {/* Modal d'édition de tâche */}
              {showEditModal && editingTask && (
