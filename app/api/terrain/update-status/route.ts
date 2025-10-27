@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("=== UPDATE STATUS API CALL START ===")
     const supabase = await createClient()
     const body = await request.json()
     const { tache_id, statut_reel } = body
@@ -61,16 +62,26 @@ export async function POST(request: NextRequest) {
     const finalStatut = mappedStatut
 
     // Récupérer les informations de la tâche pour obtenir site_id et affaire_id
+    console.log("Fetching task with ID:", tache_id)
     const { data: tache, error: tacheError } = await supabase
       .from("planning_taches")
-      .select("site_id, affaire_id, date_debut_plan, date_fin_plan")
+      .select("id, site_id, affaire_id, date_debut_plan, date_fin_plan, libelle_tache")
       .eq("id", tache_id)
       .single()
 
-    if (tacheError || !tache) {
+    if (tacheError) {
       console.error("Error fetching task:", tacheError)
+      console.error("Task ID:", tache_id)
       return NextResponse.json(
-        { success: false, message: `Task not found: ${tacheError?.message}` },
+        { success: false, message: `Task not found: ${tacheError.message}` },
+        { status: 404 }
+      )
+    }
+
+    if (!tache) {
+      console.error("Task not found:", tache_id)
+      return NextResponse.json(
+        { success: false, message: `Task not found: ${tache_id}` },
         { status: 404 }
       )
     }
@@ -99,6 +110,8 @@ export async function POST(request: NextRequest) {
 
     if (existingRemontee) {
       console.log("Updating existing remontee:", existingRemontee.id)
+      console.log("Update data:", { statut_reel: finalStatut })
+      
       // Mettre à jour la remontée existante
       const { error } = await supabase
         .from("remontee_site")
@@ -110,6 +123,7 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         console.error("Error updating remontee:", error)
+        console.error("Error details:", JSON.stringify(error, null, 2))
         return NextResponse.json(
           { success: false, message: `Update error: ${error.message}` },
           { status: 500 }
@@ -117,29 +131,26 @@ export async function POST(request: NextRequest) {
       }
       console.log("Remontee updated successfully")
     } else {
-      console.log("Creating new remontee with data:", {
+      const insertData = {
         tache_id,
         site_id: tache.site_id,
         affaire_id: tache.affaire_id,
         date_saisie: new Date().toISOString().split("T")[0],
-        statut_reel,
+        statut_reel: finalStatut,
         avancement_pct: 0,
-      })
+      }
+      
+      console.log("Creating new remontee with data:", insertData)
       
       // Créer une nouvelle remontée avec tous les champs nécessaires
       const { error } = await supabase
         .from("remontee_site")
-        .insert({
-          tache_id,
-          site_id: tache.site_id,
-          affaire_id: tache.affaire_id,
-          date_saisie: new Date().toISOString().split("T")[0],
-          statut_reel: finalStatut,
-          avancement_pct: 0,
-        })
+        .insert(insertData)
 
       if (error) {
         console.error("Error creating remontee:", error)
+        console.error("Error details:", JSON.stringify(error, null, 2))
+        console.error("Insert data:", JSON.stringify(insertData, null, 2))
         return NextResponse.json(
           { success: false, message: `Insert error: ${error.message}` },
           { status: 500 }
@@ -148,9 +159,12 @@ export async function POST(request: NextRequest) {
       console.log("Remontee created successfully")
     }
 
+    console.log("=== UPDATE STATUS API CALL SUCCESS ===")
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error("=== UPDATE STATUS API CALL ERROR ===")
     console.error("Error in update-status route:", error)
+    console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
       { success: false, message: "Internal server error" },
       { status: 500 }
