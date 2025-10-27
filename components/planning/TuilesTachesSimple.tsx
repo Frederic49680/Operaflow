@@ -129,6 +129,7 @@ export default function TuilesTachesSimple() {
       <div key={task.id} className="space-y-2">
         <TaskCard
           task={task}
+          level={level}
           onEdit={handleEdit}
           onSubTask={(parentId) => {
             console.log('Créer sous-tâche pour:', parentId)

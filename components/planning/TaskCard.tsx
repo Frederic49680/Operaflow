@@ -28,6 +28,7 @@ interface TaskCardProps {
   onToggleExpand?: (taskId: string) => void
   isExpanded?: boolean
   hasChildren?: boolean
+  level?: number
 }
 
 export default function TaskCard({
@@ -39,7 +40,8 @@ export default function TaskCard({
   onAssignResource,
   onToggleExpand,
   isExpanded = false,
-  hasChildren = false
+  hasChildren = false,
+  level = 0
 }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false)
 
@@ -77,11 +79,15 @@ export default function TaskCard({
     }
   }
 
+  // Calculer l'indentation en fonction du niveau
+  const indentStyle = level > 0 ? { marginLeft: `${level * 24}px` } : {}
+
   return (
     <Card 
       className={`transition-all duration-200 hover:shadow-md ${
         isHovered ? 'ring-2 ring-blue-200' : ''
       }`}
+      style={indentStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

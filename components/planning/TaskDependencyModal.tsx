@@ -57,16 +57,35 @@ export default function TaskDependencyModal({
     try {
       setIsCreating(true)
       
-      // Ici on pourrait créer une table task_dependencies
-      // Pour l'instant, on simule la création
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Envoyer la requête à l'API
+      const response = await fetch('/api/gantt/dependances', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tache_id: sourceTaskId, // Tâche qui dépend de...
+          tache_precedente_id: selectedTargetTask, // ...cette tâche
+          type_dependance: dependencyType,
+          lag_jours: lagDays
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Erreur lors de la création de la dépendance')
+      }
       
       toast.success("Dépendance créée avec succès")
       onClose()
       await loadTasks()
+      
+      // Rafraîchir la page après 1 seconde pour voir les changements
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
     } catch (error) {
       console.error('Erreur lors de la création de la dépendance:', error)
-      toast.error("Erreur lors de la création de la dépendance")
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la création de la dépendance")
     } finally {
       setIsCreating(false)
     }
