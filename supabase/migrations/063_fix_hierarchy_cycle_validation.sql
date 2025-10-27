@@ -9,7 +9,7 @@ DROP TRIGGER IF EXISTS trigger_validate_task_hierarchy ON planning_taches;
 CREATE OR REPLACE FUNCTION fn_validate_task_hierarchy()
 RETURNS TRIGGER AS $$
 DECLARE
-    v_parent parent_id%TYPE;
+    v_parent UUID;
     v_depth INTEGER := 0;
     v_visited UUID[] := ARRAY[]::UUID[];
 BEGIN
