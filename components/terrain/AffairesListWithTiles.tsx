@@ -119,10 +119,8 @@ export default function AffairesListWithTiles({ siteId, onRefresh }: AffairesLis
                     t.tache_id === taskId ? { ...t, statut: newStatus } : t
                   ))
                   
-                  // Recharger les tâches depuis le serveur pour avoir les vraies données
-                  if (selectedAffaire) {
-                    await loadTasks(selectedAffaire)
-                  }
+                  // Ne pas recharger automatiquement pour éviter l'écrasement du statut
+                  // Le statut sera synchronisé au prochain rechargement de la page
                   
                   if (onRefresh) onRefresh()
                 }}
