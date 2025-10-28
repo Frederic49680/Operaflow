@@ -97,48 +97,67 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
     
-    // Vérifier si l'utilisateur existe déjà dans Auth
+    // Créer l'utilisateur dans Supabase Auth (ou récupérer s'il existe)
     let authUser
     try {
-      const { data: existingUser, error: getUserError } = await serviceSupabase.auth.admin.getUserByEmail(accessRequest.email)
-      
-      if (getUserError && getUserError.status !== 404) {
-        console.error("❌ Erreur vérification utilisateur existant:", getUserError)
-        return NextResponse.json(
-          { success: false, message: `Erreur lors de la vérification: ${getUserError.message}` },
-          { status: 500 }
-        )
-      }
-      
-      if (existingUser && existingUser.user) {
-        console.log("✅ Utilisateur existe déjà dans Auth:", existingUser.user.id)
-        authUser = existingUser
-      } else {
-        // Créer l'utilisateur dans Supabase Auth
-        console.log("🆕 Création nouvel utilisateur Auth...")
-        const { data: newUser, error: authError } = await serviceSupabase.auth.admin.createUser({
-          email: accessRequest.email,
-          password: tempPassword,
-          email_confirm: true,
-          user_metadata: {
-            prenom: accessRequest.prenom,
-            nom: accessRequest.nom
-          }
-        })
+      // Essayer de créer l'utilisateur
+      const { data: newUser, error: authError } = await serviceSupabase.auth.admin.createUser({
+        email: accessRequest.email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+          prenom: accessRequest.prenom,
+          nom: accessRequest.nom
+        }
+      })
 
-        if (authError || !newUser.user) {
+      if (authError) {
+        // Si l'erreur est "email_exists", récupérer l'utilisateur existant
+        if (authError.message.includes("already been registered") || authError.message.includes("email_exists")) {
+          console.log("✅ Utilisateur existe déjà, récupération...")
+          
+          // Lister les utilisateurs pour trouver celui avec cet email
+          const { data: users, error: listError } = await serviceSupabase.auth.admin.listUsers()
+          
+          if (listError) {
+            console.error("❌ Erreur lors de la récupération des utilisateurs:", listError)
+            return NextResponse.json(
+              { success: false, message: "Erreur lors de la récupération de l'utilisateur existant" },
+              { status: 500 }
+            )
+          }
+          
+          const existingUser = users?.users?.find(user => user.email === accessRequest.email)
+          
+          if (!existingUser) {
+            console.error("❌ Utilisateur non trouvé malgré l'erreur email_exists")
+            return NextResponse.json(
+              { success: false, message: "Utilisateur non trouvé" },
+              { status: 500 }
+            )
+          }
+          
+          console.log("✅ Utilisateur existant récupéré:", existingUser.id)
+          authUser = { user: existingUser }
+        } else {
           console.error("❌ Erreur création utilisateur Auth:", authError)
           return NextResponse.json(
-            { success: false, message: `Erreur lors de la création du compte: ${authError?.message}` },
+            { success: false, message: `Erreur lors de la création du compte: ${authError.message}` },
             { status: 500 }
           )
         }
-        
+      } else if (newUser && newUser.user) {
         console.log("✅ Nouvel utilisateur créé:", newUser.user.id)
         authUser = newUser
+      } else {
+        console.error("❌ Utilisateur non créé")
+        return NextResponse.json(
+          { success: false, message: "Erreur lors de la création de l'utilisateur" },
+          { status: 500 }
+        )
       }
     } catch (error) {
-      console.error("❌ Erreur lors de la vérification/création:", error)
+      console.error("❌ Erreur lors de la création/récupération:", error)
       return NextResponse.json(
         { success: false, message: "Erreur lors de la gestion de l'utilisateur" },
         { status: 500 }
