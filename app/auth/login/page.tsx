@@ -1,10 +1,57 @@
+"use client"
+
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!email || !password) {
+      toast.error("Veuillez remplir tous les champs")
+      return
+    }
+
+    setIsLoading(true)
+    
+    try {
+      const supabase = createClient()
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        console.error("Erreur de connexion:", error)
+        toast.error(error.message || "Erreur de connexion")
+        return
+      }
+
+      if (data.user) {
+        toast.success("Connexion réussie !")
+        router.push("/dashboard")
+      }
+    } catch (error) {
+      console.error("Erreur inattendue:", error)
+      toast.error("Erreur de connexion")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-slate-100 p-4">
       <Card className="w-full max-w-md shadow-2xl border-slate-200">
@@ -22,14 +69,17 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-slate-700 font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="votre@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
                 className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
@@ -47,12 +97,19 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
                 className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
-            <Button type="submit" className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all">
-              Se connecter
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+            >
+              {isLoading ? "Connexion..." : "Se connecter"}
             </Button>
           </form>
           <div className="mt-6 text-center text-sm text-slate-600">
