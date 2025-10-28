@@ -46,7 +46,21 @@ export default function AccessRequestsPage() {
   const [showApproveModal, setShowApproveModal] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [selectedRole, setSelectedRole] = useState("")
+  const [availableRoles, setAvailableRoles] = useState<Array<{id: string, code: string, label: string}>>([])
   const [rejectReason, setRejectReason] = useState("")
+
+  // Charger les rôles disponibles
+  const loadRoles = async () => {
+    try {
+      const response = await fetch("/api/admin/roles")
+      if (response.ok) {
+        const roles = await response.json()
+        setAvailableRoles(roles)
+      }
+    } catch (error) {
+      console.error("Erreur chargement rôles:", error)
+    }
+  }
 
   // Charger les demandes d'accès
   const loadRequests = async () => {
@@ -91,6 +105,7 @@ export default function AccessRequestsPage() {
 
   useEffect(() => {
     loadRequests()
+    loadRoles()
   }, [])
 
   // Approuver une demande
@@ -483,13 +498,11 @@ export default function AccessRequestsPage() {
                     <SelectValue placeholder="Sélectionner un rôle" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user">Utilisateur</SelectItem>
-                    <SelectItem value="planificateur">Planificateur</SelectItem>
-                    <SelectItem value="ca">Chargé d'Affaires</SelectItem>
-                    <SelectItem value="resp_site">Responsable de Site</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="rh">RH</SelectItem>
-                    <SelectItem value="direction">Direction</SelectItem>
+                    {availableRoles.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
