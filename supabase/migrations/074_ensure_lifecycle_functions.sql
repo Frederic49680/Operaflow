@@ -2,6 +2,13 @@
 -- Date: 2025-01-27
 -- Description: Vérifier et recréer les fonctions de cycle de vie des activités
 
+-- Supprimer les fonctions existantes si elles existent
+DROP FUNCTION IF EXISTS suspend_activite(UUID, TEXT, UUID, INTEGER);
+DROP FUNCTION IF EXISTS reprend_activite(UUID, UUID);
+DROP FUNCTION IF EXISTS reporte_activite(UUID, TEXT, UUID, DATE);
+DROP FUNCTION IF EXISTS prolonge_activite(UUID, TEXT, UUID, INTEGER);
+DROP FUNCTION IF EXISTS lance_activite(UUID, UUID);
+
 -- Fonction pour suspendre une activité
 CREATE OR REPLACE FUNCTION suspend_activite(
   tache_id UUID,
