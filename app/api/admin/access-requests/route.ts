@@ -8,7 +8,7 @@ interface Role {
 }
 
 interface UserRole {
-  roles: Role
+  roles: Role | null
 }
 
 export async function GET(request: NextRequest) {
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     console.log("🔍 Debug - User roles:", userRoles, "Error:", roleError)
 
     // Vérifier si l'utilisateur a le rôle admin
-    const hasAdminRole = (userRoles as UserRole[])?.some(ur => ur.roles?.code === "admin")
+    const hasAdminRole = userRoles?.some((ur: any) => ur.roles?.code === "admin") || false
     
     console.log("🔍 Debug - Has admin role:", hasAdminRole)
 
