@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
           nom,
           prenom
         ),
-        remplaçant:ressources!sites_remplaçant_id_fkey (
+        remplaçant:ressources!sites_remplacant_id_fkey (
           nom,
           prenom
         )
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       code_site,
       nom,
       responsable_id,
-      remplaçant_id,
+      remplacant_id,
       statut,
       commentaires,
     } = body
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       code_site,
       nom,
       responsable_id,
-      remplaçant_id: remplaçant_id || null,
+      remplacant_id: remplacant_id || null,
       statut: statut || "Actif",
       commentaires: commentaires || null,
       created_by: user?.id || null,

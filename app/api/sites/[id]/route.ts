@@ -19,7 +19,7 @@ export async function GET(
           nom,
           prenom
         ),
-        remplaçant_id:ressources (
+        remplacant_id:ressources (
           id,
           nom,
           prenom

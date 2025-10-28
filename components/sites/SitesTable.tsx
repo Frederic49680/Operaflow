@@ -75,7 +75,7 @@ export function SitesTable({ searchTerm = "", showClosedSites = false }: SitesTa
       // Charger les sites
       const { data: sitesData, error: sitesError } = await supabase
         .from('sites')
-        .select('id, code_site, nom, statut, responsable_id, remplaçant_id')
+        .select('id, code_site, nom, statut, responsable_id, remplacant_id')
         .order('nom')
 
       if (sitesError) throw sitesError

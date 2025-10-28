@@ -82,7 +82,7 @@ export function SiteFormModal({ children, siteId, onClose }: SiteFormModalProps)
             setSiteData(site)
             // Mettre à jour les sélections quand les données sont chargées
             setSelectedResponsable(site?.responsable_id || "")
-            setSelectedRemplaçant(site?.remplaçant_id || "")
+            setSelectedRemplaçant(site?.remplacant_id || "")
           }
         }
       } catch (error) {
@@ -112,7 +112,7 @@ export function SiteFormModal({ children, siteId, onClose }: SiteFormModalProps)
         code_site: formData.get("code_site"),
         nom: formData.get("nom"),
         responsable_id: formData.get("responsable"),
-        remplaçant_id: formData.get("remplaçant") || null,
+        remplacant_id: formData.get("remplaçant") || null,
         statut: formData.get("statut") || "Actif",
         commentaires: formData.get("commentaires") || null,
       }
