@@ -97,18 +97,39 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
     
-    const { data: authUser, error: authError } = await serviceSupabase.auth.admin.createUser({
-      email: accessRequest.email,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: {
-        prenom: accessRequest.prenom,
-        nom: accessRequest.nom
-      }
+    // Utiliser l'API REST Supabase directement pour créer l'utilisateur
+    const createUserResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!
+      },
+      body: JSON.stringify({
+        email: accessRequest.email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+          prenom: accessRequest.prenom,
+          nom: accessRequest.nom
+        }
+      })
     })
 
-    if (authError || !authUser.user) {
-      console.error("Erreur création utilisateur Auth:", authError)
+    if (!createUserResponse.ok) {
+      const errorText = await createUserResponse.text()
+      console.error("❌ Erreur création utilisateur via API REST:", errorText)
+      return NextResponse.json(
+        { success: false, message: `Erreur création utilisateur: ${errorText}` },
+        { status: 500 }
+      )
+    }
+
+    const authUser = await createUserResponse.json()
+    console.log("✅ Utilisateur créé via API REST:", authUser.user?.id)
+
+    if (!authUser.user) {
+      console.error("❌ Utilisateur non créé:", authUser)
       return NextResponse.json(
         { success: false, message: "Erreur lors de la création du compte" },
         { status: 500 }
