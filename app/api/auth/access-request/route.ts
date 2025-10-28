@@ -15,23 +15,49 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Vérifier si l'utilisateur existe déjà dans app_users
-    const { data: existingUser } = await supabase
-      .from("app_users")
-      .select("id")
+    // Vérifier si une demande existe déjà pour cet email
+    const { data: existingRequest } = await supabase
+      .from("access_requests")
+      .select("id, statut")
       .eq("email", email)
       .single()
 
-    if (existingUser) {
-      return NextResponse.json(
-        { success: false, message: "Un compte existe déjà pour cet email" },
-        { status: 409 }
-      )
+    if (existingRequest) {
+      if (existingRequest.statut === "pending") {
+        return NextResponse.json(
+          { success: false, message: "Une demande est déjà en cours pour cet email" },
+          { status: 409 }
+        )
+      }
+      if (existingRequest.statut === "approved") {
+        return NextResponse.json(
+          { success: false, message: "Un compte existe déjà pour cet email" },
+          { status: 409 }
+        )
+      }
     }
 
-    // Pour l'instant, on simule la création de la demande
-    // et on envoie directement l'email à l'admin
-    console.log("📝 Demande d'accès reçue:", { email, prenom, nom, message })
+    // Créer la demande d'accès
+    const { data: requestData, error: requestError } = await supabase
+      .from("access_requests")
+      .insert({
+        email,
+        prenom,
+        nom,
+        message: message || "Demande d'accès à OperaFlow",
+        statut: "pending",
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (requestError) {
+      console.error("Erreur création demande:", requestError)
+      return NextResponse.json(
+        { success: false, message: "Erreur lors de la création de la demande" },
+        { status: 500 }
+      )
+    }
 
     // Envoyer un email de notification à l'administrateur
     const adminEmailTemplate = {
@@ -72,18 +98,19 @@ export async function POST(request: NextRequest) {
                 <p><strong>Email :</strong> ${email}</p>
                 <p><strong>Message :</strong> ${message || "Aucun message"}</p>
                 <p><strong>Date de demande :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
+                <p><strong>ID Demande :</strong> ${requestData.id}</p>
               </div>
               
-              <p>Pour traiter cette demande, vous pouvez :</p>
+              <p>Pour traiter cette demande :</p>
               
               <div style="text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/users" class="button">
-                  🚀 Créer le compte utilisateur
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/access-requests" class="button">
+                  🚀 Gérer les demandes d'accès
                 </a>
               </div>
               
               <p><strong>Ou copiez ce lien dans votre navigateur :</strong><br>
-              <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/users">${process.env.NEXT_PUBLIC_APP_URL}/admin/users</a></p>
+              <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/access-requests">${process.env.NEXT_PUBLIC_APP_URL}/admin/access-requests</a></p>
               
               <p>Cordialement,<br>
               <strong>Le système OperaFlow</strong></p>
@@ -107,8 +134,9 @@ export async function POST(request: NextRequest) {
         Email : ${email}
         Message : ${message || "Aucun message"}
         Date : ${new Date().toLocaleDateString('fr-FR')}
+        ID Demande : ${requestData.id}
         
-        Lien pour créer le compte : ${process.env.NEXT_PUBLIC_APP_URL}/admin/users
+        Lien pour traiter la demande : ${process.env.NEXT_PUBLIC_APP_URL}/admin/access-requests
         
         Cordialement,
         Le système OperaFlow
@@ -120,7 +148,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Demande d'accès envoyée avec succès",
-      requestId: `temp_${Date.now()}` // ID temporaire
+      requestId: requestData.id
     })
 
   } catch (error) {
