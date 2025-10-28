@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         message: "Erreur lors de l'envoi d'email",
-        error: emailError.message
+        error: emailError instanceof Error ? emailError.message : String(emailError)
       }, { status: 500 })
     }
     
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       message: "Erreur serveur",
-      error: error.message
+      error: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }
