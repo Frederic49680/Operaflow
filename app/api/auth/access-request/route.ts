@@ -4,7 +4,11 @@ import { sendEmail } from "@/lib/email"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    // Utiliser le client anonyme pour permettre la création de demandes d'accès
+    const supabase = createClient({
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    })
     const body = await request.json()
     const { email, prenom, nom, message } = body
 
