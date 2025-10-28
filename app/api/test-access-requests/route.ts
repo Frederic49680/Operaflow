@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Erreur dans test-access-requests GET:", error)
     return NextResponse.json(
-      { success: false, message: "Erreur interne du serveur", error: error.message },
+      { success: false, message: "Erreur interne du serveur", error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }
