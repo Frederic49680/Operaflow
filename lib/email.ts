@@ -267,7 +267,7 @@ export function createResetLink(token: string): string {
   return `${baseUrl}/auth/reset?token=${token}`
 }
 
-// Fonction principale d'envoi d'email (à implémenter selon votre service)
+// Fonction principale d'envoi d'email avec Supabase
 export async function sendEmail(template: EmailTemplate): Promise<boolean> {
   try {
     console.log('📧 Envoi d\'email:', {
@@ -277,15 +277,23 @@ export async function sendEmail(template: EmailTemplate): Promise<boolean> {
       hasText: !!template.text
     })
     
-    // Ici vous pouvez intégrer votre service d'email préféré :
-    // - SendGrid
-    // - Mailgun
-    // - AWS SES
-    // - Nodemailer avec SMTP
-    // - Supabase Edge Functions
+    // Utiliser Supabase pour logger l'email
+    const { createClient } = await import('@/lib/supabase/client')
+    const supabase = createClient()
     
-    // Pour l'instant, on simule l'envoi
-    console.log('✅ Email envoyé avec succès (simulation)')
+    const { error } = await supabase.rpc('send_custom_email', {
+      p_to_email: template.to,
+      p_subject: template.subject,
+      p_html_content: template.html,
+      p_text_content: template.text || ''
+    })
+    
+    if (error) {
+      console.error('❌ Erreur Supabase email:', error)
+      return false
+    }
+    
+    console.log('✅ Email envoyé avec succès via Supabase')
     return true
     
   } catch (error) {

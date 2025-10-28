@@ -20,9 +20,22 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
     
     try {
-      // TODO: Implémenter la réinitialisation avec Supabase
-      toast.info("Fonctionnalité de réinitialisation en cours de développement")
-      setIsSent(true)
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast.success(data.message)
+        setIsSent(true)
+      } else {
+        toast.error(data.message || "Erreur lors de la réinitialisation")
+      }
     } catch (error) {
       console.error("Password reset error:", error)
       toast.error("Erreur lors de la réinitialisation")
