@@ -17,7 +17,8 @@ import {
   X,
   ChevronDown,
   UserCog,
-  Shield
+  Shield,
+  UserCheck
 } from "lucide-react"
 
 const navigationItems = [
@@ -150,6 +151,10 @@ export default function Navigation() {
                     <Link href="/admin/roles" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       <Shield className="h-4 w-4 mr-2" />
                       Rôles & Permissions
+                    </Link>
+                    <Link href="/admin/access-requests" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Demandes d'Accès
                     </Link>
                   </div>
                 </div>

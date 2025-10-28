@@ -6,37 +6,69 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     const body = await request.json()
-    const { requestId, rejectionReason } = body
+    const { requestId, reason } = body
 
-    if (!requestId || !rejectionReason) {
+    if (!requestId || !reason) {
       return NextResponse.json(
-        { success: false, message: "ID de demande et raison du rejet requis" },
+        { success: false, message: "requestId et reason requis" },
         { status: 400 }
       )
     }
 
-    // Récupérer la demande
-    const { data: requestData, error: requestError } = await supabase
+    // Vérifier que l'utilisateur est admin
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Non authentifié" },
+        { status: 401 }
+      )
+    }
+
+    // Vérifier le rôle admin
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("roles(code)")
+      .eq("user_id", user.id)
+      .eq("roles.code", "admin")
+      .single()
+
+    if (!userRole) {
+      return NextResponse.json(
+        { success: false, message: "Accès non autorisé" },
+        { status: 403 }
+      )
+    }
+
+    // Récupérer la demande d'accès
+    const { data: accessRequest, error: fetchError } = await supabase
       .from("access_requests")
       .select("*")
       .eq("id", requestId)
-      .eq("statut", "pending")
       .single()
 
-    if (requestError || !requestData) {
+    if (fetchError || !accessRequest) {
       return NextResponse.json(
-        { success: false, message: "Demande non trouvée ou déjà traitée" },
+        { success: false, message: "Demande d'accès non trouvée" },
         { status: 404 }
       )
     }
 
-    // Mettre à jour la demande comme rejetée
+    if (accessRequest.statut !== "pending") {
+      return NextResponse.json(
+        { success: false, message: "Cette demande a déjà été traitée" },
+        { status: 400 }
+      )
+    }
+
+    // Mettre à jour le statut de la demande
     const { error: updateError } = await supabase
       .from("access_requests")
       .update({
         statut: "rejected",
-        rejection_reason: rejectionReason,
-        processed_at: new Date().toISOString()
+        processed_at: new Date().toISOString(),
+        processed_by: user.id,
+        rejection_reason: reason
       })
       .eq("id", requestId)
 
@@ -48,68 +80,59 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Envoyer un email de notification au demandeur
+    // Envoyer un email de notification de rejet
     const rejectionEmailTemplate = {
-      to: requestData.email,
+      to: accessRequest.email,
       subject: "❌ Demande d'accès OperaFlow - Rejetée",
       html: `
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Demande d'accès rejetée</title>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
-            .reason-box { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>❌ Demande d'accès rejetée</h1>
-              <p>OperaFlow - Notification</p>
-            </div>
-            
-            <div class="content">
-              <h2>Bonjour ${requestData.prenom} ${requestData.nom},</h2>
-              
-              <p>Nous vous informons que votre demande d'accès à OperaFlow a été rejetée.</p>
-              
-              <div class="reason-box">
-                <h3>📋 Raison du rejet :</h3>
-                <p>${rejectionReason}</p>
-              </div>
-              
-              <p>Si vous pensez qu'il s'agit d'une erreur ou si vous souhaitez plus d'informations, n'hésitez pas à contacter l'administrateur.</p>
-              
-              <p>Cordialement,<br>
-              <strong>L'équipe OperaFlow</strong></p>
-            </div>
-            
-            <div class="footer">
-              <p>Cet email a été envoyé automatiquement par OperaFlow</p>
-            </div>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 2rem; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 2rem;">❌ Demande d'accès rejetée</h1>
+            <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Votre demande d'accès à OperaFlow</p>
           </div>
-        </body>
-        </html>
+          
+          <div style="background: white; padding: 2rem; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2 style="color: #1e293b; margin-top: 0;">📋 Détails de votre demande</h2>
+            
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
+              <p style="margin: 0;"><strong>Nom :</strong> ${accessRequest.prenom} ${accessRequest.nom}</p>
+              <p style="margin: 0;"><strong>Email :</strong> ${accessRequest.email}</p>
+              <p style="margin: 0;"><strong>Date de demande :</strong> ${new Date(accessRequest.created_at).toLocaleDateString('fr-FR')}</p>
+            </div>
+            
+            <div style="background: #fef2f2; border: 1px solid #fca5a5; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
+              <h3 style="color: #dc2626; margin-top: 0;">Motif du rejet :</h3>
+              <p style="margin: 0; color: #7f1d1d;">${reason}</p>
+            </div>
+            
+            <div style="background: #f0f9ff; border: 1px solid #7dd3fc; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
+              <p style="margin: 0; color: #0c4a6e;">
+                <strong>💡 Que faire maintenant ?</strong><br>
+                Si vous pensez que cette décision est injustifiée, vous pouvez contacter l'administrateur pour plus d'informations.
+              </p>
+            </div>
+            
+            <p style="color: #64748b; font-size: 0.9rem; margin-top: 2rem;">
+              Merci de votre compréhension.
+            </p>
+          </div>
+        </div>
       `,
       text: `
         Demande d'accès OperaFlow - Rejetée
         
-        Bonjour ${requestData.prenom} ${requestData.nom},
+        Votre demande d'accès à OperaFlow a été rejetée.
         
-        Nous vous informons que votre demande d'accès à OperaFlow a été rejetée.
+        Détails :
+        - Nom : ${accessRequest.prenom} ${accessRequest.nom}
+        - Email : ${accessRequest.email}
+        - Date de demande : ${new Date(accessRequest.created_at).toLocaleDateString('fr-FR')}
         
-        Raison du rejet : ${rejectionReason}
+        Motif du rejet : ${reason}
         
-        Si vous pensez qu'il s'agit d'une erreur, contactez l'administrateur.
+        Si vous pensez que cette décision est injustifiée, vous pouvez contacter l'administrateur.
         
-        Cordialement,
+        Merci de votre compréhension.
         L'équipe OperaFlow
       `
     }

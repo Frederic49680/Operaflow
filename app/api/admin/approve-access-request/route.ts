@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { sendUserActivationEmail } from "@/lib/email"
+import { sendEmail } from "@/lib/email"
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,132 +8,191 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { requestId, roleId } = body
 
-    if (!requestId) {
+    if (!requestId || !roleId) {
       return NextResponse.json(
-        { success: false, message: "ID de demande requis" },
+        { success: false, message: "requestId et roleId requis" },
         { status: 400 }
       )
     }
 
-    // Récupérer la demande
-    const { data: requestData, error: requestError } = await supabase
+    // Vérifier que l'utilisateur est admin
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Non authentifié" },
+        { status: 401 }
+      )
+    }
+
+    // Vérifier le rôle admin
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("roles(code)")
+      .eq("user_id", user.id)
+      .eq("roles.code", "admin")
+      .single()
+
+    if (!userRole) {
+      return NextResponse.json(
+        { success: false, message: "Accès non autorisé" },
+        { status: 403 }
+      )
+    }
+
+    // Récupérer la demande d'accès
+    const { data: accessRequest, error: fetchError } = await supabase
       .from("access_requests")
       .select("*")
       .eq("id", requestId)
-      .eq("statut", "pending")
       .single()
 
-    if (requestError || !requestData) {
+    if (fetchError || !accessRequest) {
       return NextResponse.json(
-        { success: false, message: "Demande non trouvée ou déjà traitée" },
+        { success: false, message: "Demande d'accès non trouvée" },
         { status: 404 }
       )
     }
 
+    if (accessRequest.statut !== "pending") {
+      return NextResponse.json(
+        { success: false, message: "Cette demande a déjà été traitée" },
+        { status: 400 }
+      )
+    }
+
     // Générer un mot de passe temporaire
-    const temporaryPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    const tempPassword = Math.random().toString(36).slice(-12) + "A1!"
 
     // Créer l'utilisateur dans Supabase Auth
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-      email: requestData.email,
-      password: temporaryPassword,
-      email_confirm: false,
+      email: accessRequest.email,
+      password: tempPassword,
+      email_confirm: true,
       user_metadata: {
-        prenom: requestData.prenom,
-        nom: requestData.nom
+        prenom: accessRequest.prenom,
+        nom: accessRequest.nom
       }
     })
 
-    if (authError) {
+    if (authError || !authUser.user) {
       console.error("Erreur création utilisateur Auth:", authError)
       return NextResponse.json(
-        { success: false, message: "Erreur lors de la création de l'utilisateur" },
+        { success: false, message: "Erreur lors de la création du compte" },
         { status: 500 }
       )
     }
 
-    if (!authUser.user) {
-      return NextResponse.json(
-        { success: false, message: "Erreur lors de la création de l'utilisateur" },
-        { status: 500 }
-      )
-    }
-
-    // Créer l'utilisateur dans notre table app_users
-    const { error: userError } = await supabase
+    // Créer le profil utilisateur
+    const { error: profileError } = await supabase
       .from("app_users")
       .insert({
         id: authUser.user.id,
-        email: requestData.email,
-        prenom: requestData.prenom,
-        nom: requestData.nom,
+        email: accessRequest.email,
+        prenom: accessRequest.prenom,
+        nom: accessRequest.nom,
         active: true,
-        email_verified: false,
-        force_pwd_change: true,
-        sites_scope: [],
-        created_at: new Date().toISOString()
+        email_verified: true,
+        force_pwd_change: true
       })
 
-    if (userError) {
-      console.error("Erreur création app_users:", userError)
+    if (profileError) {
+      console.error("Erreur création profil:", profileError)
       // Nettoyer l'utilisateur Auth créé
       await supabase.auth.admin.deleteUser(authUser.user.id)
       return NextResponse.json(
-        { success: false, message: "Erreur lors de la création du profil utilisateur" },
+        { success: false, message: "Erreur lors de la création du profil" },
         { status: 500 }
       )
     }
 
-    // Assigner le rôle si fourni
-    if (roleId) {
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: authUser.user.id,
-          role_id: roleId
-        })
+    // Assigner le rôle
+    const { error: roleError } = await supabase
+      .from("user_roles")
+      .insert({
+        user_id: authUser.user.id,
+        role_id: roleId
+      })
 
-      if (roleError) {
-        console.error("Erreur assignation rôle:", roleError)
-        // Ne pas faire échouer la création pour une erreur de rôle
-      }
+    if (roleError) {
+      console.error("Erreur assignation rôle:", roleError)
+      // Ne pas faire échouer la création pour une erreur de rôle
     }
 
-    // Mettre à jour la demande comme approuvée
+    // Mettre à jour le statut de la demande
     const { error: updateError } = await supabase
       .from("access_requests")
       .update({
         statut: "approved",
-        role_id: roleId,
-        processed_at: new Date().toISOString()
+        processed_at: new Date().toISOString(),
+        processed_by: user.id
       })
       .eq("id", requestId)
 
     if (updateError) {
       console.error("Erreur mise à jour demande:", updateError)
+      // Ne pas faire échouer pour cette erreur
     }
 
-    // Envoyer l'email d'activation
-    const emailResult = await sendUserActivationEmail({
-      email: requestData.email,
-      prenom: requestData.prenom,
-      nom: requestData.nom
-    })
-
-    if (emailResult.success) {
-      console.log("✅ Email d'activation envoyé à:", requestData.email)
+    // Envoyer un email de bienvenue avec le mot de passe temporaire
+    const welcomeEmailTemplate = {
+      to: accessRequest.email,
+      subject: "🎉 Votre compte OperaFlow a été créé !",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 2rem; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 2rem;">🎉 Bienvenue sur OperaFlow !</h1>
+            <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Votre compte a été créé avec succès</p>
+          </div>
+          
+          <div style="background: white; padding: 2rem; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h2 style="color: #1e293b; margin-top: 0;">📋 Vos informations de connexion</h2>
+            
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
+              <p style="margin: 0;"><strong>Email :</strong> ${accessRequest.email}</p>
+              <p style="margin: 0;"><strong>Mot de passe temporaire :</strong> <code style="background: #e2e8f0; padding: 0.25rem 0.5rem; border-radius: 4px;">${tempPassword}</code></p>
+            </div>
+            
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
+              <p style="margin: 0; color: #92400e;"><strong>⚠️ Important :</strong> Vous devrez changer ce mot de passe lors de votre première connexion.</p>
+            </div>
+            
+            <div style="text-align: center; margin: 2rem 0;">
+              <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login" 
+                 style="background: #3b82f6; color: white; padding: 0.75rem 2rem; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
+                Se connecter maintenant
+              </a>
+            </div>
+            
+            <p style="color: #64748b; font-size: 0.9rem; margin-top: 2rem;">
+              Si vous avez des questions, n'hésitez pas à contacter votre administrateur.
+            </p>
+          </div>
+        </div>
+      `,
+      text: `
+        Bienvenue sur OperaFlow !
+        
+        Votre compte a été créé avec succès.
+        
+        Email : ${accessRequest.email}
+        Mot de passe temporaire : ${tempPassword}
+        
+        IMPORTANT : Vous devrez changer ce mot de passe lors de votre première connexion.
+        
+        Lien de connexion : ${process.env.NEXT_PUBLIC_APP_URL}/auth/login
+        
+        Cordialement,
+        L'équipe OperaFlow
+      `
     }
+
+    await sendEmail(welcomeEmailTemplate)
 
     return NextResponse.json({
       success: true,
-      message: "Demande approuvée et compte créé avec succès",
-      user: {
-        id: authUser.user.id,
-        email: requestData.email,
-        prenom: requestData.prenom,
-        nom: requestData.nom,
-        temporaryPassword: temporaryPassword // À retirer en production
-      }
+      message: "Compte créé avec succès",
+      userId: authUser.user.id
     })
 
   } catch (error) {
