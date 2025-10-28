@@ -97,31 +97,58 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
     
-    // Créer l'utilisateur dans Supabase Auth avec la vraie clé service_role
-    const { data: authUser, error: authError } = await serviceSupabase.auth.admin.createUser({
-      email: accessRequest.email,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: {
-        prenom: accessRequest.prenom,
-        nom: accessRequest.nom
+    // Vérifier si l'utilisateur existe déjà dans Auth
+    let authUser
+    try {
+      const { data: existingUser, error: getUserError } = await serviceSupabase.auth.admin.getUserByEmail(accessRequest.email)
+      
+      if (getUserError && getUserError.status !== 404) {
+        console.error("❌ Erreur vérification utilisateur existant:", getUserError)
+        return NextResponse.json(
+          { success: false, message: `Erreur lors de la vérification: ${getUserError.message}` },
+          { status: 500 }
+        )
       }
-    })
+      
+      if (existingUser && existingUser.user) {
+        console.log("✅ Utilisateur existe déjà dans Auth:", existingUser.user.id)
+        authUser = existingUser
+      } else {
+        // Créer l'utilisateur dans Supabase Auth
+        console.log("🆕 Création nouvel utilisateur Auth...")
+        const { data: newUser, error: authError } = await serviceSupabase.auth.admin.createUser({
+          email: accessRequest.email,
+          password: tempPassword,
+          email_confirm: true,
+          user_metadata: {
+            prenom: accessRequest.prenom,
+            nom: accessRequest.nom
+          }
+        })
 
-    if (authError || !authUser.user) {
-      console.error("❌ Erreur création utilisateur Auth:", authError)
+        if (authError || !newUser.user) {
+          console.error("❌ Erreur création utilisateur Auth:", authError)
+          return NextResponse.json(
+            { success: false, message: `Erreur lors de la création du compte: ${authError?.message}` },
+            { status: 500 }
+          )
+        }
+        
+        console.log("✅ Nouvel utilisateur créé:", newUser.user.id)
+        authUser = newUser
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors de la vérification/création:", error)
       return NextResponse.json(
-        { success: false, message: `Erreur lors de la création du compte: ${authError?.message}` },
+        { success: false, message: "Erreur lors de la gestion de l'utilisateur" },
         { status: 500 }
       )
     }
 
-    console.log("✅ Utilisateur créé avec succès:", authUser.user.id)
-
-    // Créer le profil utilisateur
+    // Créer le profil utilisateur (ou mettre à jour s'il existe)
     const { error: profileError } = await supabase
       .from("app_users")
-      .insert({
+      .upsert({
         id: authUser.user.id,
         email: accessRequest.email,
         prenom: accessRequest.prenom,
@@ -132,19 +159,17 @@ export async function POST(request: NextRequest) {
       })
 
     if (profileError) {
-      console.error("Erreur création profil:", profileError)
-      // Nettoyer l'utilisateur Auth créé
-      await supabase.auth.admin.deleteUser(authUser.user.id)
+      console.error("Erreur création/mise à jour profil:", profileError)
       return NextResponse.json(
-        { success: false, message: "Erreur lors de la création du profil" },
+        { success: false, message: "Erreur lors de la création/mise à jour du profil" },
         { status: 500 }
       )
     }
 
-    // Assigner le rôle
+    // Assigner le rôle (ou mettre à jour s'il existe)
     const { error: roleError } = await supabase
       .from("user_roles")
-      .insert({
+      .upsert({
         user_id: authUser.user.id,
         role_id: roleId
       })
