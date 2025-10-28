@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { sendEmail } from "@/lib/email"
 
 export async function POST(request: NextRequest) {
@@ -78,8 +79,13 @@ export async function POST(request: NextRequest) {
     // Générer un mot de passe temporaire
     const tempPassword = Math.random().toString(36).slice(-12) + "A1!"
 
-    // Créer l'utilisateur dans Supabase Auth
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+    // Créer l'utilisateur dans Supabase Auth avec service_role
+    const serviceSupabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    const { data: authUser, error: authError } = await serviceSupabase.auth.admin.createUser({
       email: accessRequest.email,
       password: tempPassword,
       email_confirm: true,
