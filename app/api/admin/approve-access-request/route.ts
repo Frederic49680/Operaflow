@@ -296,10 +296,19 @@ export async function POST(request: NextRequest) {
     // Envoyer l'email de bienvenue
     try {
       console.log("📧 Envoi de l'email de bienvenue à:", accessRequest.email)
+      
+      // Test avec console.log pour debug
+      console.log("📧 Email à envoyer:", {
+        to: accessRequest.email,
+        subject: welcomeEmailTemplate.subject,
+        preview: welcomeEmailTemplate.html.substring(0, 200) + "..."
+      })
+      
       await sendEmail(welcomeEmailTemplate)
       console.log("✅ Email envoyé avec succès")
     } catch (emailError) {
       console.error("❌ Erreur envoi email:", emailError)
+      console.log("⚠️ Email non envoyé mais compte créé quand même")
       // Ne pas faire échouer la création pour une erreur d'email
     }
 
