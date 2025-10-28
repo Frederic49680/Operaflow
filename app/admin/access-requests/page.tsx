@@ -42,6 +42,7 @@ export default function AccessRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [loading, setLoading] = useState(true)
   const [selectedRequest, setSelectedRequest] = useState<AccessRequest | null>(null)
+  const [showViewModal, setShowViewModal] = useState(false)
   const [showApproveModal, setShowApproveModal] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [selectedRole, setSelectedRole] = useState("")
@@ -312,7 +313,10 @@ export default function AccessRequestsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedRequest(request)}
+                        onClick={() => {
+                          setSelectedRequest(request)
+                          setShowViewModal(true)
+                        }}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Voir
@@ -350,6 +354,117 @@ export default function AccessRequestsPage() {
             ))
           )}
         </div>
+
+        {/* Modale de visualisation */}
+        <Dialog open={showViewModal} onOpenChange={setShowViewModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Détails de la demande d'accès</DialogTitle>
+              <DialogDescription>
+                Informations complètes de la demande
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6">
+              {selectedRequest && (
+                <>
+                  {/* Informations personnelles */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-800">Informations personnelles</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-slate-600">Nom complet</Label>
+                        <p className="text-lg font-semibold">{selectedRequest.prenom} {selectedRequest.nom}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-slate-600">Email</Label>
+                        <p className="text-lg">{selectedRequest.email}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Statut et dates */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-800">Statut et dates</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-slate-600">Statut actuel</Label>
+                        <div className="mt-1">
+                          {getStatusBadge(selectedRequest.statut)}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-slate-600">Date de demande</Label>
+                        <p className="text-lg">{new Date(selectedRequest.created_at).toLocaleDateString('fr-FR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}</p>
+                      </div>
+                    </div>
+                    {selectedRequest.processed_at && (
+                      <div>
+                        <Label className="text-sm font-medium text-slate-600">Date de traitement</Label>
+                        <p className="text-lg">{new Date(selectedRequest.processed_at).toLocaleDateString('fr-FR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Message */}
+                  {selectedRequest.message && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-slate-800">Message du demandeur</h3>
+                      <div className="bg-slate-50 p-4 rounded-lg border">
+                        <p className="text-slate-700 whitespace-pre-wrap">{selectedRequest.message}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions disponibles */}
+                  {selectedRequest.statut === "pending" && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-slate-800">Actions disponibles</h3>
+                      <div className="flex gap-3">
+                        <Button
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            setShowViewModal(false)
+                            setShowApproveModal(true)
+                          }}
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Approuver
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setShowViewModal(false)
+                            setShowRejectModal(true)
+                          }}
+                        >
+                          <UserX className="h-4 w-4 mr-2" />
+                          Rejeter
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowViewModal(false)}>
+                Fermer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Modale d'approbation */}
         <Dialog open={showApproveModal} onOpenChange={setShowApproveModal}>
