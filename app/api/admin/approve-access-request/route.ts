@@ -80,6 +80,18 @@ export async function POST(request: NextRequest) {
     const tempPassword = Math.random().toString(36).slice(-12) + "A1!"
 
     // Créer l'utilisateur dans Supabase Auth avec service_role
+    console.log("🔍 Debug - Environment variables:")
+    console.log("NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "✅ Présente" : "❌ Manquante")
+    console.log("SUPABASE_SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "✅ Présente" : "❌ Manquante")
+    
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("❌ SUPABASE_SERVICE_ROLE_KEY manquante")
+      return NextResponse.json(
+        { success: false, message: "Configuration serveur manquante" },
+        { status: 500 }
+      )
+    }
+    
     const serviceSupabase = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
