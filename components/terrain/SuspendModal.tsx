@@ -154,7 +154,7 @@ export default function SuspendModal({ isOpen, onClose, taskId, taskName, onSucc
                   </SelectItem>
                 ))}
                 {users.length === 0 && !loadingUsers && (
-                  <SelectItem value="" disabled>
+                  <SelectItem value="no-users" disabled>
                     Aucun utilisateur trouvé
                   </SelectItem>
                 )}
