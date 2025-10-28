@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,11 +18,46 @@ interface SuspendModalProps {
   onSuccess?: () => void
 }
 
+interface User {
+  id: string
+  prenom: string
+  nom: string
+  email: string
+}
+
 export default function SuspendModal({ isOpen, onClose, taskId, taskName, onSuccess }: SuspendModalProps) {
   const [motif, setMotif] = useState("")
   const [dureeEstimee, setDureeEstimee] = useState("")
   const [responsableId, setResponsableId] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [users, setUsers] = useState<User[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+
+  // Charger les utilisateurs au montage du composant
+  useEffect(() => {
+    if (isOpen) {
+      loadUsers()
+    }
+  }, [isOpen])
+
+  const loadUsers = async () => {
+    setLoadingUsers(true)
+    try {
+      const response = await fetch("/api/admin/users")
+      if (response.ok) {
+        const usersData = await response.json()
+        setUsers(usersData)
+      } else {
+        console.error("Erreur chargement utilisateurs:", response.statusText)
+        toast.error("Erreur lors du chargement des utilisateurs")
+      }
+    } catch (error) {
+      console.error("Erreur chargement utilisateurs:", error)
+      toast.error("Erreur lors du chargement des utilisateurs")
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!motif.trim()) {
@@ -108,15 +143,21 @@ export default function SuspendModal({ isOpen, onClose, taskId, taskName, onSucc
 
           <div className="space-y-2">
             <Label htmlFor="responsable">Responsable de la décision *</Label>
-            <Select value={responsableId} onValueChange={setResponsableId}>
+            <Select value={responsableId} onValueChange={setResponsableId} disabled={loadingUsers}>
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner le responsable" />
+                <SelectValue placeholder={loadingUsers ? "Chargement..." : "Sélectionner le responsable"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="user1">Responsable Site</SelectItem>
-                <SelectItem value="user2">Chef de Chantier</SelectItem>
-                <SelectItem value="user3">Planificateur</SelectItem>
-                {/* TODO: Charger dynamiquement depuis l'API */}
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.prenom} {user.nom} ({user.email})
+                  </SelectItem>
+                ))}
+                {users.length === 0 && !loadingUsers && (
+                  <SelectItem value="" disabled>
+                    Aucun utilisateur trouvé
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
