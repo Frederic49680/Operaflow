@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         .from("user_roles")
         .insert({
           user_id: authUser.user.id,
-          role_id
+          role_id: roleId
         })
 
       if (roleError) {
