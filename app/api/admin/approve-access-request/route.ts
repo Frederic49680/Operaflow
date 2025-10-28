@@ -9,11 +9,33 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { requestId, roleId } = body
 
-    if (!requestId || !roleId) {
+    if (!requestId) {
       return NextResponse.json(
-        { success: false, message: "requestId et roleId requis" },
+        { success: false, message: "requestId requis" },
         { status: 400 }
       )
+    }
+
+    // Si aucun roleId fourni, utiliser le rôle USER par défaut
+    let finalRoleId = roleId
+    if (!finalRoleId) {
+      console.log("🔍 Aucun rôle fourni, recherche du rôle USER par défaut")
+      const { data: defaultRole } = await supabase
+        .from("roles")
+        .select("id")
+        .eq("code", "USER")
+        .single()
+      
+      if (defaultRole) {
+        finalRoleId = defaultRole.id
+        console.log("✅ Rôle USER trouvé:", finalRoleId)
+      } else {
+        console.error("❌ Rôle USER non trouvé dans la base")
+        return NextResponse.json(
+          { success: false, message: "Rôle USER par défaut non trouvé" },
+          { status: 500 }
+        )
+      }
     }
 
     // Vérifier que l'utilisateur est admin
@@ -186,16 +208,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Assigner le rôle (ou mettre à jour s'il existe)
+    console.log("🎭 Assignation du rôle:", { userId: authUser.user.id, roleId: finalRoleId })
+    
     const { error: roleError } = await supabase
       .from("user_roles")
       .upsert({
         user_id: authUser.user.id,
-        role_id: roleId
+        role_id: finalRoleId
       })
 
     if (roleError) {
-      console.error("Erreur assignation rôle:", roleError)
+      console.error("❌ Erreur assignation rôle:", roleError)
+      console.error("❌ Détails erreur:", JSON.stringify(roleError, null, 2))
       // Ne pas faire échouer la création pour une erreur de rôle
+    } else {
+      console.log("✅ Rôle assigné avec succès")
     }
 
     // Mettre à jour le statut de la demande
@@ -266,7 +293,15 @@ export async function POST(request: NextRequest) {
       `
     }
 
-    await sendEmail(welcomeEmailTemplate)
+    // Envoyer l'email de bienvenue
+    try {
+      console.log("📧 Envoi de l'email de bienvenue à:", accessRequest.email)
+      await sendEmail(welcomeEmailTemplate)
+      console.log("✅ Email envoyé avec succès")
+    } catch (emailError) {
+      console.error("❌ Erreur envoi email:", emailError)
+      // Ne pas faire échouer la création pour une erreur d'email
+    }
 
     return NextResponse.json({
       success: true,
