@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { 
   Home, 
@@ -14,8 +14,16 @@ import {
   FileText,
   GraduationCap,
   Menu,
-  X
+  X,
+  ChevronDown,
+  UserCog,
+  Shield,
+  UserCheck,
+  LogOut,
+  User
 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
 
 const navigationItems = [
   {
@@ -60,9 +68,79 @@ const navigationItems = [
   }
 ]
 
+interface UserProfile {
+  id: string
+  email: string
+  prenom: string
+  nom: string
+}
+
 export default function ClientNavigation() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false)
+  const [user, setUser] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const supabase = createClient()
+    
+    // Récupérer l'utilisateur actuel
+    const getUser = async () => {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        
+        if (authUser) {
+          // Récupérer le profil utilisateur
+          const { data: profile } = await supabase
+            .from('app_users')
+            .select('id, email, prenom, nom')
+            .eq('id', authUser.id)
+            .single()
+          
+          if (profile) {
+            setUser(profile)
+          }
+        }
+      } catch (error) {
+        console.error('Erreur récupération utilisateur:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    getUser()
+
+    // Écouter les changements d'authentification
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        router.push('/auth/login')
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        getUser()
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [router])
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      toast.success("Déconnexion réussie")
+    } catch (error) {
+      console.error('Erreur déconnexion:', error)
+      toast.error("Erreur lors de la déconnexion")
+    }
+  }
+
+  // Ne pas afficher la navigation sur les pages d'auth
+  if (pathname.startsWith('/auth/')) {
+    return null
+  }
 
   return (
     <nav className="bg-white border-b">
@@ -109,12 +187,71 @@ export default function ClientNavigation() {
 
           {/* Actions Desktop */}
           <div className="hidden lg:flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              Admin
-            </Button>
-            <Button variant="outline" size="sm">
-              Dashboard
-            </Button>
+            {/* Menu Admin */}
+            <div className="relative">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+                className="flex items-center gap-1"
+              >
+                <Shield className="h-4 w-4" />
+                Admin
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+              
+              {isAdminMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border">
+                  <div className="py-1">
+                    <Link href="/admin/users" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <UserCog className="h-4 w-4 mr-2" />
+                      Utilisateurs
+                    </Link>
+                    <Link href="/admin/roles" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Rôles & Permissions
+                    </Link>
+                    <Link href="/admin/access-requests" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Demandes d'Accès
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Menu Utilisateur */}
+            {!isLoading && (
+              <div className="relative">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  {user ? `${user.prenom} ${user.nom}` : 'Utilisateur'}
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+                
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border">
+                    <div className="py-1">
+                      <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                        {user?.email}
+                      </div>
+                      <button 
+                        onClick={handleLogout}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Se déconnecter
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Menu Mobile */}
@@ -169,8 +306,19 @@ export default function ClientNavigation() {
                 <Button variant="outline" size="sm" className="w-full justify-start">
                   Admin
                 </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  Dashboard
+                {user && (
+                  <div className="px-3 py-2 text-sm text-gray-600">
+                    {user.prenom} {user.nom}
+                  </div>
+                )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full justify-start"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Se déconnecter
                 </Button>
               </div>
             </div>
