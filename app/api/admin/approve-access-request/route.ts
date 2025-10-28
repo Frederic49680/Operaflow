@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
-import { sendEmail } from "@/lib/email"
 import { generateWelcomeEmail } from "@/lib/email-templates"
 
 export async function POST(request: NextRequest) {
@@ -250,7 +249,7 @@ export async function POST(request: NextRequest) {
       loginUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://operaflow-ten.vercel.app'}/auth/login`
     })
 
-    // Envoyer l'email de bienvenue
+    // Envoyer l'email de bienvenue via SendGrid
     try {
       console.log("📧 Envoi de l'email de bienvenue à:", accessRequest.email)
       
@@ -261,8 +260,27 @@ export async function POST(request: NextRequest) {
         preview: welcomeEmailTemplate.html.substring(0, 200) + "..."
       })
       
-      await sendEmail(welcomeEmailTemplate)
-      console.log("✅ Email envoyé avec succès")
+      // Appel à l'API SendGrid interne
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://operaflow-ten.vercel.app'}/api/sendgrid`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: accessRequest.email,
+          subject: welcomeEmailTemplate.subject,
+          html: welcomeEmailTemplate.html,
+          text: welcomeEmailTemplate.text
+        })
+      })
+      
+      if (emailResponse.ok) {
+        console.log("✅ Email envoyé avec succès via SendGrid")
+      } else {
+        const errorText = await emailResponse.text()
+        console.error("❌ Erreur SendGrid:", errorText)
+        throw new Error(`SendGrid error: ${errorText}`)
+      }
     } catch (emailError) {
       console.error("❌ Erreur envoi email:", emailError)
       console.log("⚠️ Email non envoyé mais compte créé quand même")
