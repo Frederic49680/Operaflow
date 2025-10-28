@@ -8,6 +8,8 @@ export async function GET(request: NextRequest) {
     // Vérifier que l'utilisateur est admin
     const { data: { user } } = await supabase.auth.getUser()
     
+    console.log("🔍 Debug - User:", user?.id)
+    
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Non authentifié" },
@@ -15,17 +17,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Vérifier le rôle admin
-    const { data: userRole } = await supabase
+    // Vérifier le rôle admin avec plus de détails
+    const { data: userRoles, error: roleError } = await supabase
       .from("user_roles")
-      .select("roles(code)")
+      .select("roles(code, label)")
       .eq("user_id", user.id)
-      .eq("roles.code", "admin")
-      .single()
 
-    if (!userRole) {
+    console.log("🔍 Debug - User roles:", userRoles, "Error:", roleError)
+
+    // Vérifier si l'utilisateur a le rôle admin
+    const hasAdminRole = userRoles?.some(ur => ur.roles?.code === "admin")
+    
+    console.log("🔍 Debug - Has admin role:", hasAdminRole)
+
+    if (!hasAdminRole) {
       return NextResponse.json(
-        { success: false, message: "Accès non autorisé" },
+        { 
+          success: false, 
+          message: "Accès non autorisé - Rôle admin requis",
+          debug: {
+            userId: user.id,
+            userRoles: userRoles,
+            hasAdminRole: hasAdminRole
+          }
+        },
         { status: 403 }
       )
     }
@@ -36,17 +51,24 @@ export async function GET(request: NextRequest) {
       .select("*")
       .order("created_at", { ascending: false })
 
+    console.log("🔍 Debug - Requests:", requests, "Error:", error)
+
     if (error) {
       console.error("Erreur récupération demandes:", error)
       return NextResponse.json(
-        { success: false, message: "Erreur lors de la récupération des demandes" },
+        { success: false, message: "Erreur lors de la récupération des demandes", error: error.message },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      requests: requests || []
+      requests: requests || [],
+      debug: {
+        userId: user.id,
+        hasAdminRole: hasAdminRole,
+        requestCount: requests?.length || 0
+      }
     })
 
   } catch (error) {
