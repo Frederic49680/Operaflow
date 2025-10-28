@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       .from("user_roles")
       .select("roles(code)")
       .eq("user_id", user.id)
-      .eq("roles.code", "admin")
+      .eq("roles.code", "ADMIN")
       .single()
 
     if (!userRole) {
