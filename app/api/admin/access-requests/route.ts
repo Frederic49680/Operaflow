@@ -30,13 +30,37 @@ export async function GET(request: NextRequest) {
     // Vérifier le rôle admin avec plus de détails
     const { data: userRoles, error: roleError } = await supabase
       .from("user_roles")
-      .select("roles(code, label)")
+      .select("role_id")
       .eq("user_id", user.id)
 
     console.log("🔍 Debug - User roles:", userRoles, "Error:", roleError)
 
+    if (roleError || !userRoles || userRoles.length === 0) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: "Accès non autorisé - Aucun rôle trouvé",
+          debug: {
+            userId: user.id,
+            userRoles: userRoles,
+            roleError: roleError
+          }
+        },
+        { status: 403 }
+      )
+    }
+
+    // Récupérer les détails des rôles
+    const roleIds = userRoles.map(ur => ur.role_id)
+    const { data: roles, error: rolesError } = await supabase
+      .from("roles")
+      .select("id, code, label")
+      .in("id", roleIds)
+
+    console.log("🔍 Debug - Roles details:", roles, "Error:", rolesError)
+
     // Vérifier si l'utilisateur a le rôle ADMIN
-    const hasAdminRole = userRoles?.some((ur: any) => ur.roles?.code === "ADMIN") || false
+    const hasAdminRole = roles?.some(role => role.code === "ADMIN") || false
     
     console.log("🔍 Debug - Has admin role:", hasAdminRole)
 

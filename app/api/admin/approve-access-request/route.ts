@@ -26,14 +26,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier le rôle admin
-    const { data: userRole } = await supabase
+    const { data: userRoles } = await supabase
       .from("user_roles")
-      .select("roles(code)")
+      .select("role_id")
       .eq("user_id", user.id)
-      .eq("roles.code", "ADMIN")
-      .single()
 
-    if (!userRole) {
+    if (!userRoles || userRoles.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "Accès non autorisé" },
+        { status: 403 }
+      )
+    }
+
+    // Récupérer les détails des rôles
+    const roleIds = userRoles.map(ur => ur.role_id)
+    const { data: roles } = await supabase
+      .from("roles")
+      .select("id, code")
+      .in("id", roleIds)
+
+    const hasAdminRole = roles?.some(role => role.code === "ADMIN") || false
+
+    if (!hasAdminRole) {
       return NextResponse.json(
         { success: false, message: "Accès non autorisé" },
         { status: 403 }
