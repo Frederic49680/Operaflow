@@ -52,19 +52,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Utiliser la fonction SQL pour suspendre l'activité
-    const { data: result, error: suspendError } = await supabase
-      .rpc('suspend_activite', {
-        tache_id: tache_id,
-        motif: motif,
-        responsable_id: responsable_id,
-        duree_estimee: duree_estimee || null
+    // Mettre à jour directement la tâche au lieu d'utiliser la fonction SQL
+    const { error: updateError } = await supabase
+      .from("planning_taches")
+      .update({
+        statut: "Suspendu",
+        motif_suspension: motif,
+        date_suspension: new Date().toISOString(),
+        responsable_suspension: responsable_id,
+        updated_at: new Date().toISOString()
       })
+      .eq("id", tache_id)
 
-    if (suspendError) {
-      console.error("Error suspending activity:", suspendError)
+    if (updateError) {
+      console.error("Error updating task:", updateError)
       return NextResponse.json(
-        { success: false, message: `Error suspending activity: ${suspendError.message}` },
+        { success: false, message: `Error updating task: ${updateError.message}` },
         { status: 500 }
       )
     }
