@@ -14,69 +14,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Utiliser l'API REST directement pour éviter les problèmes de contexte
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    
-    // Vérifier si une demande existe déjà pour cet email
-    const checkResponse = await fetch(`${supabaseUrl}/rest/v1/access_requests?email=eq.${encodeURIComponent(email)}&select=id,statut`, {
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      }
+    // Utiliser le client Supabase avec la fonction SQL qui contourne RLS
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    // Appeler la fonction SQL qui gère tout (vérification + création)
+    const { data: requestId, error: functionError } = await supabase.rpc('create_access_request', {
+      p_email: email,
+      p_prenom: prenom,
+      p_nom: nom,
+      p_message: message || "Demande d'accès à OperaFlow"
     })
 
-    if (checkResponse.ok) {
-      const existingRequests = await checkResponse.json()
-      if (existingRequests && existingRequests.length > 0) {
-        const existingRequest = existingRequests[0]
-        if (existingRequest.statut === "pending") {
-          return NextResponse.json(
-            { success: false, message: "Une demande est déjà en cours pour cet email" },
-            { status: 409 }
-          )
-        }
-        if (existingRequest.statut === "approved") {
-          return NextResponse.json(
-            { success: false, message: "Un compte existe déjà pour cet email" },
-            { status: 409 }
-          )
-        }
+    if (functionError) {
+      console.error("Erreur création demande:", functionError)
+      
+      // Gérer les erreurs spécifiques
+      if (functionError.message.includes("Une demande existe déjà")) {
+        return NextResponse.json(
+          { success: false, message: "Une demande est déjà en cours pour cet email" },
+          { status: 409 }
+        )
       }
-    }
-
-    // Créer la demande d'accès via API REST
-    const insertResponse = await fetch(`${supabaseUrl}/rest/v1/access_requests`, {
-      method: 'POST',
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify({
-        email,
-        prenom,
-        nom,
-        message: message || "Demande d'accès à OperaFlow",
-        statut: "pending",
-        created_at: new Date().toISOString()
-      })
-    })
-
-    if (!insertResponse.ok) {
-      const errorText = await insertResponse.text()
-      console.error("Erreur création demande:", errorText)
+      
       return NextResponse.json(
         { success: false, message: "Erreur lors de la création de la demande" },
         { status: 500 }
       )
     }
-
-    const requestData = await insertResponse.json()
-    const requestId = requestData[0]?.id
 
     // Envoyer un email de notification à l'administrateur
     const adminEmailTemplate = {
