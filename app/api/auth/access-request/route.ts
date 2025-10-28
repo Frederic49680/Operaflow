@@ -4,11 +4,6 @@ import { sendEmail } from "@/lib/email"
 
 export async function POST(request: NextRequest) {
   try {
-    // Utiliser le client anonyme pour permettre la création de demandes d'accès
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
     const body = await request.json()
     const { email, prenom, nom, message } = body
 
@@ -19,32 +14,49 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Utiliser l'API REST directement pour éviter les problèmes de contexte
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    
     // Vérifier si une demande existe déjà pour cet email
-    const { data: existingRequest } = await supabase
-      .from("access_requests")
-      .select("id, statut")
-      .eq("email", email)
-      .single()
-
-    if (existingRequest) {
-      if (existingRequest.statut === "pending") {
-        return NextResponse.json(
-          { success: false, message: "Une demande est déjà en cours pour cet email" },
-          { status: 409 }
-        )
+    const checkResponse = await fetch(`${supabaseUrl}/rest/v1/access_requests?email=eq.${encodeURIComponent(email)}&select=id,statut`, {
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
       }
-      if (existingRequest.statut === "approved") {
-        return NextResponse.json(
-          { success: false, message: "Un compte existe déjà pour cet email" },
-          { status: 409 }
-        )
+    })
+
+    if (checkResponse.ok) {
+      const existingRequests = await checkResponse.json()
+      if (existingRequests && existingRequests.length > 0) {
+        const existingRequest = existingRequests[0]
+        if (existingRequest.statut === "pending") {
+          return NextResponse.json(
+            { success: false, message: "Une demande est déjà en cours pour cet email" },
+            { status: 409 }
+          )
+        }
+        if (existingRequest.statut === "approved") {
+          return NextResponse.json(
+            { success: false, message: "Un compte existe déjà pour cet email" },
+            { status: 409 }
+          )
+        }
       }
     }
 
-    // Créer la demande d'accès
-    const { data: requestData, error: requestError } = await supabase
-      .from("access_requests")
-      .insert({
+    // Créer la demande d'accès via API REST
+    const insertResponse = await fetch(`${supabaseUrl}/rest/v1/access_requests`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
         email,
         prenom,
         nom,
@@ -52,16 +64,19 @@ export async function POST(request: NextRequest) {
         statut: "pending",
         created_at: new Date().toISOString()
       })
-      .select()
-      .single()
+    })
 
-    if (requestError) {
-      console.error("Erreur création demande:", requestError)
+    if (!insertResponse.ok) {
+      const errorText = await insertResponse.text()
+      console.error("Erreur création demande:", errorText)
       return NextResponse.json(
         { success: false, message: "Erreur lors de la création de la demande" },
         { status: 500 }
       )
     }
+
+    const requestData = await insertResponse.json()
+    const requestId = requestData[0]?.id
 
     // Envoyer un email de notification à l'administrateur
     const adminEmailTemplate = {
@@ -102,7 +117,7 @@ export async function POST(request: NextRequest) {
                 <p><strong>Email :</strong> ${email}</p>
                 <p><strong>Message :</strong> ${message || "Aucun message"}</p>
                 <p><strong>Date de demande :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
-                <p><strong>ID Demande :</strong> ${requestData.id}</p>
+                <p><strong>ID Demande :</strong> ${requestId}</p>
               </div>
               
               <p>Pour traiter cette demande :</p>
@@ -138,7 +153,7 @@ export async function POST(request: NextRequest) {
         Email : ${email}
         Message : ${message || "Aucun message"}
         Date : ${new Date().toLocaleDateString('fr-FR')}
-        ID Demande : ${requestData.id}
+        ID Demande : ${requestId}
         
         Lien pour traiter la demande : ${process.env.NEXT_PUBLIC_APP_URL}/admin/access-requests
         
@@ -152,7 +167,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Demande d'accès envoyée avec succès",
-      requestId: requestData.id
+      requestId: requestId
     })
 
   } catch (error) {
