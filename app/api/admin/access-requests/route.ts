@@ -79,20 +79,44 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Récupérer toutes les demandes d'accès
-    const { data: requests, error } = await supabase
-      .from("access_requests")
-      .select("*")
-      .order("created_at", { ascending: false })
+    // Récupérer toutes les demandes d'accès avec gestion d'erreur RLS
+    console.log("🔍 Tentative de récupération des demandes...")
+    
+    let requests = []
+    let fetchError = null
+    
+    try {
+      const { data: accessRequests, error: requestsError } = await supabase
+        .from("access_requests")
+        .select("*")
+        .order("created_at", { ascending: false })
 
-    console.log("🔍 Debug - Requests:", requests, "Error:", error)
+      console.log("🔍 Debug - Requests:", accessRequests, "Error:", requestsError)
 
-    if (error) {
-      console.error("Erreur récupération demandes:", error)
-      return NextResponse.json(
-        { success: false, message: "Erreur lors de la récupération des demandes", error: error.message },
-        { status: 500 }
-      )
+      if (requestsError) {
+        console.error("❌ Erreur RLS lors de la récupération:", requestsError)
+        fetchError = requestsError
+      } else {
+        console.log("✅ Demandes récupérées:", accessRequests?.length || 0)
+        requests = accessRequests || []
+      }
+    } catch (err) {
+      console.error("❌ Exception lors de la récupération:", err)
+      fetchError = err
+    }
+
+    // Si erreur RLS, retourner une réponse avec debug
+    if (fetchError) {
+      return NextResponse.json({
+        success: false,
+        message: "Erreur d'accès aux données (RLS)",
+        debug: {
+          error: fetchError,
+          userId: user.id,
+          hasAdminRole: hasAdminRole,
+          suggestion: "RLS peut bloquer l'accès même pour les admins"
+        }
+      }, { status: 500 })
     }
 
     return NextResponse.json({
