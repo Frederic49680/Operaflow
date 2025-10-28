@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("Activity suspended successfully:", result)
+    console.log("Activity suspended successfully")
 
     // Créer une entrée dans remontee_site pour tracer la suspension
     const { error: remonteeError } = await supabase
