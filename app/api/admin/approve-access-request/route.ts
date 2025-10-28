@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { sendEmail } from "@/lib/email"
+import { generateWelcomeEmail } from "@/lib/email-templates"
 
 export async function POST(request: NextRequest) {
   try {
@@ -240,58 +241,14 @@ export async function POST(request: NextRequest) {
       // Ne pas faire échouer pour cette erreur
     }
 
-    // Envoyer un email de bienvenue avec le mot de passe temporaire
-    const welcomeEmailTemplate = {
-      to: accessRequest.email,
-      subject: "🎉 Votre compte OperaFlow a été créé !",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 2rem; text-align: center; border-radius: 8px 8px 0 0;">
-            <h1 style="margin: 0; font-size: 2rem;">🎉 Bienvenue sur OperaFlow !</h1>
-            <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Votre compte a été créé avec succès</p>
-          </div>
-          
-          <div style="background: white; padding: 2rem; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            <h2 style="color: #1e293b; margin-top: 0;">📋 Vos informations de connexion</h2>
-            
-            <div style="background: #f8fafc; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
-              <p style="margin: 0;"><strong>Email :</strong> ${accessRequest.email}</p>
-              <p style="margin: 0;"><strong>Mot de passe temporaire :</strong> <code style="background: #e2e8f0; padding: 0.25rem 0.5rem; border-radius: 4px;">${tempPassword}</code></p>
-            </div>
-            
-            <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
-              <p style="margin: 0; color: #92400e;"><strong>⚠️ Important :</strong> Vous devrez changer ce mot de passe lors de votre première connexion.</p>
-            </div>
-            
-            <div style="text-align: center; margin: 2rem 0;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login" 
-                 style="background: #3b82f6; color: white; padding: 0.75rem 2rem; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
-                Se connecter maintenant
-              </a>
-            </div>
-            
-            <p style="color: #64748b; font-size: 0.9rem; margin-top: 2rem;">
-              Si vous avez des questions, n'hésitez pas à contacter votre administrateur.
-            </p>
-          </div>
-        </div>
-      `,
-      text: `
-        Bienvenue sur OperaFlow !
-        
-        Votre compte a été créé avec succès.
-        
-        Email : ${accessRequest.email}
-        Mot de passe temporaire : ${tempPassword}
-        
-        IMPORTANT : Vous devrez changer ce mot de passe lors de votre première connexion.
-        
-        Lien de connexion : ${process.env.NEXT_PUBLIC_APP_URL}/auth/login
-        
-        Cordialement,
-        L'équipe OperaFlow
-      `
-    }
+    // Générer l'email de bienvenue avec le template personnalisé
+    const welcomeEmailTemplate = generateWelcomeEmail({
+      prenom: accessRequest.prenom,
+      nom: accessRequest.nom,
+      email: accessRequest.email,
+      temporaryPassword: tempPassword,
+      loginUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://operaflow-ten.vercel.app'}/auth/login`
+    })
 
     // Envoyer l'email de bienvenue
     try {
