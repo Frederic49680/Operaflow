@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     console.log("🔍 Debug - User roles:", userRoles, "Error:", roleError)
 
     // Vérifier si l'utilisateur a le rôle admin
-    const hasAdminRole = userRoles?.some(ur => ur.roles?.code === "admin")
+    const hasAdminRole = userRoles?.some(ur => ur.roles && ur.roles.code === "admin")
     
     console.log("🔍 Debug - Has admin role:", hasAdminRole)
 
