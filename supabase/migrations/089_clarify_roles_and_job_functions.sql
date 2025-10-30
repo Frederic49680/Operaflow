@@ -86,9 +86,12 @@ CREATE INDEX IF NOT EXISTS idx_job_functions_seniority ON job_functions(seniorit
 ALTER TABLE job_functions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE resource_job_functions ENABLE ROW LEVEL SECURITY;
 
--- Politiques RLS pour lecture publique
-CREATE POLICY IF NOT EXISTS "Lecture publique des job_functions" ON job_functions FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Lecture publique des resource_job_functions" ON resource_job_functions FOR SELECT USING (true);
+-- Politiques RLS pour lecture publique (compat PG: pas de IF NOT EXISTS sur CREATE POLICY)
+DROP POLICY IF EXISTS "Lecture publique des job_functions" ON job_functions;
+CREATE POLICY "Lecture publique des job_functions" ON job_functions FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Lecture publique des resource_job_functions" ON resource_job_functions;
+CREATE POLICY "Lecture publique des resource_job_functions" ON resource_job_functions FOR SELECT USING (true);
 
 -- Trigger pour s'assurer qu'une ressource n'a qu'un seul rôle principal
 CREATE OR REPLACE FUNCTION check_unique_primary_job_function()
