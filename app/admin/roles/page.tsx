@@ -66,21 +66,18 @@ export default function AdminRolesPage() {
                `)
                .order('seniority_rank', { ascending: true })
 
-             if (rolesError) {
-               console.error('❌ [ROLES] Erreur lors du chargement des rôles:', rolesError)
-               alert(`❌ Erreur rôles: ${rolesError.message}`)
-               throw rolesError
-             }
-             
-             console.log('✅ [ROLES] Rôles chargés:', rolesData?.length || 0, 'rôles')
-             alert(`✅ Rôles chargés: ${rolesData?.length || 0}`)
-             
-             // Log détaillé de chaque rôle
-             rolesData?.forEach((role: any) => {
-               const permCount = role.role_permissions?.length || 0
-               console.log(`📊 [ROLE] ${role.code} (${role.label}): ${permCount} permissions`)
-               alert(`📊 ${role.code}: ${permCount} permissions`)
-             })
+            if (rolesError) {
+              console.error('❌ [ROLES] Erreur lors du chargement des rôles:', rolesError)
+              throw rolesError
+            }
+            
+            console.log('✅ [ROLES] Rôles chargés:', rolesData?.length || 0, 'rôles')
+            
+            // Log détaillé de chaque rôle
+            rolesData?.forEach((role: any) => {
+              const permCount = role.role_permissions?.length || 0
+              console.log(`📊 [ROLE] ${role.code} (${role.label}): ${permCount} permissions`)
+            })
 
              // Charger les permissions séparément
              console.log('🔐 [PERMISSIONS] Chargement des permissions...')
@@ -89,32 +86,28 @@ export default function AdminRolesPage() {
                .select('*')
                .order('code', { ascending: true })
 
-             if (permissionsError) {
-               console.error('❌ [PERMISSIONS] Erreur lors du chargement des permissions:', permissionsError)
-               alert(`❌ Erreur permissions: ${permissionsError.message}`)
-               throw permissionsError
-             }
-             
-             console.log('✅ [PERMISSIONS] Permissions chargées:', permissionsData?.length || 0, 'permissions')
-             alert(`✅ Permissions chargées: ${permissionsData?.length || 0}`)
+            if (permissionsError) {
+              console.error('❌ [PERMISSIONS] Erreur lors du chargement des permissions:', permissionsError)
+              throw permissionsError
+            }
+            
+            console.log('✅ [PERMISSIONS] Permissions chargées:', permissionsData?.length || 0, 'permissions')
 
              console.log('🎯 [FINAL] Données finales:')
              console.log('  - Rôles:', rolesData?.length || 0)
              console.log('  - Permissions:', permissionsData?.length || 0)
              
-             setRoles(rolesData || [])
-             setPermissions(permissionsData || [])
-             
-             console.log('✅ [ROLES] Chargement terminé avec succès')
-             alert('✅ Chargement terminé avec succès')
-           } catch (err) {
-             console.error('❌ [ROLES] Erreur lors du chargement:', err)
-             alert(`❌ Erreur: ${err instanceof Error ? err.message : 'Erreur inconnue'}`)
-             setError(err instanceof Error ? err.message : 'Erreur inconnue')
-           } finally {
-             setLoading(false)
-           }
-         }
+            setRoles(rolesData || [])
+            setPermissions(permissionsData || [])
+            
+            console.log('✅ [ROLES] Chargement terminé avec succès')
+          } catch (err) {
+            console.error('❌ [ROLES] Erreur lors du chargement:', err)
+            setError(err instanceof Error ? err.message : 'Erreur inconnue')
+          } finally {
+            setLoading(false)
+          }
+        }
 
   const handleRoleCreated = () => {
     loadData() // Recharger les données après création/modification
@@ -147,7 +140,7 @@ export default function AdminRolesPage() {
       setRoles(prev => prev.filter(r => r.id !== role.id))
     } catch (err) {
       console.error('Erreur lors de la suppression:', err)
-      alert(err instanceof Error ? err.message : 'Erreur inconnue')
+      setError(err instanceof Error ? err.message : 'Erreur inconnue')
     }
   }
 
