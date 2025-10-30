@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import RoleFormModal from '@/components/admin/RoleFormModal'
 import PermissionsMatrix from '@/components/admin/PermissionsMatrix'
-import DebugRoles from '@/components/admin/DebugRoles'
 import { Button } from '@/components/ui/button'
 import { Shield, Users, CheckCircle, Plus, Edit, Trash2, Settings, RefreshCw } from 'lucide-react'
 
@@ -196,12 +195,7 @@ export default function AdminRolesPage() {
                  <p className="mt-2 text-gray-600">
                    Configurez les rôles et leurs permissions d'accès
                  </p>
-               </div>
-
-               {/* Debug Component */}
-               <div className="mb-8">
-                 <DebugRoles />
-               </div>
+              </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
