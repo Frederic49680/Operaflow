@@ -1,7 +1,11 @@
 -- Migration 040: Système Rôles, Compétences & Affectations
 -- Création des tables de base pour le système d'affectation avancé
+-- 
+-- ATTENTION: Cette migration crée une table "roles" pour les FONCTIONS MÉTIER (hiérarchie)
+-- Cette table a été remplacée par "job_functions" dans la migration 088/089
+-- Cette migration est conservée pour historique mais ne devrait plus être appliquée
 
--- 1. Table des rôles hiérarchiques
+-- 1. Table des rôles hiérarchiques (DEPRECATED - utiliser job_functions)
 CREATE TABLE IF NOT EXISTS roles (
     code TEXT PRIMARY KEY,
     label TEXT NOT NULL,

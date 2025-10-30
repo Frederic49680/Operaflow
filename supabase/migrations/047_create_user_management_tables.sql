@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS app_users (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Table des rôles
+-- Table des rôles applicatifs (droits d'accès dans l'application)
+-- ATTENTION: Cette table est pour les RÔLES APP (ADMIN, PLANIFICATEUR, etc.)
+-- Pour les fonctions métier (N1-N8, NA-NC), utiliser la table job_functions
 CREATE TABLE IF NOT EXISTS roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code TEXT UNIQUE NOT NULL,
