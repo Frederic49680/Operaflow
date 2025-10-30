@@ -70,8 +70,11 @@ CREATE INDEX IF NOT EXISTS idx_job_functions_seniority ON job_functions(seniorit
 ALTER TABLE job_functions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE resource_job_functions ENABLE ROW LEVEL SECURITY;
 
--- Politiques RLS
+-- Politiques RLS (compat PG: pas de IF NOT EXISTS sur CREATE POLICY)
+DROP POLICY IF EXISTS "Lecture publique des job_functions" ON job_functions;
 CREATE POLICY "Lecture publique des job_functions" ON job_functions FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Modification job_functions admin" ON job_functions;
 CREATE POLICY "Modification job_functions admin" ON job_functions FOR ALL USING (
     EXISTS (
         SELECT 1 FROM user_roles ur
@@ -80,7 +83,10 @@ CREATE POLICY "Modification job_functions admin" ON job_functions FOR ALL USING 
     )
 );
 
+DROP POLICY IF EXISTS "Lecture publique des resource_job_functions" ON resource_job_functions;
 CREATE POLICY "Lecture publique des resource_job_functions" ON resource_job_functions FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Modification resource_job_functions admin" ON resource_job_functions;
 CREATE POLICY "Modification resource_job_functions admin" ON resource_job_functions FOR ALL USING (
     EXISTS (
         SELECT 1 FROM user_roles ur
